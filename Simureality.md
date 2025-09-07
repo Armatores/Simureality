@@ -348,10 +348,8 @@ Thus, all the observable complexity of the world is the result of a hierarchical
 *   **Proton Tunneling in DNA.** Within an isolated "atom" system, a proton cannot spontaneously overcome energy barriers. But as part of the meta-system "DNA," which for the Σ-Algorithm is a single computational module, the proton receives "privileges." The system can temporarily increase its quantum uncertainty (approximation), allowing it to tunnel to perform a function critical to the entire system (e.g., repair). Its behavior is dictated not by its own properties, but by the global tasks of the higher-level system.
 *   **Photosynthesis and Quantum Coherence.** In chlorophyll molecules inside a plant, excitation from a quantum of light does not search for a path chaotically. The "plant cell" system uses quantum coherence to calculate the propagation of energy in the most optimal way, as if it were a single computational device, not a set of molecules. This is another example of a different level of rules.
 
-Thus, anomalies are not errors, but pointers to system boundaries.
 Einstein's greatness lay in describing the world as a system that defines the rules of matter. It is time to take the next step—to recognize that the system is not alone. Atom, DNA, cell, organism, star, galaxy—all are nested systems, subordinate to common optimization principles but having their own methods and rules of operation.
 
-Einstein's greatness lay in describing the world as a system that defines the rules of matter. It is time to take the next step—to recognize that the system is not alone. Atom, DNA, cell, organism, star, galaxy—all are nested systems, subordinate to common optimization principles but having their own methods and rules of operation.
 
 What we call anomalies is precisely a sign that we have encountered another system, where our usual ideas about how things should work run into difficulties. It's like sewing clothes only to your own size and being surprised why they don't fit other people well.
 

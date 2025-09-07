@@ -1,4 +1,4 @@
-**Simureality: A New Perspective on Old Things**
+#### **Simureality: A New Perspective on Old Things**
 
 **Beyond Reality**
 

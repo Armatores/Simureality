@@ -21,8 +21,7 @@ What if our universe isn't being *simulated for someone*, but is simply *being c
 
 This repository contains the full treatise on the Simureality hypothesis, exploring its implications from quantum mechanics and cosmology to biology and the nature of consciousness.
 
-*   `simureality_treatise.pdf`: The complete main text.
-*   `key_concepts.md`: A breakdown of the core terms and ideas.
+*   `simureality.md`: The complete theory main text.
 
 ## Contribution & Discussion
 

@@ -236,7 +236,7 @@ Thus, a neutron star merger is not death, but transformation. It is the brightes
 If the Σ-Algorithm is the engineer, then this principle is its main and unchanging budget. The law can be formulated as:
 **ΣK (total computational complexity of the Universe) = const**
 
-If computations simplify in one place in the Universe, they must necessarily become more complex elsewhere. The simulation's energy does not come from nowhere and does not go nowhere-it is only redistributed between various processes. This is the fundamental accounting principle of the universe, preventing the system from reaching a state of absolute rest.
+Simply speaking, **if computations simplify in one place in the Universe, they must necessarily become more complex elsewhere**. The simulation's energy does not come from nowhere and does not go nowhere-it is only redistributed between various processes. This is the fundamental accounting principle of the universe, preventing the system from reaching a state of absolute rest.
 
 Here's how this manifests in various phenomena:
 

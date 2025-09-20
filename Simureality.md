@@ -946,40 +946,6 @@ Let's try to find unexpected echoes of the hypothesis in one of the most widespr
 *   "God called the dry ground 'land,' and the gathered waters he called 'seas.' And God saw that it was good." - Earth is planets, seas of water-hot suns, essentially the same liquid quark-gluon plasma.
 *   "Then God said, 'Let the land produce vegetation: seed-bearing plants and trees on the land that bear fruit with seed in it, according to their various kinds.' And it was so. The land produced vegetation: plants bearing seed according to their kinds and trees bearing fruit with seed in it according to their kinds. And God saw that it was good. And there was evening, and there was morning-the third day." The Bible does not describe the huge time span between the formation of DNA and the formation of planets but immediately moves to the essence of DNA-a self-sustaining meta-system of the next level.
 
-
-
-#### **The Law of Conservation of Stupidity: Why the World Isn't Getting Smarter**
-
-And finally, let's dilute the article with a small portion of light sarcasm. If a person "rents" the computational power of the system, then the law of conservation of total complexity must also apply to him. But applied to human society, we will reformulate this law a little differently-if someone has become smarter, it means someone somewhere has become dumber.
-
-Have you noticed this strange paradox? It seems the world is rushing forward: technology, science, access to information-all this should have made us, humanity, smarter. The collective mind simply had to shine with new facets.
-
-But why, in parallel with this, do flat Earth conspiracy theories flourish, social networks choke on waves of absurd content, and people whose cognitive abilities cause... bewilderment sometimes end up in the highest positions?
-
-So where does our progress go? Where does the "mind" go?
-
-Perhaps the answer lies in one caustic but brilliant law, which we will call the "Principle of Conservation of Stupidity."
-
-Don't believe it? Look.
-
-Imagine that the general "smartness" of society is not a bottomless ocean but a glass of water. Its volume is limited. If you add water somewhere, it must necessarily decrease from somewhere else.
-
-How does this work in reality?
-
-*   **The Vertical of "Mind"**. For one person in a chair to make genius, highly complex strategic decisions, thousands of other people don't need to think. They only need to clearly, without reasoning, execute orders. Their "intellectual water" is poured upward. Does the system as a whole become smarter and more efficient? Yes. But the price for this is the intellectual passivity of the majority.
-*   **Digital Fast Food**. Ten people in Silicon Valley created an algorithm capable of studying your preferences with jeweler's precision and feeding you exactly the content you will mindlessly scroll through for hours. They showed incredible intelligence. And what do millions of users do? They become stupider, consuming this digitally generated popcorn for them. The complexity of the algorithm is compensated by the simplification of content and the degradation of the audience's attention.
-*   **"I Didn't Shamanize, I Called the Brigade."** We become smarter globally but dumber locally. A modern city dweller is unlikely to be able to light a fire without matches or a lighter, navigate by the stars, or grow potatoes. We delegated these skills to specialists and technologies. Our personal "complexity" in these areas has reset to zero, but we have become experts in the narrow field of our work.
-
-We created a civilization that concentrates mind in some points, paying for it with stupidity in others.
-
-This is that very law. The general "smartness" of the system does not disappear-it is redistributed. And often in the most unpleasant way for us.
-
-So the next time you see another surge of collective stupidity online or in life, don't be surprised. Perhaps somewhere right now a lone genius is making a breakthrough discovery. And its price is our portion of "reasonableness" that went to pay for his genius.
-
-The world is not getting stupider. It is simply constantly pouring intellect from one end of the glass to the other. Everyone's task is to decide which part of the glass to be in.
-
-
-
 ### **Appendix** 
 
 #### **Two Levels of Description of Gravitational Interaction**

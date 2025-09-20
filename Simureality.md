@@ -125,8 +125,8 @@ Thus, time is the computation delay, and space is its byproduct. The photon, alw
 
 #### **Mass as Computation Complexity**
 
-"Stop!" an attentive reader will exclaim. "How can a photon have mass? And why isn't it in its parameters?"
-This is a correct observation. Mass is indeed not a particle parameter. Because mass in Simureality is not a parameter, but a metric.
+How can a photon have mass? And why isn't it in its parameters?
+It's because mass in Simureality is indeed not a particle parameter, but a metric.
 
 Mass is a measure of a particle's computational complexity relative to the reference photon.
 
@@ -262,8 +262,6 @@ Here's how this manifests in various phenomena:
     *   **Sonoluminescence**: When a cavitation bubble collapses, the system performs an instant and extremely costly operation to find a new stable configuration of matter. After successful optimization, a huge computational "bonus" is released instantaneously, dumped as a flash of light-photons.
     *   **Proton Tunneling in DNA**: From the system's perspective, DNA is a highly optimized meta-cluster. If an important function (e.g., repair) requires a proton to overcome an energy barrier, the system temporarily increases its "blurriness" (approximation), allowing it to "seep" to where it could not penetrate in a normal state. The price for this is a temporary increase in uncertainty.
 
-This list could be continued endlessly, finding more and more examples of this fundamental principle at work. However, we will consciously leave this food for independent thought to the reader-for the best theory is not one that gives all the answers, but one that asks the most interesting questions and opens space for intellectual search.
-
 #### **Why Three Quarks? An Architectural Necessity**
 
 The three-color system of quarks from the position of Simureality is not an arbitrary rule, but a direct consequence of the fundamental three-channel architecture of the computational system.
@@ -386,8 +384,6 @@ Instead, the system treats a gravitationally bound structure as a single computa
 
 The phenomenon labeled "dark matter" is, therefore, a **misinterpretation of a systemic property**. We expected gravity from localized mass, but we observe gravity from distributed computational complexity. The dark matter problem is solved not by a discovery in physics, but by a shift in perspective: from a universe of parts to a universe of optimized, hierarchical systems.
 
-**Conclusion: A Unified Narrative**
-
 In essence, the universe is not expanding; it is being **computed at an ever-increasing scale.** The observations we attribute to dark energy and dark matter are the thermodynamic and gravitational signatures of the Σ-Algorithm's relentless pursuit of optimal computational efficiency. Redshift, flatness, and galactic dynamics are not independent puzzles but interconnected symptoms of a single, underlying principle: the conservation of computational resources.
 
 #### **The Principle of Relativistic Complexity and Natural Level of Detail (LOD)**
@@ -437,20 +433,20 @@ Their research offers a radically new perspective on the fundamental concepts of
 2.  **Digits as Operators:** The coordinate `x` is expanded into a series: `x = Σ x_s * q^s`, where `x_s` is the digit in the `s`-th place. The authors' ingenious insight is that these digits `x_s` themselves are quantum operators with a discrete spectrum (e.g., 0 or 1 for the binary system). The same holds true for momentum `p`.
 3.  **Solving the Renormalization Problem:** The most striking consequence of their theory is a fundamentally new understanding of **renormalization**. On a lattice, it loses its mystical meaning of "subtracting infinities." Instead, it becomes a procedure of **renumbering the lattice nodes**. For example, transitioning from describing the set of values `{0, 1, 2, ..., N-1}` to `{-(N-1)/2, ..., 0, ..., (N-1)/2}` *is* renormalization. This is not a trick but a choice of the most efficient and consistent way to describe the system.
 
-**Why does this work fit our Simureality theory so perfectly?**
+**Perfect fit to Simureality theory**
 
-Their formalism is practically a ready-made **mathematical language** for describing our computational universe:
+Their formalism is practically a ready-made **mathematical language** for describing computational universe:
 
 *   The **finite lattice** is a direct description of the computational network of a hypothetical supercomputer with a finite number of memory cells.
 *   The **digit operators `x_s` and `p_r`** are the mathematical representation of our **trilexes**. A particle is indeed described not by continuous parameters but by a set of discrete data "digits."
 *   **Renormalization as renumbering** is an exact description of the work of the **Σ-Algorithm**, which manages the computational load by reassigning and optimizing data "addresses" to prevent system overload.
-*   The authors also note that in their approach, the **vacuum energy is identically equal to zero**, which is a direct consequence of the finiteness and self-consistency of the lattice model and aligns perfectly with our law of conservation of computational complexity (`ΣK = const`).
+*   The authors also note that in their approach, the **vacuum energy is identically equal to zero**, which is a direct consequence of the finiteness and self-consistency of the lattice model and aligns perfectly with law of conservation of computational complexity (`ΣK = const`).
 
 Thus, the work of Ivanov and Polushkin does not merely offer a new mathematical tool. It provides a rigorous, self-consistent formalism that describes the universe as an **informational system operating with discrete digital objects**. Their model is a powerful confirmation that the philosophical foundations of Simureality have a profound mathematical embodiment and outlines a path toward creating a complete theory free from infinities and paradoxes.
 
 #### **Towards a Formalization: Trilexes and Meta-Clusters in Digital Representation**
 
-The profound mathematical formalism developed by Ivanov and Polushkin  provides a natural and powerful foundation for the ontological framework proposed in this work. Their concept of representing continuous observables as expansions in digit operators within a cyclic lattice architecture aligns perfectly with the core tenets of Simureality. Herein, we propose a pathway for formalizing the Trilex and Meta-Cluster concepts using this digital representation, outlining a set of hypotheses and a research program for future mathematical development.
+The profound mathematical formalism developed by Ivanov and Polushkin  provides a natural and powerful foundation for the ontological framework proposed in this work. Herein, we propose a pathway for formalizing the Trilex and Meta-Cluster concepts using this digital representation, outlining a set of hypotheses and a research program for future mathematical development.
 
 ###### **Fundamental Postulates and Definitions**
 
@@ -510,8 +506,6 @@ This formal framework, while preliminary, sets a clear direction for future rese
         
     - **Update:** The algorithm executes, updating the particles' Momentum and Identity Trilexes accordingly.
         
-
-
 The digital representation formalism provides the necessary mathematical language to transition the Simureality hypothesis from a philosophical framework to a potential physical theory. By proposing the Triplex-Meta-Cluster architecture and its associated commutation relations, we have outlined a concrete research program. The synthesis of this ontological model with the rigorous mathematics of digitized observables offers a promising path toward a unified, computation-based understanding of physical reality, from quantum mechanics to cosmology.
 
 

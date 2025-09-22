@@ -1064,7 +1064,4 @@ This view leads to several novel, falsifiable predictions about brain function:
     Groups of neurons processing different attributes of a single object become temporarily entangled. This creates an instantaneous, non-communicative correlation between their states, binding the percept without the need for sluggish classical signal transmission.
     *   **Experimental Signature (Long-term):** Experiments designed to detect quantum correlations (e.g., Bell-type inequalities) between spatially separated neural populations (e.g., in visual and olfactory cortex) as they process a unified object (e.g., a rose) should reveal statistically significant non-classical correlations. These correlations would vanish when the same features are perceived as unrelated.
 
-**Conclusion: A Shift in Paradigm**
-
-The brain is not a passive victim of its environment. It is an active, encapsulated domain that has learned to execute sophisticated quantum algorithms for perception, cognition, and consciousness, all in the relentless pursuit of the universal imperative: **ΣK → min**.
 

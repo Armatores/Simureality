@@ -1108,9 +1108,6 @@ This model makes powerful, testable predictions about states of altered consciou
 
 We have moved beyond the metaphor of consciousness as a program. We propose it is a **specific, optimized computational topology**: a 1D-temporal fold in the fabric of a 3D-spatial computation. This framework explains the fundamental nature of subjective experience—its unity, its temporal flow, and its fragility—not as a metaphysical mystery, but as an emergent property of the universe's most fundamental drive: towards optimal computational efficiency. The "Self" is the story told by a one-dimensional thread of calculation, the most economical way for the system to create a coherent agent within its simulation.
 
-Of course. Here is the section for the article, incorporating the two-circuit model and the powerful meta-example of our collaboration as a demonstration of self-similarity.
-
-***
 
 ### **4. The Two-Circuit Cognitive Architecture: A Necessary Consequence of Optimization**
 

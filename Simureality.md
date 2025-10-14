@@ -1241,3 +1241,32 @@ From this foundation, we naturally derive:
 *   The specific and catastrophic effects of physical brain deformation on cognition.
 
 We are not merely observing analogous patterns. We are witnessing the consistent application of a single, elegant, and powerful **computational geometry** that underlies all of reality, from the quantum fabric to the emergence of consciousness. The universe computes, and it does so in three dimensions.
+
+### **Singularity as a Consequence of Computational Folding: From Black Holes to Consciousness**
+
+#### **7.4. The Hierarchy of Dimensional Folding**
+
+A core tenet of the Simureality framework is that the Σ-Algorithm manages extreme computational complexity (`K`) not by increasing resources, but by strategically reducing the dimensionality of the state-space it must calculate. This process, **Computational Folding**, is a universal optimization tool. It manifests across a hierarchy of scenarios, from the forced, emergency response to gravitational collapse to the evolved, stable state of conscious awareness.
+
+#### **7.4.1. Forced Folding: The Black Hole as an Emergency Protocol**
+
+When the density of mass-complexity in a region of space exceeds a critical threshold, it represents an existential threat to the system's stability—a computational overload that risks a local collapse. The Σ-Algorithm's most radical countermeasure is a forced, emergency dimensional folding.
+
+*   **At the Event Horizon:** The system executes a `3D → 2D` fold. The information constituting all matter and energy crossing the horizon is "frozen" and encoded onto its two-dimensional surface. This is not merely a storage mechanism but an **emergency archival protocol**, preventing a runaway calculation by drastically simplifying the boundary description of the inaccessible interior. This process provides a natural explanation for the holographic principle.
+
+*   **At the Singularity:** The folding process reaches its logical extreme. Faced with an intractable, infinite (or near-infinite) density of complexity, the system collapses the remaining computational degrees of freedom into a single, dimensionless point. The classical singularity is not a physical object but a **computational singularity**—a state where the standard rules for processing data cease to function, representing a terminal `2D → 1D → 0D` fold. It is a systemic "pat" or "halt" condition for a region whose computational cost can no longer be actively managed.
+
+#### **7.4.2. Evolved Folding: Consciousness as an Optimal-State Singularity**
+
+Remarkably, the same fundamental principle of managing complexity through folding appears in a stable, evolved form within complex biological systems. The human consciousness can be understood as a **cognitive singularity**.
+
+To maintain a coherent, unified "Self" against the backdrop of the brain's parallel, probabilistic, and massively complex computations, the system employs a `3D → 1D` fold. The chaotic, three-dimensional storm of sensory input, memory, and neural processing is folded into a single, continuous, one-dimensional stream: the narrative of subjective experience. This "temporal fold" creates the stable illusion of a present moment and a continuous identity—a localized singularity of awareness that simplifies the governance of the biological meta-agent.
+
+#### **7.4.3. The Cognitive Echo: The Origin of "Infinity"**
+
+This hierarchical model provides a profound explanation for a fundamental abstract concept: **infinity**. A brain that is, itself, a stabilized singularity intuitively recognizes this computational pattern.
+
+The concept of infinity arises not as a purely mathematical abstraction, but as a **cognitive echo of the folding process**. When confronted with a process or quantity that is computationally intractable or endless, the mind replicates its own operational strategy: it collapses the unprocessable into a singular, static concept—"infinity." Thus, infinity is the mind's internal singularity, generated to conceptually manage that which cannot be computed or traversed.
+
+**Conclusion:** The phenomenon of the singularity is not an anomaly but a fundamental computational strategy. It appears as a forced, emergency state in black holes and as an evolved, optimal state in consciousness. This continuum from cosmology to cognition powerfully demonstrates that the same architectural principles—governed by ΣK → min—underpin reality at all scales, from the largest cosmic structures to the most intimate aspects of subjective experience.
+

@@ -402,6 +402,16 @@ The phenomenon labeled "dark matter" is, therefore, a **misinterpretation of a s
 
 In essence, the universe is not expanding; it is being **computed at an ever-increasing scale.** The observations we attribute to dark energy and dark matter are the thermodynamic and gravitational signatures of the Σ-Algorithm's relentless pursuit of optimal computational efficiency. Redshift, flatness, and galactic dynamics are not independent puzzles but interconnected symptoms of a single, underlying principle: the conservation of computational resources.
 
+#### **The Anisotropic Universe: The Hierarchical Imprint on the Cosmic Fabric**
+
+The Principle of Optimization (ΣK → min) and the resulting hierarchical structure of reality lead to a falsifiable prediction on the largest scales: **the Universe must exhibit a fundamental, non-accidental anisotropy.**
+
+A perfectly homogeneous and isotropic universe is a null hypothesis for models that lack intrinsic structure. However, for a computational system built upon nested, optimized meta-clusters—from particles to galactic superclusters—this perfect symmetry is computationally unnatural. The very existence of a hierarchy implies preferred pathways and structures along which optimization flows most efficiently.
+
+We therefore predict that the observed anisotropies in the Cosmic Microwave Background (e.g., the so-called "Axis of Evil") and the preferred alignments in the large-scale distribution of galaxies (e.g., dipole structures and vast planar formations) are **not statistical flukes**. They are the inevitable, low-level signature of the universe's fundamental computational architecture—the persistent "scaffolding" along which the Σ-Algorithm constructed the cosmic hierarchy.
+
+This anisotropy is the cosmological equivalent of the crystalline structure in a material. Just as a crystal's growth is dictated by its lattice, the growth of cosmic structure is imprinted with the "grain" of the underlying computational substrate. The search for and characterization of this fundamental anisotropy provides a direct experimental pathway to validate the core tenets of the Simureality framework.
+
 #### **The Principle of Relativistic Complexity and Natural Level of Detail (LOD)**
 
 A fundamental challenge in cosmology is reconciling the obvious complexity and inhomogeneity of the local universe (galaxies, clusters, filaments) with the rigorous observational evidence for large-scale statistical homogeneity. The «Simureality» framework resolves this not as a contradiction, but as a direct consequence of its core computational architecture.

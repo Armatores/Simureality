@@ -1658,3 +1658,55 @@ The following taxonomy outlines the primary geometric-operational modes governed
 | **1** | Vector | **Channeling & Export Mode (1D):** Creates a **linear, 1D channel**. This geometry is optimized for the efficient, directed export of computational complexity (`K_out`). It acts as a pipeline for energy and entropy flow. It is the state of **action and transmission**. *Macroscopic Manifestation:* Electric current in conductors, photon propagation. |
 | **2** | Tensor | **Dynamic Adaptation Mode:** Defines the **malleable geometry of the computational grid itself**. It is not a deformation *within* the grid, but the mechanism of grid deformation in response to mass-complexity (`K`), i.e., gravity. |
 
+### **PRINCIPLE OF MINIMAL GEOMETRIC DEFORMATION (PMGD)**
+
+**Formulation:**
+The Σ-Algorithm maintains the geodesic nature of all object trajectories by introducing the minimally necessary distortion into the basic (spherically symmetric) geometry of the computational grid, required to preserve overall computational stability (ΣK → min).
+
+**1. BASE STATE: THE "GRAVITY SPHERE"**
+
+*   **What it is:** Around any object with mass (i.e., high local computational complexity K), the Σ-Algorithm, by default, constructs a static, spherically symmetric delay field ("lag").
+*   **Why a Sphere:** A sphere emerges as the natural consequence of applying the simplest computational rule: **"lag correction must be identical in all directions from the mass center."** This rule requires a minimal number of unique instructions and automatically generates spherical symmetry. The number π, which we discover when measuring a sphere, is not the cause of its formation but a **side effect artifact** of this process for an external observer.
+*   **Analogy:** Imagine a water droplet in zero gravity. It assumes a spherical shape not because it "knows" about π, but because this is the state of minimal surface energy. The ball shape arises by itself from the simplest physical principle.
+
+**2. PERTURBATION: A MOVING OBJECT**
+
+*   **What happens:** When another object (e.g., an asteroid or photon) approaches a massive body, it enters its "gravity sphere."
+*   **Challenge for the system:** Without changes, the object would continue moving in a straight line within the global grid. But this would lead to computationally expensive "conflicts" and instability. An optimal path must be found.
+
+
+**3. DEFORMATION MECHANISM: ADAPTIVE RECALIBRATION**
+
+The Σ-Algorithm acts not as a brute force, but as a genius engineer:
+
+*   **Locality:** It does not recalculate the entire "sphere." It only computes the region of the sphere where the moving object is located.
+*   **Minimalism:** It distorts the geometry just enough so that the object's trajectory remains geodesic within the *distorted* grid.
+*   **What is a Geodesic in this context:** It is the most computationally economical path. Not the path of least distance, but the path of **least computational resistance**.
+*   **What it looks like technically:**
+    *   An object at point A must reach point B.
+    *   The Σ-Algorithm tests different micro-deformations of the "sphere" along the path from A to B.
+    *   It selects the deformation for which the object's final path requires the **least number of computational cycles** and does not create new zones of instability.
+    *   This "winning" deformation is the very **curvature of spacetime** described by Einstein's field equations.
+
+**4. ANALOGIES AND CONFIRMATIONS**
+
+*   **The Photon as a "Geodesic Pencil":** Its trajectory is the "pure" geodesic, traced over the already deformed grid. It is a marker with which the system verifies its own work.
+*   **The Electron and its Spin 1/2:** This is a **static analogue** of the PMGD. The electron's base state is a "sphere," but its internal complexity (spin 1/2) requires a permanent, "hardwired" deformation of its personal geometry. It is always computed in a slightly distorted mode.
+*   **Gravity vs. Motion:**
+    *   **Gravity (mass)** is a **static deformation** of the "sphere."
+    *   **Object motion** within a field is a **dynamic deformation** of the "sphere."
+    Both processes are governed by the same principle: the minimization of global computational complexity ΣK.
+
+**5. CONSEQUENCES AND ADVANTAGES OF PMGD**
+
+*   **Explains the equivalence of inertial and gravitational mass:** Both are simply measures of an object's computational complexity (K). The Σ-Algorithm responds to K, not to its origin.
+*   **Explains the principle of equivalence:** An observer cannot distinguish gravity from acceleration because in both cases the Σ-Algorithm applies the **same mechanism** — deforming the grid to optimize trajectories.
+*   **Eliminates the "action at a distance" problem:** There is no mysterious attraction at a distance. There is only a local recalibration of the computational geometry in response to the presence of complexity.
+*   **Elegance:** The entire General Theory of Relativity reduces to a simple rule: **"Maintain geodesicity through minimal deformation."**
+*   **Consistent with the nature of mathematical constants:** All "fundamental constants," including π, turn out to be not causes, but consequences of the operation of the simplest computational rules.
+
+
+
+
+
+

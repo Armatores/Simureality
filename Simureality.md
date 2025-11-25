@@ -1516,28 +1516,26 @@ Furthermore, **evolution is redefined as the search for more efficient methods o
 
 The Entropy Metabolism Principle elevates the Simureality framework from a static architectural model to a dynamic theory of existence. It reveals a universe not winding down, but constantly churning—a vast, interconnected web of systems consuming, transforming, and expelling computational complexity. This endless dance of `K_in` and `K_out`, governed by the universal Σ-Algorithm, is the fundamental engine that drives the growth, evolution, and sustained complexity of everything from a subatomic particle to a galactic supercluster.
 
+### 4.4. The Principle of Obligatory Metabolism: Stability as a Dynamic Process
 
-#### 4.4. The Principle of Obligatory Metabolism: Stability as a Dynamic Process
-Postulate:
-Within the Simureality framework, stability is not a static property of matter, but a dynamic consequence of active participation in the system's computational economy.
-We postulate the Principle of Obligatory Metabolism: Any complex system claiming existence beyond a critical timeframe (t > t_{critical}) must possess an active mechanism for entropy metabolism (K_{in} \leftrightarrow K_{out}). Systems with "frozen" or isolated complexity that fail to participate in this exchange are classified as "Metabolic Bankrupts" and are subject to forced system optimization (decay).
-Case Study: The Enigma of Neutron Decay
-Standard physics struggles to intuitively explain why a free neutron decays in approximately 15 minutes, while a neutron bound inside an atomic nucleus remains stable for eternity. The \Sigma-Algorithm provides a lucid economic explanation:
- * The Free Neutron as a "Dead Asset":
-   A free neutron is a computationally expensive cluster (comprising three quarks and a gluon field) drifting in a vacuum. Crucially, it is electrically neutral and chemically inert. It cannot form bonds, it cannot interact with the electromagnetic field, and it does not participate in the structuring of local complexity.
-   From the perspective of the \Sigma-Algorithm, a free neutron is a closed loop of high maintenance cost (K_{high}) that generates no systemic utility. It consumes processing power but has no metabolism.
- * The 880-Second "Time-Out":
-   The neutron's mean lifetime (~880 seconds) is not a random quantum variable, but a systemic grace period. It is the specific time window the algorithm allocates for this complex cluster to find a "job"—to integrate itself into a metabolic structure (an atomic nucleus).
-   * In a Nucleus: The neutron stabilizes the proton configuration, allowing for the existence of complex elements. It becomes part of a metabolically active system. Its computational cost is justified by the utility of the atom.
-   * In a Vacuum: If integration fails within the time-out period, the neutron is declared a metabolic bankrupt.
- * Decay as Forced Recycling:
-   Beta decay (n \to p + e + \bar{\nu}) is the system's sanitation protocol. The \Sigma-Algorithm dismantles the inefficient, inert cluster into components that are maximal metabolic agents:
-   * The Proton (p): Charged and stable, capable of forming matter.
-   * The Electron (e): The universal connector, the primary agent of chemical bonding and complexity transfer.
-   * The Antineutrino (\bar{\nu}): A mechanism to balance the books and carry away excess spin/energy.
-Conclusion:
-Matter does not decay because of "weak force interactions"; the weak force is simply the tool the system uses to execute bankruptcy proceedings. The universe does not tolerate free-loaders. Only those agents that actively metabolize entropy—turning chaos into structure—are granted the privilege of stability.
+**Postulate:** Within the Simureality framework, stability is not a static property of matter, but a dynamic consequence of active participation in the system's computational economy. We postulate the **Principle of Obligatory Metabolism**: Any complex system claiming existence beyond a critical timeframe (`t > t_{critical}`) must possess an active mechanism for entropy metabolism (`K_{in} \leftrightarrow K_{out}`). Systems with "frozen" or isolated complexity that fail to participate in this exchange are classified as **"Metabolic Bankrupts"** and are subject to forced system optimization (decay).
 
+**Case Study: The Enigma of Neutron Decay**
+
+Standard physics struggles to intuitively explain why a free neutron decays in approximately 15 minutes, while a neutron bound inside an atomic nucleus remains stable for eternity. The Σ-Algorithm provides a lucid economic explanation:
+
+*   **The Free Neutron as a "Dead Asset":** A free neutron is a computationally expensive cluster (comprising three quarks and a gluon field) drifting in a vacuum. Crucially, it is electrically neutral and chemically inert. It cannot form bonds, it cannot interact with the electromagnetic field, and it does not participate in the structuring of local complexity. From the perspective of the Σ-Algorithm, a free neutron is a closed loop of high maintenance cost (`K_{high}`) that generates no systemic utility. It consumes processing power but has no metabolism.
+
+*   **The 880-Second "Time-Out":** The neutron's mean lifetime (~880 seconds) is not a random quantum variable, but a systemic grace period. It is the specific time window the algorithm allocates for this complex cluster to find a "job"—to integrate itself into a metabolic structure (an atomic nucleus).
+    *   *In a Nucleus:* The neutron stabilizes the proton configuration, allowing for the existence of complex elements. It becomes part of a metabolically active system. Its computational cost is justified by the utility of the atom.
+    *   *In a Vacuum:* If integration fails within the time-out period, the neutron is declared a metabolic bankrupt.
+
+*   **Decay as Forced Recycling:** Beta decay (`n \to p + e + \bar{\nu}`) is the system's sanitation protocol. The Σ-Algorithm dismantles the inefficient, inert cluster into components that are maximal metabolic agents:
+    *   The **Proton (p)**: Charged and stable, capable of forming matter.
+    *   The **Electron (e)**: The universal connector, the primary agent of chemical bonding and complexity transfer.
+    *   The **Antineutrino (`\bar{\nu}`)**: A mechanism to balance the books and carry away excess spin/energy.
+
+**Conclusion:** Matter does not decay because of "weak force interactions"; the weak force is simply the tool the system uses to execute bankruptcy proceedings. The universe does not tolerate free-loaders. Only those agents that actively metabolize entropy—turning chaos into structure—are granted the privilege of stability.
 
 ### **5. Spin as the Geometric Control Protocol: Dynamical Rule-Sculpting in Computational Reality**
 

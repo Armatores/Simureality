@@ -1035,7 +1035,6 @@ We propose that the Lag τ(x) modifies the temporal component of the metric (g_0
 For a weak field (Newtonian limit), the line element ds² becomes:
 ds² = -(1 + 2τ)c²·dt² + dx² + dy² + dz²
 
-> Plain English Explanation:
 > Imagine the universe as a synchronized network. A massive object (like a planet) is a cluster of data so complex that it takes longer to process. To keep it from "crashing" the network or falling behind, the System deliberately slows down the local time in that area (Lag).
 > The formula above says: "The flow of time (dt) is stretched by the Lag factor (1+2τ)." Gravity is simply the system managing this difference in processing speeds.
 > 
@@ -1049,7 +1048,7 @@ S = -mc ∫ ds
 
 δ ∫ √[ -(1 + 2τ)c²·dt² + v²·dt² ] = 0
 
-> Plain English Explanation:
+
 > The particle "thinks" it is moving in a straight line. However, the System has distorted the map (the metric) with Lag.
 > Since time runs slower near the mass (due to Lag), a path that curves slightly towards the mass becomes computationally "cheaper" (it spends fewer "ticks" of global time). The particle follows this cheapest path. We perceive this optimization curve as "attraction."
 > 
@@ -1064,7 +1063,7 @@ Substituting this back into the equation of motion:
 a = -c² · ∇τ
 
 (Where a is acceleration and ∇τ is the gradient of the Lag)
-> Plain English Explanation:
+
 > We calculated the "slope" of the Lag field. Just as a ball rolls down a physical hill, any object in Simureality "rolls" down the gradient of Lag (∇τ).
 > The math proves that the acceleration is driven entirely by the change in processing speed. The steeper the change in Lag, the stronger the apparent gravity.
 > 

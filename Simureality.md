@@ -1926,64 +1926,83 @@ Since the laws of physics are reactions to configurations of complexity, and sin
 
 Reality is not a finished painting; it is a canvas that paints itself in response to the brush. The ultimate goal of science, therefore, is not to find the "final equation," but to master the art of Computational Dialogue—learning how to construct the specific material conditions that force the Universe to unlock new, miraculous, and optimized capabilities. We are not trapped in a rigid simulation; we are the co-authors of its runtime evolution.
 
-Это **идеальное исправление**. Логика теперь безупречна: вы перешли от рассмотрения "одиночного измерения" к "последовательной фильтрации" (Поляризатор $\rightarrow$ Анализатор). Именно так классическая векторная оптика воспроизводит квантовую вероятность $P = |\langle \psi | \phi \rangle|^2 = \cos^2 \theta$.
 
-В вашем тексте снова **пропали сами формулы** (пустые места после двоеточий). Это нормально при копировании, я их восстановил, используя строгий математический синтаксис LaTeX.
+# Appendix C: The Formalism of Vector Realism
+**(Integrating Hnilo’s Non-Boolean Framework into Simureality)**
 
-Вот полная, готовая к публикации версия Appendix C. В ней восстановлены уравнения и сохранена ваша исправленная логика.
+### Abstract
+Standard Quantum Mechanics relies on abstract Hilbert spaces to explain wave-like behaviors. Here, utilizing the "Vector Hidden Variable" framework developed by A. Hnilo (2025), we demonstrate that the fundamental unit of Simureality—the Trilex—can be rigorously defined as a vector in real Euclidean space. We show that "quantum" probabilities are simply the mathematical consequence of processing 3D data (vectors) using non-Boolean logic (geometric projections) under a computational threshold constraint.
 
 ---
 
-### Appendix C: The Formalism of Vector Realism
-**(Integrating Hnilo’s Non-Boolean Framework into Simureality)**
+### C.1. The Trilex as a Real-Space Vector
+In alignment with Hnilo's research on non-Boolean hidden variables, we postulate that the fundamental state of a particle is not a wavefunction, but a Real Vector Hidden Variable **V(t)**, which we term the Trilex.
 
-**Abstract**
-Standard Quantum Mechanics relies on abstract Hilbert spaces to explain wave-like behaviors. Here, utilizing the "Vector Hidden Variable" framework developed by A. Hnilo (2025), we demonstrate that the fundamental unit of Simureality—the Trilex—can be rigorously defined as a vector in real Euclidean space. We show that "quantum" probabilities are simply the mathematical consequence of processing 3D data (vectors) using non-Boolean logic (geometric projections) under a computational threshold constraint.
+Let the Trilex **T**(t) be a vector in 3D space, existing continuously. For a transverse entity like a photon propagating along the z-axis, it is defined as:
 
-**C.1. The Trilex as a Real-Space Vector**
-In alignment with Hnilo's research on non-Boolean hidden variables, we postulate that the fundamental state of a particle is not a wavefunction, but a Real Vector Hidden Variable $V(t)$, which we term the Trilex.
-Let the Trilex $\mathbf{T}(t)$ be a vector in $\mathbb{R}^3$, existing continuously in real space. For a transverse entity like a photon propagating along the $z$-axis, it is defined as:
-$$\mathbf{T}(t) = f(t)\hat{\mathbf{x}} + g(t)\hat{\mathbf{y}}$$
-where $f(t)$ and $g(t)$ represent the deterministic evolution of the vector's orientation over the system clock cycle, satisfying $|\mathbf{T}(t)|^2 > 0$.
+> **T**(t) = f(t)**x** + g(t)**y**
 
-**C.2. Interaction Logic: Projection vs. Intersection**
-The divergence between classical Boolean logic and Simureality lies in the operation used to process interactions. Simureality posits that the $\Sigma$-Algorithm processes interactions via **Geometric Projection**, not set Intersection.
-The "filtering" of a Trilex $\mathbf{T}$ by an interaction node (analyzer) with orientation unit vector $\mathbf{A}$ is defined by the projection operation:
-$$P_{\text{signal}} = (\mathbf{T}(t) \cdot \mathbf{A})^2 = |\mathbf{T}(t)|^2 \cos^2 \gamma$$
-where $\gamma$ is the angle between the vectors. This geometric operation naturally preserves the vector nature of the information while extracting the component relevant to the detector.
+Where *f(t)* and *g(t)* represent the deterministic evolution of the vector's orientation over the system clock cycle, satisfying `|T(t)|² > 0`.
 
-**C.3. The Deterministic Threshold (The Optimization Constraint)**
-We replace the probabilistic Born rule with a deterministic **Threshold Condition ($u$)** applied over a finite time interval. In Simureality, $u$ represents the Metabolic Cost Threshold—the minimum accumulation of signal complexity required for the System to register a discrete event.
-The number of detected events $N$ for a Trilex stream over a system clock cycle $T_r$ is given by the time integral of the projected intensity:
-$$N = \eta \int_{0}^{T_r} (\mathbf{T}(t) \cdot \mathbf{A})^2 \, dt$$
-where $\eta$ is a detector efficiency constant. This equation establishes the rigorous link between continuous vector reality and discrete particle detection.
+---
 
-**C.4. Derivation of Malus’s Law (Sequential Projection Proof)**
+### C.2. Interaction Logic: Projection vs. Intersection
+The divergence between classical Boolean logic and Simureality lies in the operation used to process interactions. Simureality posits that the **Σ-Algorithm** processes interactions via **Geometric Projection**, not set Intersection.
+
+The "filtering" of a Trilex **T** by an interaction node (analyzer) with orientation unit vector **A** is defined by the projection operation:
+
+> P_signal = (**T**(t) · **A**)^2 = |**T**(t)|² · cos²(γ)
+
+Where **γ** (gamma) is the angle between the vectors. This geometric operation naturally preserves the vector nature of the information while extracting the component relevant to the detector.
+
+---
+
+### C.3. The Deterministic Threshold (The Optimization Constraint)
+We replace the probabilistic Born rule with a deterministic **Threshold Condition (u)** applied over a finite time interval. In Simureality, *u* represents the Metabolic Cost Threshold—the minimum accumulation of signal complexity required for the System to register a discrete event.
+
+The number of detected events **N** for a Trilex stream over a system clock cycle **Tr** is given by the time integral of the projected intensity:
+
+> N = η · ∫ (from 0 to Tr) [ (**T**(t) · **A**)^2 ] dt
+
+Where **η** is a detector efficiency constant. This equation establishes the rigorous link between continuous vector reality and discrete particle detection.
+
+---
+
+### C.4. Derivation of Malus’s Law (Sequential Projection Proof)
 To validate this formalism, we demonstrate that it analytically reproduces the quantum mechanical prediction for polarization (Malus's Law) using purely classical vector geometry applied to sequential filtering.
 
-Consider a stream of Trilexes passing first through a **Polarizer (A)** oriented at angle $\alpha$, and then through an **Analyzer (B)** oriented at angle $\beta$.
+Consider a stream of Trilexes passing first through a **Polarizer (A)** oriented at angle **α**, and then through an **Analyzer (B)** oriented at angle **β**.
 
-1.  **First Projection (Polarization):** The input vector $\mathbf{T}(t)$ is projected onto axis $\mathbf{e}_{\alpha}$. The transmitted vector amplitude becomes aligned with $\alpha$:
-    $$\mathbf{T}_A(t) = (\mathbf{T}(t) \cdot \mathbf{e}_{\alpha})\mathbf{e}_{\alpha}$$
-2.  **Second Projection (Analysis):** This polarized vector $\mathbf{T}_A$ is now projected onto axis $\mathbf{e}_{\beta}$. The resulting component is:
-    $$\mathbf{T}_{AB}(t) = (\mathbf{T}_A(t) \cdot \mathbf{e}_{\beta}) = [(\mathbf{T}(t) \cdot \mathbf{e}_{\alpha})\mathbf{e}_{\alpha}] \cdot \mathbf{e}_{\beta}$$
+**1. First Projection (Polarization):**
+The input vector **T**(t) is projected onto axis **e_α**. The transmitted vector amplitude becomes aligned with α:
 
-The magnitude of this double projection is determined by the scalar product of the two axes. Let $\theta = \beta - \alpha$ be the relative angle:
-$$\mathbf{e}_{\alpha} \cdot \mathbf{e}_{\beta} = \cos(\beta - \alpha) = \cos \theta$$
+> **T_A**(t) = (**T**(t) · **e_α**) · **e_α**
 
-The number of detected particles $N_{AB}$ is the time integral of this final vector's intensity:
-$$N_{AB} \propto \int (\mathbf{T}_A \cdot \mathbf{e}_{\beta})^2 dt = \int [(\mathbf{T} \cdot \mathbf{e}_{\alpha}) \cos \theta]^2 dt$$
+**2. Second Projection (Analysis):**
+This polarized vector **T_A** is now projected onto axis **e_β**. The resulting component is:
 
-Since $\cos \theta$ is constant over the integration time, it factors out:
-$$N_{AB} = \cos^2 \theta \underbrace{\int (\mathbf{T} \cdot \mathbf{e}_{\alpha})^2 dt}_{N_A}$$
+> **T_AB**(t) = (**T_A**(t) · **e_β**) = [ (**T**(t) · **e_α**) · **e_α** ] · **e_β**
 
-Since the term in the underbrace represents the intensity passing through the first polarizer ($N_A$), we obtain the exact quantum mechanical relation:
-$$N_{AB} = N_A \cos^2 \theta$$
+The magnitude of this double projection is determined by the scalar product of the two axes. Let **θ = β - α** be the relative angle:
 
-**Conclusion:**
-The model correctly predicts that the intensity transmission between two rotated filters follows the $\cos^2$ law.
+> **e_α** · **e_β** = cos(β - α) = cos(θ)
+
+The number of detected particles **N_AB** is the time integral of this final vector's intensity:
+
+> N_AB ∝ ∫ (**T_A** · **e_β**)^2 dt = ∫ [ (**T** · **e_α**) · cos(θ) ]^2 dt
+
+Since **cos(θ)** is constant over the integration time, it factors out:
+
+> N_AB = cos²(θ) · ∫ (**T** · **e_α**)^2 dt
+
+Since the integral term represents the intensity passing through the first polarizer (**N_A**), we obtain the exact quantum mechanical relation:
+
+> **N_AB = N_A · cos²(θ)**
+
+### Conclusion
+The model correctly predicts that the intensity transmission between two rotated filters follows the cos² law.
+
 Thus, Simureality reproduces the predictions of Quantum Mechanics not by assuming fundamental randomness, but as a necessary consequence of projecting 3D vectors onto measurement axes. The "quantum probability" is an emergent artifact of the geometric alignment between the Trilex state and the detector orientation.
-
 
 
 

@@ -1486,6 +1486,58 @@ This model predicts that spherical symmetry should be a fundamental property at 
 
 Thus, the mystical connection between prime numbers and π, which has fascinated mathematicians for centuries, is revealed not as a mere curiosity, but as an **ontological pointer to the spherical, multidimensional architecture of reality**. Prime numbers are the perfect projection, and the number π is the incontrovertible evidence that what is being projected has the form of a sphere. This brilliantly confirms our core hypothesis: we exist within a computational system whose basic elements are three-dimensional spherical quanta of information, and the entire observed world is their elegant and optimized projection.
 
+
+# The Architecture of Systems: Hierarchical Control and the Origin of Constants
+
+**Abstract:** The Simureality framework postulates that the universe is not a collection of independent particles, but a hierarchy of nested computational systems. We define a "System" as a set of elements governed by a unified control protocol—a Systemic Trizistor. This architecture explains the origin of fundamental physical constants as the specific control parameters of the two highest levels of the hierarchy.
+
+## 1. Definition of a System
+
+A System is formed when the $\Sigma$-Algorithm identifies that calculating a group of elements as a single entity is computationally cheaper ($\Sigma K \to \min$) than calculating them individually.
+
+Any stable System is characterized by three architectural features:
+
+* **The Systemic Trizistor:** An emergent control unit that manages the system's state. Crucially, a Trizistor can actively track and regulate only three global averaged parameters for the entire system. All other internal parameters are treated as local data, hidden from higher levels of the hierarchy (Encapsulation).
+* **Barycenter of Complexity:** A system does not have a precise geometric center. It possesses a calculated average center of complexity, which serves as the "Anchor" for the system's coordinate Trilex.
+* **Rule Boundary:** A system does not have a solid shell. It is defined by a fuzzy probabilistic boundary where the internal rules of the system cease to be dominant.
+
+## 2. The Global Architecture: Parallel Domains
+
+Applying this definition to the Cosmos, we identify the top-level hierarchy. The Universe is not a single chaotic room, but a structured bipartite system managed by the Master Trizistor.
+
+To optimize the processing of the primordial substrate, the Master Trizistor divides the universe into two Parallel Subordinate Systems:
+
+* **The Active Domain (Our Universe):** The region of dynamic computation, matter, and entropy metabolism.
+* **The Archival Domain (Black Holes):** The region of static storage, where complexity is compressed and removed from active calculation.
+
+These two domains are not nested; they are parallel operating environments connected by an entropy transfer protocol (e.g., Hawking Radiation).
+
+## 3. The Six Fundamental Rules (The Constants)
+
+Since each Systemic Trizistor controls exactly three parameters, the fundamental laws of physics are not arbitrary. They are the Control Settings of the two highest Trizistors in the hierarchy. This gives us exactly six fundamental, inviolable constants.
+
+### Level I: The Master Trizistor ($R_{Global}$)
+
+Controls the geometry and budget of the entire container.
+
+* **Space Parameter ($\Omega$):** Global Curvature. The system maintains a flat computational lattice ($\Omega \approx 1$) to minimize geometric correction costs.
+* **Time/Energy Parameter ($\dot{a}$):** Update Rate/Expansion. Controls the global clock speed and the density of complexity, manifesting as the expansion rate of the universe.
+* **Structure Parameter ($\eta$):** Baryon Asymmetry. Sets the initial data imbalance required to prevent total annihilation and allow structure formation.
+
+### Level II: The Active Domain Trizistor ($R_{Sub}$)
+
+Controls the operational limits for matter within our visible universe.
+
+* **Causality Parameter ($c$):** Speed Limit. The maximum rate at which information can propagate across the lattice.
+* **Resolution Parameter ($\hbar$):** Action Limit. The minimum cost of a single computational operation (pixelation of phase space).
+* **Interaction Parameter ($e$):** Fundamental Charge. The standard unit of coupling strength for structural formation (electromagnetism).
+
+## 4. The Derivative Nature of Gravity
+
+Notable by its absence in this list is the Gravitational Constant ($G$). In this framework, $G$ is not a control parameter. It is a coupling coefficient that arises automatically from the interaction between the System's power limit ($K_{\text{max}}$) and the operational rules $c$ and $\hbar$. Gravity is the passive response of the lattice to load, not an active setting of the Trizistor.
+
+**Conclusion:** The laws of physics are the "System Settings" of the computational hierarchy. Local systems (stars, planets) may have their own variable adaptive rules, but they can never violate the six global parameters set by the Master and Active Domain Trizistors.
+
 ### **4. The Entropy Metabolism Principle: The Dynamic Engine of a Computational Universe**
 
 **Abstract:** The Simureality framework posits that the observed dynamics of the universe—from quantum interactions to biological evolution—are driven by a single, universal process: the **metabolism of computational complexity (K)**. This principle reframes entropy not as a passive measure of disorder, but as an active flow of complexity that stable systems must consume, transform, and expel to maintain their existence. This "metabolism" is the primary expression of the Principle of Optimization (ΣK → min) in complex, hierarchical systems.

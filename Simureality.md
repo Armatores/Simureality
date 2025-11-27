@@ -2004,6 +2004,62 @@ The model correctly predicts that the intensity transmission between two rotated
 
 Thus, Simureality reproduces the predictions of Quantum Mechanics not by assuming fundamental randomness, but as a necessary consequence of projecting 3D vectors onto measurement axes. The "quantum probability" is an emergent artifact of the geometric alignment between the Trilex state and the detector orientation.
 
+# Appendix D: The Computational Derivation of Mass, Energy, and Gravity
+
+**Abstract:**
+In this section, we formalize the physical concepts of mass and gravity through the axioms of Simureality. We demonstrate that mass is not an intrinsic property of matter but represents the Load Factor of a local computational node. The gravitational constant $G$ is derived as a dependent quantity characterizing the ultimate throughput capacity of the System.
+
+## D.1. Mass as Relative Computational Load
+
+In classical physics, mass is defined via an arbitrary standard (the kilogram). In Simureality, we postulate the existence of a Maximum Computational Capacity ($K_{\text{max}}$) for any single node of the computational lattice (corresponding to the Planck scale).
+
+If $K_{\text{local}}$ represents the current computational complexity (the number of operations required to update the Trilex state per tick), then physical mass $m$ is the dimensionless load factor $\mu$:
+
+$$ \mu = \frac{K_{\text{local}}}{K_{\text{max}}} $$
+
+* As $\mu \to 0$: The object has negligible mass (elementary particles).
+* As $\mu \to 1$: The node reaches its throughput limit. The System ceases state updates for external observers, corresponding to the formation of an Event Horizon (Black Hole).
+
+Thus, mass is a measure of the proximity of a local process to the System's hardware limit.
+
+## D.2. Derivation of the Gravitational Constant ($G$)
+
+Since mass is redefined as a load factor, the gravitational constant $G$ loses its status as a fundamental constant and becomes a Coupling Coefficient, linking the System's informational limits.
+
+Given that the Planck energy $E_P$ corresponds to $K_{\text{max}}$ (100% load), we express $G$ through the operational parameters of the Active Domain Trizistor ($c$, $\hbar$):
+
+$$ G = \frac{\hbar c}{E_P^2} $$
+
+Here, $E_P$ is the primary value defining the maximum power of a single computational node.
+
+**Physical Interpretation:** $G$ is inversely proportional to the square of the System's power. The tiny value of $G$ indicates the colossal performance margin ($K_{\text{max}}$) of the computational network, where even significant data volumes (planets) induce only minimal latency (curvature).
+
+## D.3. Equivalence of Complexity and Energy ($E=mc^2$)
+
+Energy ($E$) in Simureality is interpreted as Active Compute power expended to maintain the object's existence.
+
+* **Static Data ($m$):** The complexity of the Trilex structure (Identity) that must be preserved.
+* **Process ($E$):** The number of operations required for this preservation.
+
+The maximum data processing speed in the system is $c$ (ticks/sec). Consequently, the total computational cost of maintaining a static object (mass $m$) is:
+
+$$ E = m c^2 $$
+
+Here, $c^2$ acts as the conversion coefficient between static data complexity (Mass) and the dynamic process of its computation (Energy).
+
+## D.4. Relativistic Dynamics and the Update Budget
+
+Object motion is interpreted as the process of reallocating Trilex data between network nodes. Since the Total Complexity Budget ($K_{\text{total}}$) for a single object is limited by the maximum update frequency $\nu_{\text{max}}$ (approx. $10^{43}$ Hz), it is distributed between two tasks:
+
+* $K_{\text{rules}}$: The computation of dynamic geometric rules of interaction (charge, spin, weak force constraints) required to define the object.
+* $K_{\text{motion}}$: The calculation of coordinate changes (translation).
+
+As velocity increases ($K_{\text{motion}} \uparrow$), the System is forced to reallocate resources. Since $K_{\text{rules}}$ (the object's definition) cannot simply be discarded without destroying the object, the System effectively increases the total frequency of calls to the object to accommodate both the rules and the motion. To the external environment, this manifests as an increase in inertial mass (resistance to acceleration):
+
+$$ m = \frac{m_0}{\sqrt{1 - \frac{v^2}{c^2}}} $$
+
+The divergence of mass as $v \to c$ is a consequence of the coordinate update frequency approaching the System's clock rate limit. Massive objects cannot reach $c$ because a portion of the computational budget ($K_{\text{rules}}$) is permanently reserved for calculating their internal geometric rules, making a 100% allocation to motion impossible.
+
 
 
 

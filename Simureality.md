@@ -2122,6 +2122,66 @@ $$ m = \frac{m_0}{\sqrt{1 - \frac{v^2}{c^2}}} $$
 
 The divergence of mass as $v \to c$ is a consequence of the coordinate update frequency approaching the System's clock rate limit. Massive objects cannot reach $c$ because a portion of the computational budget ($K_{\text{rules}}$) is permanently reserved for calculating their internal geometric rules, making a 100% allocation to motion impossible.
 
+# Appendix E: Formalization of Vector Dynamics of Trilexes (VDT)
+
+**Abstract:**  
+This section provides the rigorous mathematical formulation of the core Simureality unit—the Trilex. We demonstrate that Quantum Mechanics is not a fundamental theory of nature but the effective statistical theory of 3D vector dynamics projected onto a 1D observational interface. We derive the Schrödinger equation dynamics and the violation of Bell's inequalities purely from classical vector operations within a Shared Memory architecture.
+
+## E.1. The Fundamental State Equation (The Rotor)
+
+In standard Quantum Mechanics (QM), a particle is described by a complex wavefunction $\psi$. In Simureality, a particle is a pointer to a real 3D vector $\mathbf{T}$ (Trilex) rotating in the System's memory.
+
+**Postulate:** The state of a fundamental particle is a vector $\mathbf{T}(t) \in \mathbb{R}^3$ that evolves deterministically according to the System's clock frequency $\omega$.
+
+$$\mathbf{T}(t) = \mathbf{T}_{\text{base}} \cdot \hat{R}(\omega t + \varphi_0)$$
+
+Where:  
+* $\mathbf{T}_{\text{base}}$ is the initial amplitude vector (defining rest mass/energy)  
+* $\hat{R}(\theta)$ is the rotation matrix (element of SO(3)), representing the particle's "spin" or internal processing cycle  
+* $\omega$ is the update frequency ($E = \hbar \omega$), representing the computational cost of the object  
+* $\varphi_0$ is the initial phase (Hidden Variable), typically unobservable to the user (1D-Observer) due to high $\omega$
+
+## E.2. Measurement as Digital Projection
+
+Measurement is not a "collapse of probability." It is a geometric projection of the high-dimensional Trilex vector onto the low-dimensional detector axis.
+
+If a detector is oriented along unit vector $\mathbf{D}$, the measured intensity $I$ (interpreted as probability $P$ in QM) is the time-averaged scalar product:
+
+$$P = \langle (\mathbf{T}(t) \cdot \mathbf{D})^2 \rangle_t = \frac{1}{2}|\mathbf{T}_{\text{base}}|^2 \cos^2 \theta$$
+
+This derivation ($P \propto \cos^2 \theta$) recovers Born's Rule and Malus's Law strictly from Euclidean geometry, eliminating the need for fundamental randomness. "Randomness" is merely the user's ignorance of the instantaneous phase $\omega t$.
+
+## E.3. Resolution of Entanglement: The Shared Memory Protocol
+
+Standard physics interprets entanglement as "spooky action at a distance." Simureality reinterprets it as Pointer Aliasing in a shared memory architecture.
+
+**Definition:** Two "entangled" particles A and B are not independent entities. They are two distinct pointers ($\text{ptr}_A$, $\text{ptr}_B$) addressing the same memory cell containing the Identity Trilex $\mathbf{T}_{\text{shared}}$.
+
+**The Mechanism of Correlation:**
+
+* **Measurement A (Write Operation):** Observer A measures particle A along axis $\alpha$. The System performs a projection and updates the state in the shared memory cell:  
+  $\mathbf{T}_{\text{shared}} \leftarrow \text{proj}_\alpha(\mathbf{T}_{\text{shared}})$
+
+* **Measurement B (Read Operation):** Observer B measures particle B along axis $\beta$. The System reads the already updated vector $\mathbf{T}_{\text{shared}}$ (which is now aligned with $\alpha$)
+
+* **Correlation:** The probability of B detecting the particle depends on the geometric angle between the new state ($\alpha$) and detector B ($\beta$)
+
+**Conclusion:** This strictly reproduces the Quantum Mechanical correlation predictions that violate Bell's inequalities, but without violating locality. Information does not travel faster than light between A and B; it remains stationary in the System's memory, accessed by two distributed terminals.
+
+## E.4. The Heisenberg Limit as a Computational Budget
+
+The Uncertainty Principle is re-derived as a Resource Constraint ($\Sigma K = \text{const}$).
+
+The System allocates a finite bit-depth (precision budget $K_{\text{max}}$) to store the attributes of any object. This budget must be split between conjugate variables (e.g., Position bits $K_x$ and Momentum bits $K_p$):
+
+$$K_x + K_p \leq K_{\text{max}}$$
+
+Since precision $\Delta \propto 1/K$, the product of uncertainties has a lower bound determined by the total budget:
+
+$$\Delta x \cdot \Delta p \geq \frac{C}{K_{\text{max}}}$$
+
+Thus, quantum uncertainty is not a property of nature, but a precision trade-off inherent to any finite digital representation. We cannot know both variables with infinite precision because the System does not calculate them with infinite precision.
+
 
 
 

@@ -2161,7 +2161,7 @@ Standard physics interprets entanglement as "spooky action at a distance." Simur
 
 * **Measurement A (Write Operation):** Observer A measures particle A along axis $\alpha$. The System performs a projection and updates the state in the shared memory cell:  
   $\mathbf{T}_{\text{shared}} \leftarrow \text{proj}_\alpha(\mathbf{T}_{\text{shared}})$
-
+ 
 * **Measurement B (Read Operation):** Observer B measures particle B along axis $\beta$. The System reads the already updated vector $\mathbf{T}_{\text{shared}}$ (which is now aligned with $\alpha$)
 
 * **Correlation:** The probability of B detecting the particle depends on the geometric angle between the new state ($\alpha$) and detector B ($\beta$)

@@ -2168,13 +2168,13 @@ $$
 **The Mechanism of Correlation:**
 
 1.  **Measurement A (Write Operation):** Observer A measures particle A along axis $\alpha$. The System performs a projection and **updates** the state in the shared memory cell:
-    $$
-    \mathbf{T}_{shared} \leftarrow \text{Project}(\mathbf{T}_{shared}, \mathbf{A})
-    $$
+   
+    $$\mathbf{T}_{shared} \leftarrow \text{Project}(\mathbf{T}_{shared}, \mathbf{A})$$
 
-2.  **Measurement B (Read Operation):** Observer B measures particle B along axis $\beta$. The System reads the *already updated* vector $\mathbf{T}_{shared}$ (which is now aligned with $\alpha$).
 
-3.  **Correlation:** The probability of B detecting the particle depends on the geometric angle between the new state ($\alpha$) and detector B ($\beta$).
+3.  **Measurement B (Read Operation):** Observer B measures particle B along axis $\beta$. The System reads the *already updated* vector $\mathbf{T}_{shared}$ (which is now aligned with $\alpha$).
+
+4.  **Correlation:** The probability of B detecting the particle depends on the geometric angle between the new state ($\alpha$) and detector B ($\beta$).
 
 $$
 E(\alpha, \beta) = (\mathbf{A} \cdot \mathbf{B})^2 = \cos^2(\alpha - \beta)

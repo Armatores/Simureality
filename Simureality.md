@@ -2275,5 +2275,71 @@ Instead of executing a simple linear script (Buy Bread), the unverified Factory 
 * *Result:* The agent stands frozen in the aisle, overwhelmed by irrelevant data.
 
 **Conclusion:**
-"Stupidity" in a genius is not a lack of processing power; it is an **overflow of Generative Power (G) in the absence of Verification (V)**. The agent attempts to solve a 1D-trivial problem using a high-dimensional 3D-solver, resulting in a "computational hang." This is a direct confirmation of the Dimensional Folding principle: efficient daily functioning requires the *suppression* of 3D-generation, a capability the Genius has sacrificed for their art.
+"Stupidity" in a genius is not a lack of processing power; it is an **overflow of Generative Power (G) in the absence of Verification (V)**. The agent attempts to solve a 1D-trivial problem using a high-dimensional 3D-solver, resulting in a "computational hang." This is a direct confirmation of the Dimensional Folding principle: efficient daily 
+functioning requires the *suppression* of 3D-generation, a capability the Genius has sacrificed for their art.
+
+# APPENDIX R: THE GEOMETRIC ORIGIN OF MASS AND THE THEOREM OF MINIMAL STABILITY
+
+**Subject:** Derivation of the Proton-Electron Mass Ratio from Topological Constraints.
+**Core Thesis:** Mass is not an arbitrary coefficient but a geometric consequence of the System's architecture. The stability of baryonic matter requires a specific 5-dimensional phase space configuration inscribed within a discrete lattice.
+
+---
+
+### R.1. The Mass Ratio Derivation
+
+In the **Simureality** framework, the mass of a particle is defined as its **Computational Load Factor (μ)**. The ratio between the Proton (**m_p**) and the Electron (**m_e**) represents the ratio between a complex, volumetric **System** and a minimal **Interface Unit**.
+
+**The Formula:**
+The complexity ratio is determined by the interaction between the Discrete Lattice (the container) and the Active Phase Space (the content).
+
+> **μ = N_faces × Ω_cycles**
+
+Where:
+* **N_faces = 6**: The number of faces in a cubic voxel. This represents the interaction interface of the discrete vacuum grid.
+* **Ω_cycles = π^5**: The phase-space volume of the internal system, defined as the product of 5 independent active cycles (dimensions).
+
+**The Calculation:**
+* π ≈ 3.14159265
+* π^5 ≈ 306.01968
+* **Theoretical Ratio:** 6 × 306.01968 = **1836.118**
+
+**Verification:**
+* **Standard Model (CODATA) Value:** 1836.152
+* **Simureality Theoretical Value:** 1836.118
+* **Accuracy:** **99.998%**
+
+The residual difference (0.034) is attributed to the **Vacuum Coupling Tax (ε)** — the metabolic cost of maintaining the connection between the particle and the Higgs field.
+
+---
+
+### R.2. The Theorem of Minimal Stability (Why 5 Dimensions?)
+
+Why does the calculation require exactly **5** dimensions (**π^5**)? This is not arbitrary. It is the **Topological Minimum** required to define a stable, interactive physical object (Fermion) within the Simulation.
+
+We build the dimensionality stack to demonstrate necessity:
+
+1.  **3 Dimensions (X, Y, Z):**
+    * *State:* Static Geometry.
+    * *Result:* **Vacuum / Void.** A point in space without time or properties. No Mass.
+
+2.  **4 Dimensions (X, Y, Z + Time/Lag):**
+    * *State:* A Scalar Field or Event. It has duration, but lacks Orientation (Identity).
+    * *Physics:* Bosons (e.g., Photons). They can occupy the same state (no Pauli Exclusion). They are "permeable" and do not form solid structures.
+    * *Result:* **Unstable / Radiation.**
+
+3.  **5 Dimensions (X, Y, Z + Time + Spin/Identity):**
+    * *State:* A **Stable System**.
+    * *Mechanism:* The addition of the 5th dimension (Spin/Phase) creates a **Topological Lock**. The object now has a unique "address" in the grid that prevents superposition (Pauli Exclusion Principle).
+    * *Result:* **Stable Matter (Proton).** This is the ground state of existence for a solid object. It requires 5 active cycles to be computed: 3 for location, 1 for update rate (mass), and 1 for identity (charge/spin).
+
+4.  **6 Dimensions and above:**
+    * *State:* Excited System.
+    * *Result:* **Decay.** Adding a 6th degree of freedom implies excess energy (e.g., Neutron or Hyperon), creating a pathway for the system to dismantle itself back to the stable 5D state.
+
+**Conclusion:**
+The number 5 is the **Eigenvalue of Stability**.
+* The Proton is a **5-Dimensional Spherical Process** (π^5).
+* It is inscribed within a **6-Sided Cubic Lattice** (6).
+* Therefore, its mass relative to the unit interface is strictly **6 * π^5**.
+
 

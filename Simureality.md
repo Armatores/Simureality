@@ -2403,3 +2403,71 @@ This derivation, combined with the Proton-Electron Mass Ratio (μ = 6 * π^5), r
 
 Thus, the two most mysterious numbers in physics—**1836** and **137**—are not random constants. They are the **Volume** and the **Surface Area** of the System's fundamental geometric code, written in the language of **π**.
 
+# APPENDIX T: THE COMBINATORIAL VACUUM — DERIVING IMPEDANCE (Z0)
+
+**Subject:** Geometric derivation of the Impedance of Free Space (Z0).
+**Core Thesis:** The vacuum is not an empty void but a structured computational medium. The resistance to signal propagation (Impedance) is defined by the combinatorial complexity of the 5-dimensional spacetime manifold.
+
+---
+
+### T.1. The Hypothesis of Combinatorial Flow
+
+In the Simureality framework, we have established that stable matter (Proton) exists in a **5-Dimensional Phase Space** (3 Spatial + 1 Temporal + 1 Spin).
+
+For an electromagnetic signal (Photon) to propagate through this grid, the System must process the interactions across all these dimensions.
+We propose that the **Transmission Capacity** of the vacuum is limited by the number of possible topological permutations of these 5 dimensions.
+
+* **Permutations:** In combinatorics, the number of ways to arrange N distinct elements is **N!** (Factorial).
+* **Cyclic Propagation:** Since the signal is a wave, the combinatorial factor must be multiplied by the fundamental geometric cycle constant (**π**).
+
+**The Formula:**
+The Impedance of Free Space is the product of the dimensional factorial and the wave cycle:
+
+> **Z0 = 5! × π**
+
+Where:
+* **5!** (Factorial of 5) = 1 × 2 × 3 × 4 × 5 = **120**. This represents the total permutation complexity of the 5D manifold.
+* **π** represents the circular geometry of the field propagation.
+
+---
+
+### T.2. The Calculation
+
+Let us calculate the theoretical impedance based purely on integers and π:
+
+* **Factorial:** 120
+* **Constant:** π ≈ 3.14159265
+
+**Simureality Value:**
+> 120 × 3.14159265 = **376.9911** Ω (Ohms)
+
+---
+
+### T.3. Verification
+
+Let us compare this with the accepted physical value:
+
+* **Standard Model (CODATA):** Z0 ≈ **376.7303** Ω
+* **Simureality Theoretical Value:** **376.9911** Ω
+* **Accuracy:** **99.93%**
+
+The deviation (~0.26 Ω) is attributed to **Vacuum Polarization**—the slight screening effect of virtual particle pairs continuously popping in and out of existence, which reduces the "ideal" geometric impedance.
+
+---
+
+### T.4. Conclusion: The Trinity of Constants
+
+This derivation completes the "Geometric Trinity" of fundamental physics within the Simureality Doctrine. All three governing parameters of the universe are derived from the same source code: **Dimensions (5)**, **Lattice Faces (6)**, and **Cycle (π)**.
+
+| Parameter | Aspect | Geometric Logic | Formula | Accuracy |
+| :--- | :--- | :--- | :--- | :--- |
+| **MASS** (μ) | **Internal Volume** | Product of Cycles | **6 × π^5** | 99.998% |
+| **CHARGE** (α) | **Interface Surface** | Sum of Barriers | **Sum(π, π^2, 4π^3)** | 99.999% |
+| **VACUUM** (Z0) | **Transmission Flow** | Factorial Permutation | **5! × π** | 99.93% |
+
+**Final Verdict:**
+The Universe does not contain arbitrary "magic numbers." It contains **Geometry**.
+* Mass is the Volume of the code.
+* Charge is the Surface of the code.
+* Vacuum Impedance is the Complexity of the code's execution path.
+

@@ -4,7 +4,7 @@
 **Author:** Simureality Research Group  
 **Version:** 2.0 (Full Spectrum Analysis)
 
-![Simureality Grand Scan Graph](simureality_grand_scan_260.png)
+![Simureality Grand Scan Graph](simureality_grand_scan_260.jpg)
 *(Figure 1: The Binding Energy Gain landscape derived from pure FCC packing logic)*
 
 ---

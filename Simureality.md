@@ -1615,34 +1615,9 @@ Standard physics struggles to intuitively explain why a free neutron decays in a
 
 **Abstract:** Within the Simureality framework, quantum spin is reinterpreted not as intrinsic angular momentum in the classical sense, but as a **fundamental control parameter that dynamically sculpts the geometry of a particle's interaction rules**. This protocol allows a single type of computational unit (e.g., an electron) to implement vastly different functions by reconfiguring its operational geometry in real-time, enabling the system-wide management of entropy and complexity.
 
-#### **5.1. The Base State: The Charge as a Spherical Rule**
-
-A charged particle, in its default state, possesses a rule defined by its charge (`Q`). Without spin, this rule is computationally simple but inflexible:
-
-*   **Rule Formalism:** `Interaction_Rule = Sphere(Q)`
-*   **Characteristics:** Isotropy, simplicity, low computational cost.
-*   **Limitation:** Inability to create directional flows or complex structures.
-
-Of course. Here is the revised section, fully integrated with the "Spin as Geometric Modes" insight, and rewritten as formal theoretical content.
-
----
-
-### **5.2. Spin as the Determinant of Geometric Computational Role**
-
 The spin value of a particle is not a mere quantum number but defines its **fundamental geometric nature and computational function** within the Σ-Algorithm's architecture. It dictates how a particle's presence deforms the local computational grid and interacts with entropy flows.
 
 The introduction of spin (`S ≠ 0`) activates a specific deformation protocol, moving beyond a simple spherical symmetry. The particle's charge-based interaction rule is dynamically warped by its intrinsic spin geometry, creating a complex, anisotropic operational profile.
-
-*   **Unified Formalism:** `Interaction_Rule = Deform(Sphere(Q), Spin_Geometry(S))`
-
-The following taxonomy outlines the primary geometric-operational modes governed by spin:
-
-| Spin | Geometric Type | Operational Mode & Systemic Function |
-| :--- | :--- | :--- |
-| **0** | Scalar | **Stabilization Mode:** Governs "background" geometry and global constants. Provides a stable foundation for other deformations. |
-| **1/2** | Spinor | **Probing & Holding Mode (3D):** Generates a **complex 3D scaffold**. This geometry is optimized for sensing local complexity (`K_local`), assessing entropy gradients, and forming stable, structured bonds (e.g., atomic orbitals). It is the state of **information gathering and complexity containment**. *Macroscopic Manifestation:* Paramagnetism, chemical bonds. |
-| **1** | Vector | **Channeling & Export Mode (1D):** Creates a **linear, 1D channel**. This geometry is optimized for the efficient, directed export of computational complexity (`K_out`). It acts as a pipeline for energy and entropy flow. It is the state of **action and transmission**. *Macroscopic Manifestation:* Electric current in conductors, photon propagation. |
-| **2** | Tensor | **Dynamic Adaptation Mode:** Defines the **malleable geometry of the computational grid itself**. It is not a deformation *within* the grid, but the mechanism of grid deformation in response to mass-complexity (`K`), i.e., gravity. |
 
 ### **5.2. Spin as the Determinant of Geometric Computational Role**
 

@@ -16,10 +16,25 @@ By simulating a "Greedy Accretion" process—adding nucleons one by one to the m
 
 ---
 
-## 📐 The Methodology
+## 📐 The Methodology: Dynamic Accretion vs. Static Design
 
-### 1. The Substrate: FCC Lattice
-We posit that the atomic nucleus acts as a **solid-state crystal** rather than a liquid drop. We utilize the **Face-Centered Cubic (FCC)** lattice because it represents the mathematically densest possible packing of spheres (Kepler Conjecture), providing each internal nucleon with exactly **12 neighbors**.
+### A Fundamental Shift in Approach
+Previous geometric models of the nucleus often relied on **Static Packing** — manually constructing ideal Platonic solids (e.g., nesting a Cube inside a Dodecahedron) to match magic numbers. While visually compelling, this approach is subjective: one must "know the answer" to build the shape.
+
+This project employs a radically different, **Dynamic Approach**:
+* **We do not "draw" shapes.** The script knows nothing about Dodecahedrons or Pyramids.
+* **We simulate a Process.** We model the natural, evolutionary accumulation of nucleons.
+* **Blind Emergence.** The geometric figures (Octahedrons, FCC-14) emerge *spontaneously* as the mathematical consequence of minimizing void space.
+
+### The Algorithm: "Greedy Accretion"
+The script simulates the growth of a nucleus from $N=1$ to $N=60$ using a deterministic, physics-agnostic algorithm:
+
+1.  **Scan:** For a cluster of $N$ particles, identify all valid empty slots on the surface.
+2.  **Evaluate:** For each slot, calculate the **Gain** — how many new physical bonds (neighbors) would be formed if a particle were placed there.
+3.  **Select:** Place the $(N+1)^{th}$ particle in the slot with the **Maximum Gain**. (Tie-breaker: choose the slot closest to the center of mass to maintain compactness).
+
+This mimics the thermodynamic behavior of matter: nature always seeks the local energy minimum (maximum bonds) at every step of growth.
+
 
 ### 2. The Algorithm: "Greedy Accretion"
 The script simulates the growth of a nucleus from $N=1$ to $N=60$ using a deterministic, physics-agnostic algorithm:

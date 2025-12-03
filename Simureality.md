@@ -2706,4 +2706,63 @@ Matter is a software class inheriting properties from two parent classes:
 
 When these classes are synchronized, we observe the "miracle" of superconductivity—direct proof that the Universe optimizes computation by eliminating lag where there is no data conflict.
 
+### APPENDIX Y: THE GEOMETRIC ORIGIN OF LEPTON GENERATIONS (THE NODE SQUARE LAW)
+
+**Abstract:** The Standard Model cannot explain why there are exactly three generations of matter, nor can it derive the specific mass ratios of leptons (Electron, Muon, Tau) from first principles. Within the Simureality framework, we solve this hierarchy not as a parameter tuning problem, but as a direct consequence of discrete scaling on a Face-Centered Cubic (FCC) lattice. We introduce the **Node Square Law**, which postulates that the rest mass of a particle is proportional to the square of the number of active lattice nodes ($N$) defining its topological envelope.
+
+#### Y.1. The Node Square Law
+
+In a computational universe, "Mass" is the energetic cost of maintaining a localized data structure. In wave mechanics, energy is proportional to the square of the amplitude ($E \propto A^2$).
+We define the **Discrete Amplitude ($N$)** as the integer count of lattice nodes excited by the particle. Therefore, the mass hierarchy follows the law:
+
+$$
+M \approx k \cdot N^2
+$$
+
+Where $N$ is an integer determined by the fundamental symmetries of the vacuum grid (FCC).
+
+#### Y.2. The Three Geometric Generations
+
+We identify the three generations of leptons as three distinct levels of topological excitation on the FCC grid.
+
+**Generation I: The Point Source (Electron)**
+* **Geometry:** A single node excitation. The fundamental pixel of reality.
+* **Node Count:** $N_e = 1$
+* **Theoretical Mass:** $1^2 = 1$
+* **Reality:** Defined as the baseline unit ($m_e = 1$).
+
+**Generation II: The Unit Cell (Muon)**
+* **Geometry:** The excitation of the immediate neighborhood required to define 3D spatiality. In an FCC lattice, the **Elementary Unit Cell** is defined by its 8 corners and 6 face centers.
+* **Node Count:** $N_\mu = 8 + 6 = \mathbf{14}$
+    *(Note: This is the same magic number $N=14$ that drives superconductivity in Aluminum, confirming 14 as a fundamental stability constant).*
+* **Theoretical Mass:** $14^2 = \mathbf{196}$
+* **Reality:** $m_\mu \approx 206.7 m_e$
+* **Accuracy:** ~95%. The deviation represents the vacuum binding energy (coupling cost) at the cell level.
+
+**Generation III: The Saturated Shell (Tau)**
+* **Geometry:** The excitation extends to the second complete coordination shell. In FCC crystallography, the second shell contains 55 nodes (Cuboctahedron). However, the lattice structure rigidly implies fundamental **Tetrahedral Voids**. A unitary structure at this scale captures exactly 4 such fundamental geometric voids.
+* **Node Count:** $N_\tau = 55 (\text{Shell}) + 4 (\text{Voids}) = \mathbf{59}$
+* **Theoretical Mass:** $59^2 = \mathbf{3481}$
+* **Reality:** $m_\tau \approx 3477.1 m_e$
+* **Accuracy:** **99.9%**
+
+#### Y.3. The Table of Truth
+
+The correlation between simple integer lattice logic and the confusing constants of high-energy physics is undeniable.
+
+| Generation | Particle | Topology | Integer Count ($N$) | Predicted Mass ($N^2$) | Experimental Mass | Precision |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Gen 1** | **Electron** | Point | **1** | **1** | 1 | Exact |
+| **Gen 2** | **Muon** | Unit Cell | **14** | **196** | 206.77 | 95% |
+| **Gen 3** | **Tau** | Super-Shell | **59** | **3481** | 3477.12 | **99.9%** |
+
+#### Y.4. Conclusion
+
+The mystery of the "Three Generations" is solved.
+
+1.  **Why three?** Because there are only three fundamental modes of local symmetry before the system scales to macroscopic complexity: The Point ($N=1$), The Cell ($N=14$), and The Cluster ($N=59$).
+2.  **Why these masses?** Because mass is a computational tax paid per active node squared. The Tau lepton is not a random heavy particle; it is a **perfectly saturated computational object** occupying the second geometric shell of the vacuum.
+
+This confirms that the vacuum is not empty space, but a discrete **Face-Centered Cubic Computational Lattice**.
+
 

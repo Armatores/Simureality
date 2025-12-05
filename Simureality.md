@@ -2939,6 +2939,76 @@ The vision of "Triangles" is not an hallucination; it is a direct perception of 
 
 We inhabit a reality that is logically cubic but topologically triangular—a "Simplex" based reality.
 
+# APPENDIX L: THE "LUCKY" COINCIDENCES (COSMOLOGY & MESONS)
+
+**Subject:** Testing the Simureality geometric framework against major cosmological and particle physics anomalies.
+**Core Thesis:** The fundamental parameters of the Universe match the basic geometric properties of a Face-Centered Cubic (FCC) Lattice and 4D-polytopes with "unreasonable" precision.
+
+---
+
+### 1. The Geometry of Dark Matter (The 26% Solution)
+
+**The Puzzle:** Modern cosmology (Planck 2018 data) states that **Dark Matter** constitutes approximately **26.8%** of the universe's mass-energy density budget (excluding Dark Energy). Its nature is unknown.
+
+**The Simureality "Coincidence":**
+If the vacuum is a computational **Face-Centered Cubic (FCC) Lattice** of spherical nodes (voxels), we can calculate the ratio of "Active Space" to "Void Space" using the Kepler Conjecture solution.
+
+* **Packing Efficiency of FCC ($K_{fcc}$):** $\frac{\pi}{\sqrt{18}} \approx 0.7405$.
+* This means **74.05%** of the volume is occupied by the processing Nodes (Spheres).
+* Consequently, **25.95%** of the volume consists of **Geometric Voids** (interstices).
+
+**Comparison:**
+* **FCC Void Volume:** **25.95%**
+* **Dark Matter Content:** **26.8%**
+
+**The Interpretation:**
+"Dark Matter" is not a particle. It is the **Structural Mass of the Grid's Voids**.
+In a computational lattice, the empty space between nodes must still be addressed and maintained geometrically. This "Void Maintenance" manifests as a gravitational scaffolding that permeates the universe (26%), invisible to electromagnetic interaction (which happens on Nodes) but active in gravity (which is Grid distortion).
+
+---
+
+### 2. The Pion and the Hypercube (The Glue)
+
+**The Puzzle:** The Pion ($\pi$-meson) is the carrier of the Strong Nuclear Force, binding protons and neutrons. Its mass is $\approx 135 - 139$ MeV. Why this specific value?
+
+**The Simureality "Coincidence":**
+We established that Baryons (Protons) are 5D-objects. The force between them must traverse the dimensional gap. The simplest geometric primitive in 4D space is the **Tesseract (Hypercube)**.
+
+* **Geometry:** A Tesseract has **16 vertices**.
+* **Scaling Law:** Using the Node Square Law ($M \propto N^2$) for bosons.
+
+**Calculation:**
+$$N_{tesseract} = 16$$
+$$M_{\pi} \approx 16^2 \times m_e$$
+$$256 \times 0.511 \text{ MeV} = \mathbf{130.8 \text{ MeV}}$$
+
+**Comparison:**
+* **Predicted Mass:** **130.8 MeV**
+* **Actual Mass ($\pi^0$):** **134.9 MeV**
+* **Accuracy:** **97%**
+
+**The Interpretation:**
+The force that glues atomic nuclei together is literally a **4-Dimensional Hypercube** (Tesseract) serving as a connector. The mass of the Pion is simply the computational cost of rendering the 16 vertices of this hyper-connector.
+
+---
+
+### 3. The Electron's Pixelation Error (g-factor)
+
+**The Puzzle:** The electron's magnetic moment is slightly larger than 2 ($g \approx 2.002319$). Standard physics calculates this using thousands of Feynman diagrams (QED).
+
+**The Simureality "Coincidence":**
+The anomaly ($0.0023...$) is the **Aliasing Error** of projecting a perfect Sphere (Spin) onto a discrete Grid.
+If we map a sphere onto a linear pixel grid, the error is proportional to the **Inverse of the Grid Resolution**.
+What is the Grid Resolution? It is defined by the Fine Structure Constant ($\alpha \approx 1/137$).
+
+**Approximation:**
+$$Anomaly \approx \frac{\alpha}{2\pi} \approx \frac{1}{137 \times 6.28} \approx \mathbf{0.00116}$$
+*(Note: The Schwinger term $\alpha/2\pi$ gives exactly half the anomaly. The full geometric correction requires the next order of pixelation, but the scale is perfectly predicted by the grid constant).*
+
+**Conclusion:**
+The universe is not analog. The "Quantum Corrections" are simply **Digital Artifacts** (Aliasing) arising from the finite resolution of the simulation grid.
+
+
 
 
 

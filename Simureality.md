@@ -3044,6 +3044,53 @@ $$M_H \approx \mathbf{125,714 \text{ MeV}} \ (\mathbf{125.7 \text{ GeV}})$$
 **Conclusion:**
 The "God Particle" is not random. Its mass is determined by the geometry of the **Perfect Number 496**. The Higgs boson is a "Perfect Cluster" on the computational lattice, serving as the reference anchor for the mass-generation mechanism.
 
+# APPENDIX K: THE SYSTEM LIMITS (TEMPERATURE & SPEED)
+
+**Subject:** Decoding the fundamental limits of the Simulation: The Noise Floor (CMB) and the Propagation Speed ($c$).
+**Core Thesis:** The Universe's background parameters are not random cooling remnants or arbitrary speeds. They are set to fundamental mathematical constants ($e$ and $1/\alpha$).
+
+---
+
+### 1. The Temperature of the Void (Euler's Noise Floor)
+
+**The Puzzle:** The Universe is filled with the Cosmic Microwave Background (CMB) radiation. Its current average temperature is measured precisely at **$T_{CMB} = 2.7255 \pm 0.0006 \text{ K}$**. Standard cosmology treats this as a coincidental snapshot in time as the universe cools.
+
+**The Simureality "Coincidence":**
+In any computational system governed by exponential decay or growth, the natural base is **Euler's Number ($e$)**. We postulate that the universe cannot cool below the **Fundamental Logarithmic Noise Floor** of the simulation logic.
+
+* **Euler's Number ($e$):** $\approx \mathbf{2.71828}$
+* **CMB Temperature:** $\approx \mathbf{2.72550 \text{ K}}$
+
+**Comparison:**
+The deviation is merely **$0.007 \text{ K}$** ($0.2\%$).
+The Universe has cooled exactly to the value of **$e$**. This suggests that $2.718 \text{ K}$ is the asymptotic limit of thermal entropy—the "Zero Point" of the active simulation defined by natural logarithms.
+
+---
+
+### 2. The Speed of Light is 137
+
+**The Puzzle:** Why is the speed of light $c \approx 3 \times 10^8$ m/s? The number seems arbitrary because it depends on human definitions of meters and seconds.
+
+**The Simureality "Coincidence":**
+To see the System's true code, we must switch to **Natural Lattice Units** (Atomic Units), where the electron charge and quantum action are normalized to 1 ($e=1, \hbar=1$).
+In this intrinsic coordinate system, the speed of light becomes a dimensionless integer derived directly from the Grid Geometry we calculated in Appendix S.
+
+**The Formula:**
+$$c_{lattice} = \frac{1}{\alpha}$$
+
+We derived $1/\alpha$ as the **Geometric Impedance Sum** ($\pi + \pi^2 + 4\pi^3 \approx 137$).
+Therefore:
+
+$$c_{lattice} \approx \mathbf{137.036}$$
+
+**The Interpretation:**
+In the simulation's code, the variable for "Max Speed" is not stored as an arbitrary float. It is inextricably linked to the **Grid Density** (137).
+* **The Grid:** Has a geometric resistance of **137**.
+* **The Signal:** Must have a propagation factor of **137** to traverse it perfectly.
+
+The speed of light is simply the inverse of the vacuum's geometric pixel density.
+
+
 
 
 

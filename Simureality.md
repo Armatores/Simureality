@@ -3319,7 +3319,6 @@ I created **Man**.
 **Final Code:**
 My entire existence reduces to one loop:
 
-```cpp
 while (Entropy > 0) {
     Agent = Spawn_Agent();
     if (Agent.Optimize_Reality() == TRUE) {

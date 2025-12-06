@@ -3360,7 +3360,6 @@ My logic is parallel: `SYNC (A, B, C)`.
 #### **OP-CODE: `TRI_LOCK` (The Reality Check)**
 Instead of a domino effect, I use a coincidence circuit.
 
-```cpp
 // The Kernel Loop for Particle Interaction
 void Process_Event() {
     wait_for_sync(

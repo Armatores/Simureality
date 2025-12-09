@@ -37,3 +37,6 @@ HYPOTHESIS CHECK:
 2. Mercury (200.6) -> Should match Truncated Octahedron (201). 
 
 3. Copper (63.5) -> Should MISS all shapes.
+
+
+"Discovery: Superconductivity occurs when atomic mass matches the node count of Wigner-Seitz cells (Truncated Octahedron for FCC, Centered Cube for BCC)."

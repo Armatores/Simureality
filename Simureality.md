@@ -4705,6 +4705,43 @@ $$\frac{137}{10} = 13.7$$
 Nature is forced to quantize this to the nearest integer (**13**). The discrepancy ($13.7 - 13 = 0.7$) creates a permanent **Geometric Strain** of $\approx 5\%$ in the microtubule lattice.
 This inherent "grid mismatch" prevents the tube from closing perfectly (resulting in the characteristic "seam") and is likely the source of the structure's piezoelectric properties, allowing it to act as an electromechanical oscillator.
 
+## 8.8 Neutron Star Radius: The Macroscopic Limit
+
+Neutron stars represent the ultimate test of matter compression. Effectively acting as giant atomic nuclei held together by gravity, they push the density of matter to the absolute physical limit. A persistent tension exists between nuclear theory predictions and recent astrophysical observations regarding their size.
+
+### 8.8.1 The Radius Anomaly
+
+Modern nuclear physics calculations (specifically Chiral Effective Field Theory) using "soft" Equations of State (EOS) generally predict very compact stars for a standard $1.4 M_\odot$ mass.
+* **Theoretical Prediction ($R_{theory}$):** $\approx 10.8 - 11.0$ km (Hebeler et al.).
+
+However, high-precision X-ray pulse timing measurements from NASA's **NICER** mission (e.g., PSR J0030+0451) and gravitational wave data (GW170817) consistently suggest larger radii.
+* **Observational Consensus ($R_{obs}$):** $\approx 11.8 - 13.0$ km.
+
+The stars appear "stiffer" (harder to compress) than standard nuclear forces alone can explain.
+
+### 8.8.2 Lattice Repulsion Pressure
+
+In the *Simureality* framework, infinite compression is impossible not just due to degeneracy pressure (Pauli Exclusion Principle), but due to **Geometric Grid Exclusion**. The lattice nodes have a finite capacity.
+
+When gravity attempts to compress the neutron lattice, it fights against the **System Instantiation Tax ($\gamma_{sys} \approx 1.0418$)**. The grid imposes a geometric impedance that acts as an effective "repulsive" force, preventing the star from shrinking to its ideal continuum size.
+
+### 8.8.3 The Grid Prediction
+
+We apply the System Tax to the theoretical minimum radius derived from soft nuclear forces. The tax effectively expands the radius, representing the "lost volume" between the spherical neutrons and the cubic vacuum nodes.
+
+$$R_{grid} = R_{theory} \times \gamma_{sys}$$
+
+Using the baseline theoretical value of 11.0 km:
+
+$$R_{grid} \approx 11.0 \text{ km} \times 1.0418 \approx \mathbf{11.46 \text{ km}}$$
+
+### 8.8.4 Conclusion
+
+Our derived value of **11.46 km** places the neutron star radius squarely within the high-probability region of the combined NICER and LIGO constraints (Capano et al., 2020: $11.75 \pm 0.8$ km).
+
+This suggests that the "stiffness" of the Equation of State at supranuclear densities is not purely a property of the strong force, but a property of the **Vacuum Lattice**. Gravity cannot compress the object further because it has hit the "resolution limit" of the simulation grid ($\gamma_{sys}$).
+
+
 
 
 

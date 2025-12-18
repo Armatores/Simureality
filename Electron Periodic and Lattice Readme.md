@@ -1,93 +1,111 @@
-# Simureality: The Geometric Origins of Electron Orbitals
+# Project Simureality: Geometric Chemistry Engine (FCC Lattice)
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)]()
-[![Status](https://img.shields.io/badge/Status-Geometric_Proof-orange.svg)]()
+> **"Chemistry is not a list of rules; it is the inevitable result of packing spheres into a 3D grid."**
 
-> **"Chemistry is not the interaction of abstract probability clouds. It is the distinct addressing of nodes on a discrete 3D lattice."**
+![Status](https://img.shields.io/badge/Status-Experimental-orange) ![Python](https://img.shields.io/badge/Python-3.8+-blue) ![License](https://img.shields.io/badge/License-MIT-green)
 
-## 🧪 Overview
+## 🌌 Overview
 
-This repository contains the computational proofs for the **Simureality Chemistry Model**. 
+This repository hosts the **Lattice Chemistry Simulator**, a computational proof-of-concept for the **Simureality Theory**.
 
-Standard Quantum Mechanics describes electron orbitals ($s, p, d, f$) as complex probability density functions derived from the Schrödinger equation. We propose a radical simplification: **Orbitals are simply address vectors pointing to the nearest neighbors on a Face-Centered Cubic (FCC) lattice.**
+Instead of solving complex Schrödinger wave equations to predict atomic stability, this engine treats atoms as **geometric configurations of vectors** (electrons) on a discrete **Face-Centered Cubic (FCC)** vacuum lattice.
 
-This repository contains two distinct scripts that prove this hypothesis from opposite directions:
-1.  **Generative Proof:** Simulates electrons self-organizing on a grid to find stability (Spontaneous Shell Formation).
-2.  **Analytic Proof:** Scans standard Quantum Mechanical orbitals to prove they align perfectly with integer lattice coordinates.
+We demonstrate that "Magic Numbers" (2, 10, 18 - Noble Gases) and chemical stability are **emergent properties of geometry**, arising naturally from the requirement to minimize geometric tension (impedance) on a grid.
 
 ---
 
-## 📂 The Scripts
+## 📐 The Hypothesis
 
-| Script File | Type | Description |
-| :--- | :--- | :--- |
-| `lattice_shell_solver.py` | **Generative** | Simulates point charges on an FCC grid. Spontaneously derives the Periodic Table's magic numbers (2, 10, 18). |
-| `orbital_vector_scanner.py` | **Analytic** | Analyzes standard spherical harmonics ($Y_{lm}$) and proves their maximum density vectors point to discrete grid nodes. |
+Standard physics views electrons as probability clouds defined by wave functions. **Simureality** posits a "Hardware-First" approach:
 
----
-
-## 🚀 1. The Generative Proof (`lattice_shell_solver.py`)
-
-**The Question:** If we place electrons on a discrete grid and tell them only to "minimize repulsion" (Coulomb law), what shapes will they form?
-
-**The Logic:**
-* **No Quantum Mechanics:** The script knows nothing about wave functions or Pauli exclusion.
-* **The Grid:** It uses a discrete Face-Centered Cubic (FCC) lattice as the only allowed position space.
-* **The Algorithm:** It adds electrons one by one ($Z=1$ to $20$) and uses a stochastic hill-climbing algorithm to find the lowest energy configuration.
-
-### 📉 The Result (Interpretation)
-The simulation outputs an energy stability graph that reveals distinct "kinks" (stability peaks) at specific numbers. These are not random; they are geometric closures:
-
-* **Z = 2 (Helium):** Stability is found at a linear configuration (opposite poles). **Geometry: Line.**
-* **Z = 10 (Neon):** A massive stability jump occurs when 8 electrons form a perfect cube around the center. **Geometry: Cube.**
-* **Z = 18 (Argon):** The next stability plateau occurs when the faces/edges of the cube are filled. **Geometry: Octahedron/Cuboctahedron.**
-
-**Conclusion:** The structure of the Periodic Table is an inevitable consequence of packing repelling spheres onto a cubic lattice.
+1.  **Space is Discrete:** The vacuum is a structured grid (likely FCC or HCP packing).
+2.  **Particles are Vectors:** Electrons are fundamental units of information occupying lattice nodes.
+3.  **Forces are Geometric:** Coulomb's Law is a simplified description of lattice impedance minimization.
+4.  **Stability = Symmetry:** An atom is "stable" (chemically inert) when its electrons form a perfectly symmetrical geometric shape that distributes tension evenly (e.g., Tetrahedron, Octahedron).
 
 ---
 
-## 🧭 2. The Analytic Proof (`orbital_vector_scanner.py`)
+## ⚙️ How It Works
 
-**The Question:** Do the "mysterious" shapes of quantum orbitals ($p_x, d_{xy}, f_{xyz}$) align with our proposed lattice?
+The script `lattice_chemistry.py` performs the following steps:
 
-**The Logic:**
-* The script takes the standard mathematical formulas for electron orbitals (Spherical Harmonics).
-* It scans 3D space to find the vector where the electron probability is **maximum**.
-* It checks if these vectors correspond to integer coordinates on an FCC grid.
+1.  **Lattice Generation:** Creates a 3D Face-Centered Cubic (FCC) grid.
+    * *Why FCC?* It represents the densest possible packing of spheres (Kepler Conjecture), minimizing empty space.
+2.  **Configuration:** Places $Z$ electrons and a nucleus ($+Z$) on the grid.
+3.  **Optimization:** Uses **Stochastic Hill Climbing** to find the arrangement with the lowest total energy.
+4.  **Energy Calculation:**
 
-### 📊 The Result (Interpretation)
-The script confirms a 100% match between Quantum Orbitals and Lattice Geometry:
+    The objective function minimizes the total system tension $E$:
 
-| Orbital Type | Max Vector | Lattice Interpretation |
-| :--- | :--- | :--- |
-| **s-orbital** | `[0,0,0]` | **The Node** (Sphere center) |
-| **p-orbitals** | `[1,0,0]` | **The Faces** (6 neighbors in a cube) |
-| **d-orbitals** | `[1,1,0]` | **The Edges** (12 diagonal edge centers) |
-| **f-orbitals** | `[1,1,1]` | **The Corners** (8 tetrahedral voids) |
+    $$E_{total} = E_{repulsion} - E_{attraction}$$
 
-**Conclusion:** Electron orbitals are not "clouds." They are **Address Busses**.
-* Chemistry is simply the activation of specific ports (Face, Edge, or Corner) on the voxel interface.
+    Where:
+
+    $$E_{repulsion} = \frac{1}{2} \sum_{i \neq j} \frac{1}{||\mathbf{r}_i - \mathbf{r}_j||}$$
+
+    $$E_{attraction} = \sum_{i} \frac{Z}{||\mathbf{r}_i||}$$
 
 ---
 
-## 🛠️ Installation & Usage
+## 🚀 Installation & Usage
 
-No heavy scientific libraries are required beyond `numpy` and `matplotlib`.
+### Prerequisites
+* Python 3.8+
+* NumPy
+* Matplotlib
 
-```bash
-# Clone the repository
-git clone [https://github.com/your-username/simureality-chemistry.git](https://github.com/your-username/simureality-chemistry.git)
+### Setup
 
-# Run the Generative Solver (Produces Stability Graph)
-python lattice_shell_solver.py
+    git clone [https://github.com/your-username/project-trilex.git](https://github.com/your-username/project-trilex.git)
+    cd project-trilex
+    pip install numpy matplotlib
 
-# Run the Vector Scanner (Produces Text Report)
-python orbital_vector_scanner.pyTheoretical Implication
+### Running the Simulation
 
-​By combining these two scripts, we demonstrate a unified truth:
-​Bottom-Up: Electrons naturally form cubes and lines when placed on a lattice (Script 1).
-​Top-Down: Standard Quantum Mechanics describes exactly these lattice directions (Script 2).
-​Therefore, Wave-Particle Duality is an illusion caused by the discrete nature of the vacuum. We perceive "waves" only because we are observing the activation of discrete lattice addresses over time.
-​Part of the Simureality Project. 2025.
+    python lattice_chemistry.py
 
+The script will:
+1.  Iterate through Atomic Numbers $Z=1$ to $Z=20$.
+2.  Find the ground state geometry for each atom.
+3.  Generate a plot `simureality_fcc_scan.png` showing stability valleys.
+
+---
+
+## 📊 Expected Results
+
+The simulation consistently finds "Energy Valleys" (Stability Peaks) at specific electron counts, matching the Periodic Table without being told about quantum shells.
+
+| Atomic Number (Z) | Element | Geometric Shape (Simureality) | Standard Physics |
+| :---: | :---: | :--- | :--- |
+| **2** | **Helium** | Linear / Tetrahedron (Draft) | 1s² (Full Shell) |
+| **10** | **Neon** | Symmetric Polyhedron | 2p⁶ (Full Shell) |
+| **18** | **Argon** | Extended Symmetric Grid | 3p⁶ (Full Shell) |
+
+> **Note:** The "Energy per Electron" graph will show local minima at these numbers, indicating that adding one more electron (breaking the symmetry) requires a disproportionate amount of energy.
+
+---
+
+## 🛠 Features
+
+* **Vectorized Calculations:** Fast NumPy operations for distance matrices.
+* **Stochastic Relaxation:** "Shaking" the atom to avoid local minima.
+* **Visualization:** Auto-generated plots highlighting Noble Gas configurations.
+* **Grid Agnostic:** Code structure allows easy swapping of FCC for HCP or SC lattices for comparison.
+
+---
+
+## 🔮 Future Roadmap
+
+- [ ] **3D Visualization:** Export atomic geometries to `.obj` or `.ply` for 3D rendering.
+- [ ] **Spin Integration:** Add vector orientation (Spin Up/Down) as a constraint for the energy function ($137$ factor).
+- [ ] **Proton Folding:** Simulate the nucleus not as a point charge, but as a packed geometry of quarks.
+
+---
+
+## 📜 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+*This project is part of the **Simureality** research initiative. We build the Vector Computer.*

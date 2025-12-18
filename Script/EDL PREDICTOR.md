@@ -66,7 +66,7 @@ The model achieves this automatically via geometry, without needing ad-hoc satur
 
 Run the simulation to see the phase transition:
 
-    python edl_simureality.py
+    python EDL PREDICTOR.py
 
 ## 🧠 Authors & Context
 

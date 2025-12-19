@@ -225,3 +225,33 @@ with st.container(border=True):
 
 st.markdown("---")
 st.caption("© 2025 Simureality Research Group. Powered by Python & Grid Physics.")
+
+# --- TRANSPARENCY SECTION ---
+st.divider()
+with st.expander("👨‍💻 View Calculation Logic (Python Code)"):
+    st.markdown("""
+    **Transparency Note:** This is the exact code running in the backend. 
+    Notice that `calculate_energy` relies **only** on geometric constants derived from the FCC lattice 
+    (alpha-clusters and nucleon packing), not on empirical fitting parameters from the Standard Model.
+    """)
+    st.code("""
+def calculate_energy(Z, A, consts):
+    E_ALPHA, E_LINK, a_Sym_Cluster, a_V, a_S, a_C, a_Sym_Lattice, K_DEFORM = consts
+    N = A - Z
+    # ... (Geometric Logic) ...
+    if Z <= 20:
+        # Light Nuclei: Alpha-Cluster Molecule Model
+        n_alpha = A // 4
+        links = 3 * n_alpha - 6 if n_alpha >= 2 else 0
+        E_geom = (n_alpha * E_ALPHA) + (links * E_LINK)
+        # ...
+        return E_geom
+    else:
+        # Heavy Nuclei: FCC Lattice Model (Liquid Drop analogue derived from geometry)
+        E_vol = a_V * A
+        E_surf = a_S * (A**(2.0/3.0))
+        E_coul = a_C * (Z*(Z-1)) / (A**(1.0/3.0))
+        # ...
+        return E_sphere - get_deformation_penalty(Z, N, K_DEFORM)
+    """, language="python")
+    st.write(f"See full source code on [GitHub](https://github.com/Armatores/Simureality)")

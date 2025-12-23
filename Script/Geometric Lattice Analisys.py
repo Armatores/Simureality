@@ -1,130 +1,124 @@
 import pandas as pd
 import numpy as np
 
-def simureality_v11_entropy_metabolism():
+def simureality_v12_system_auditor():
     print(f"{'='*100}")
-    print(f" SIMUREALITY V11: ENTROPY METABOLISM MODEL")
-    print(f" CONCEPT: Work Function = Total Geometric Energy - Entropy Losses")
+    print(f" SIMUREALITY V12: SYSTEM QUALITY AUDIT")
+    print(f" OBJECTIVE: Compare 'Real Energy Deficit' vs 'Predicted Entropy Cost'")
     print(f"{'='*100}")
 
     # --- CONSTANTS ---
-    # Геометрические идеалы (Максимальный Порядок)
-    PHI = (1 + np.sqrt(5)) / 2
-    GEO_FCC = 1 / PHI             # 0.618
-    GEO_BCC = 1 / np.sqrt(3)      # 0.577
+    CONST_FCC = 1 / ((1 + np.sqrt(5))/2)  # 0.618
+    CONST_BCC = 1 / np.sqrt(3)            # 0.577
     
-    # ENTROPY PARAMETERS
-    # Порог, ниже которого система начинает "течь" (генерировать энтропию)
-    STABILITY_THRESHOLD = 200 # MPa (Yield Strength)
-    
-    # Порог плотности: если объем > 12, энтропия вакуума "размывает" заряд
-    VACUUM_NOISE_THRESHOLD = 12.0 
-    
-    # Идеал Гексагона
+    # PARAMETERS
+    VOL_THRESHOLD = 12.0
+    STABILITY_THRESHOLD = 200
     IDEAL_HCP_CA = 1.633
+    K_PLAST = 2.4
 
     # --- DATASET ---
-    # Мы смотрим на материал как на систему с параметрами прочности и плотности
     data = [
-        # === HIGH STABILITY SYSTEMS (Hard & Dense) ===
-        {'El': 'W',  'St':'BCC', 'Ion':7.86, 'WF':4.55, 'Yield':750, 'Vol':9.53, 'CA':0,    'Group':'STABLE'},
-        {'El': 'Fe', 'St':'BCC', 'Ion':7.90, 'WF':4.50, 'Yield':250, 'Vol':7.09, 'CA':0,    'Group':'STABLE'},
-        {'El': 'Ta', 'St':'BCC', 'Ion':7.55, 'WF':4.25, 'Yield':180, 'Vol':10.8, 'CA':0,    'Group':'STABLE'},
+        # === REFERENCE (STABLE) ===
+        {'El': 'W',  'St':'BCC', 'Ion':7.86, 'WF':4.55, 'Yield':750, 'Vol':9.53, 'CA':0,    'Type':'REF'},
+        {'El': 'Fe', 'St':'BCC', 'Ion':7.90, 'WF':4.50, 'Yield':250, 'Vol':7.09, 'CA':0,    'Type':'REF'},
         
-        # === DISSIPATIVE SYSTEMS (Soft -> High Internal Entropy) ===
-        # Золото "платит" за свою мягкость
-        {'El': 'Au', 'St':'FCC', 'Ion':9.22, 'WF':5.10, 'Yield':20,  'Vol':10.2, 'CA':0,    'Group':'DISSIPATIVE'},
-        {'El': 'Ag', 'St':'FCC', 'Ion':7.58, 'WF':4.26, 'Yield':15,  'Vol':10.2, 'CA':0,    'Group':'DISSIPATIVE'},
-        {'El': 'Cu', 'St':'FCC', 'Ion':7.73, 'WF':4.65, 'Yield':70,  'Vol':7.11, 'CA':0,    'Group':'DISSIPATIVE'},
+        # === PLASTICITY CHECK (Soft) ===
+        {'El': 'Au', 'St':'FCC', 'Ion':9.22, 'WF':5.10, 'Yield':20,  'Vol':10.2, 'CA':0,    'Type':'SOFT'},
+        {'El': 'Ag', 'St':'FCC', 'Ion':7.58, 'WF':4.26, 'Yield':15,  'Vol':10.2, 'CA':0,    'Type':'SOFT'},
 
-        # === DECOHERENT SYSTEMS (Fluffy -> Vacuum Noise) ===
-        # Кальций и Магний теряют энергию из-за низкой плотности
-        {'El': 'Mg', 'St':'HCP', 'Ion':7.65, 'WF':3.66, 'Yield':90,  'Vol':14.0, 'CA':1.62, 'Group':'DECOHERENT'},
-        {'El': 'Ca', 'St':'FCC', 'Ion':6.11, 'WF':2.87, 'Yield':12,  'Vol':26.2, 'CA':0,    'Group':'DECOHERENT'},
-        {'El': 'Sr', 'St':'FCC', 'Ion':5.69, 'WF':2.59, 'Yield':8,   'Vol':33.9, 'CA':0,    'Group':'DECOHERENT'},
-        
-        # === NOISY SYSTEMS (Distorted Geometry) ===
-        # Цинк теряет энергию на геометрическом шуме
-        {'El': 'Zn', 'St':'HCP', 'Ion':9.39, 'WF':4.33, 'Yield':100, 'Vol':9.16, 'CA':1.856,'Group':'NOISY'},
-        {'El': 'Cd', 'St':'HCP', 'Ion':8.99, 'WF':4.22, 'Yield':30,  'Vol':13.0, 'CA':1.886,'Group':'NOISY'},
+        # === DENSITY CHECK (Fluffy) ===
+        {'El': 'Ca', 'St':'FCC', 'Ion':6.11, 'WF':2.87, 'Yield':12,  'Vol':26.2, 'CA':0,    'Type':'FLUFFY'},
+        {'El': 'Sr', 'St':'FCC', 'Ion':5.69, 'WF':2.59, 'Yield':8,   'Vol':33.9, 'CA':0,    'Type':'FLUFFY'},
+        {'El': 'Ba', 'St':'BCC', 'Ion':5.21, 'WF':2.70, 'Yield':6,   'Vol':38.2, 'CA':0,    'Type':'FLUFFY'},
 
-        # === ARMORED SYSTEMS (Negentropic) ===
-        # Алюминий использует оксид как "Щит от Энтропии" (снижает потери)
-        {'El': 'Al', 'St':'FCC', 'Ion':5.99, 'WF':4.28, 'Yield':30,  'Vol':10.0, 'CA':0,    'Group':'ARMORED'},
-        {'El': 'Ga', 'St':'Orth','Ion':6.00, 'WF':4.20, 'Yield':10,  'Vol':11.8, 'CA':0,    'Group':'ARMORED'},
+        # === DISTORTION CHECK (Noisy) ===
+        {'El': 'Zn', 'St':'HCP', 'Ion':9.39, 'WF':4.33, 'Yield':100, 'Vol':9.16, 'CA':1.856,'Type':'NOISY'},
+        {'El': 'Cd', 'St':'HCP', 'Ion':8.99, 'WF':4.22, 'Yield':30,  'Vol':13.0, 'CA':1.886,'Type':'NOISY'},
+
+        # === ARMOR CHECK (Boosted) ===
+        {'El': 'Al', 'St':'FCC', 'Ion':5.99, 'WF':4.28, 'Yield':30,  'Vol':10.0, 'CA':0,    'Type':'ARMOR'},
+        {'El': 'Ga', 'St':'Orth','Ion':6.00, 'WF':4.20, 'Yield':10,  'Vol':11.8, 'CA':0,    'Type':'ARMOR'},
     ]
     df = pd.DataFrame(data)
 
-    # --- CALCULATION ENGINE ---
+    # --- CALCULATIONS ---
 
-    # 1. TOTAL GEOMETRIC ENERGY (E_total)
-    # Максимально возможный порядок
-    df['Geo_Coeff'] = np.where(df['St'] == 'BCC', GEO_BCC, GEO_FCC)
-    df['E_Total'] = df['Ion'] * df['Geo_Coeff']
+    # 1. IDEAL GEOMETRIC ENERGY (The Plan)
+    df['Geo_Factor'] = np.where(df['St'] == 'BCC', CONST_BCC, CONST_FCC)
+    df['E_Ideal'] = df['Ion'] * df['Geo_Factor']
 
-    # 2. ENTROPY LOSS: DISSIPATION (Пластичность)
-    # Если прочность ниже порога, система тратит энергию на поддержание формы.
-    # Loss ~ 1/Yield
-    # Для ARMORED потери блокируются (оксид держит форму на поверхности)
-    df['Loss_Dissipation'] = np.where(
-        (df['Yield'] < STABILITY_THRESHOLD) & (df['Group'] != 'ARMORED'),
-        (2.4 / df['Yield']).clip(upper=0.35), # Макс потеря 35%
-        0.0
-    )
+    # 2. REAL DEFICIT (The Reality Check)
+    # Сколько энергии реально пропало? (Если отрицательно - значит энергии прибыло)
+    df['Deficit_Real'] = df['E_Ideal'] - df['WF']
 
-    # 3. ENTROPY LOSS: DECOHERENCE (Рыхлость)
-    # Если объем > 12, вакуум "съедает" сигнал.
-    # Loss ~ (Vol - 12)
-    df['Loss_Decoherence'] = np.where(
-        df['Vol'] > VACUUM_NOISE_THRESHOLD,
-        1 - ((VACUUM_NOISE_THRESHOLD / df['Vol']) ** 0.35),
-        0.0
-    )
-
-    # 4. ENTROPY LOSS: NOISE (Искажение решетки)
-    # Если c/a отличается от 1.633, возникает шум.
-    # Loss ~ Distortion^2
-    df['Distort_Ratio'] = np.where(df['CA'] > 0, df['CA'] / IDEAL_HCP_CA, 1.0)
-    df['Loss_Noise'] = np.where(
-        df['Distort_Ratio'] > 1.05,
-        1 - (1 / (df['Distort_Ratio']**2)),
-        0.0
-    )
+    # 3. PREDICTED COST (The Model)
     
-    # 5. NEGENTROPY BOOST (Броня)
-    # Оксид добавляет порядок
-    df['Boost_Armor'] = np.where(
-        df['Group'] == 'ARMORED',
-        (1.0418 ** 3) - 1, # Добавка от валентности 3
+    # Cost 1: Plasticity (eV loss)
+    # Loss fraction = (2.4/Yield) -> eV loss = E_Ideal * fraction
+    df['Cost_Plast'] = np.where(
+        (df['Yield'] < STABILITY_THRESHOLD) & (df['Type'] != 'ARMOR'),
+        df['E_Ideal'] * (2.4 / df['Yield']).clip(upper=0.35),
         0.0
     )
 
-    # --- FINAL STATE ---
-    # WF = E_Total * (1 - Losses + Boost)
-    # Суммируем все потери энтропии
-    df['Total_Entropy'] = df['Loss_Dissipation'] + df['Loss_Decoherence'] + df['Loss_Noise']
-    
-    # Применяем к энергии
-    df['WF_Pred'] = df['E_Total'] * (1 - df['Total_Entropy'] + df['Boost_Armor'])
-    
-    df['Error'] = abs(df['WF_Pred'] - df['WF']) / df['WF'] * 100
+    # Cost 2: Density (eV loss)
+    # Loss fraction = 1 - (12/Vol)^0.35
+    df['Cost_Dens'] = np.where(
+        df['Vol'] > VOL_THRESHOLD,
+        df['E_Ideal'] * (1 - ((VOL_THRESHOLD / df['Vol']) ** 0.35)),
+        0.0
+    )
+
+    # Cost 3: Noise (eV loss)
+    df['Distort'] = np.where(df['CA'] > 0, df['CA']/IDEAL_HCP_CA, 1.0)
+    df['Cost_Noise'] = np.where(
+        df['Distort'] > 1.05,
+        df['E_Ideal'] * (1 - (1 / df['Distort']**2)),
+        0.0
+    )
+
+    # Cost 4: Armor (Negative Cost = Gain)
+    # Gain = E_Ideal * (1.04^3 - 1)
+    df['Cost_Armor'] = np.where(
+        df['Type'] == 'ARMOR',
+        -1 * df['E_Ideal'] * ((1.0418**3) - 1), 
+        0.0
+    )
+
+    # TOTAL PREDICTED COST
+    df['Deficit_Pred'] = df['Cost_Plast'] + df['Cost_Dens'] + df['Cost_Noise'] + df['Cost_Armor']
+
+    # --- SYSTEM QUALITY INDEX (Q) ---
+    df['Q_Index'] = df['WF'] / df['E_Ideal']
+
+    # --- AUDIT ---
+    # Does the predicted deficit match the real deficit?
+    df['Audit_Diff'] = abs(df['Deficit_Pred'] - df['Deficit_Real'])
 
     # --- OUTPUT ---
-    print(f"{'El':<3} {'Group':<12} | {'E_Tot':<5} {'Entropy':<7} {'Real':<5} | {'Error':<6} | {'Physics'}")
+    print(f"{'El':<3} {'Q-Ind':<6} | {'Ideal':<5} {'Real':<5} | {'LOST(Real)':<10} {'LOST(Pred)':<10} | {'Audit'}")
     print("-" * 100)
-    
-    for i, row in df.iterrows():
-        # Physics explanation string
-        reasons = []
-        if row['Loss_Dissipation'] > 0: reasons.append(f"Dissip -{row['Loss_Dissipation']*100:.0f}%")
-        if row['Loss_Decoherence'] > 0: reasons.append(f"Decoh -{row['Loss_Decoherence']*100:.0f}%")
-        if row['Loss_Noise'] > 0: reasons.append(f"Noise -{row['Loss_Noise']*100:.0f}%")
-        if row['Boost_Armor'] > 0: reasons.append(f"Armor +{row['Boost_Armor']*100:.0f}%")
-        if not reasons: reasons.append("Stable State")
-        
-        physics = ", ".join(reasons)
-        
-        star = "★" if row['Error'] < 3.0 else ""
-        print(f"{row['El']:<3} {row['Group']:<12} | {row['E_Total']:<5.2f} {row['WF_Pred']:<7.2f} {row['WF']:<5.2f} | {row['Error']:<6.1f} | {physics} {star}")
 
-simureality_v11_entropy_metabolism()
+    for i, row in df.iterrows():
+        # Quality Label
+        q_lbl = ""
+        if row['Q_Index'] > 1.05: q_lbl = "[SUPER]" # Armor
+        elif row['Q_Index'] > 0.98: q_lbl = "[PURE]"  # Tungsten
+        elif row['Q_Index'] < 0.80: q_lbl = "[LEAKY]" # Calcium
+        
+        # Audit Verdict
+        verdict = "OK"
+        if row['Audit_Diff'] > 0.5: verdict = "MISMATCH" # > 0.5 eV error
+        
+        star = "★" if row['Audit_Diff'] < 0.2 else ""
+
+        print(f"{row['El']:<3} {row['Q_Index']:<6.2f} | {row['E_Ideal']:<5.2f} {row['WF']:<5.2f} | {row['Deficit_Real']:<10.2f} {row['Deficit_Pred']:<10.2f} | {verdict} {star} {q_lbl}")
+
+    print("-" * 100)
+    print("LEGEND:")
+    print(" LOST(Real): Amount of eV actually missing from ideal geometry.")
+    print(" LOST(Pred): Amount of eV our Entropy Model predicts should be missing.")
+    print(" MATCH: Means our specific entropy mechanism explains the energy loss accurately.")
+
+simureality_v12_system_auditor()

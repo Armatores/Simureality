@@ -234,11 +234,22 @@ We have successfully modeled the transition from **Ohmic Conduction** to **Super
 **The Paradigm Shift:**
 We began by searching for a static "System Tax." We ended by discovering that **Material Reality is a dynamic negotiation** between Geometric Order (The Grid) and Entropic Chaos (Thermal/Mechanical Noise).
 
-Based on the behavior of 40+ elements across 3 Universes and 2 Temperature regimes, we postulate the **Four Laws of Material Architecture**:
+### The Master Equation
+The compatibility quality $Q(T)$ of any material interface is governed by the following unified function derived from our simulations:
+
+$$Q(T) = \underbrace{\left( 100 - k_v \left| 1 - \frac{V_{mat}}{V_{sub}} \right| + \frac{k_w}{\sigma_y(T)} \right)}_{\text{Static Potential}} \times \underbrace{\left( 1 - \xi_{noise} \cdot \frac{T}{300K} \right)}_{\text{Entropic Filter}}$$
+
+*Where:*
+* $V_{mat}/V_{sub}$ — **Geometric Impedance** (Density Mismatch).
+* $k_w/\sigma_y$ — **Wetting Bonus** (Plasticity), which decreases as $T \to 0$ (Freezing).
+* $\xi_{noise}$ — **Lattice Distortion Factor** (Geometric Noise).
+* **Singularity Condition:** If $T < T_c$, then $Q(T) \to \infty$ (Superconductivity/God Mode).
+
+---
 
 ### I. The Law of Sacrifice (Mechanical Adaptation)
 * **"To hold the Quantum Potential, one must either be Rigid or Yielding."**
-* High-Entropy lattices (Gold, Copper) survive by sacrificing their shape. They pay the System Tax via **Plasticity**.
+* High-Entropy lattices (Gold, Copper) survive by sacrificing their shape. They pay the System Tax via **Plasticity** ($k_w/\sigma_y$).
 * *Evidence:* The inverse correlation between Work Function error and Yield Strength (Entry 002).
 
 ### II. The Law of Containment (Topological Armor)
@@ -248,12 +259,12 @@ Based on the behavior of 40+ elements across 3 Universes and 2 Temperature regim
 
 ### III. The Law of Relativity (Contextual Quality)
 * **"There is no absolute quality; there is only Resonance."**
-* A material is only "good" if its geometric frequency matches the substrate.
+* A material is only "good" if its geometric frequency matches the substrate ($V_{mat} \approx V_{sub}$).
 * *Evidence:* Iron dominates in the Copper World; Zirconium finds peace in the Magnesium World (Entry 005).
 
 ### IV. The Law of Silence (Entropic Impedance)
 * **"Resistance is a Tax on Noise."**
-* Electrical resistance is not fundamental. It is the friction caused by the thermal vibration of the lattice against the electron wave. When the lattice is silent (T $\to$ 0), the grid becomes transparent (Superconductivity).
+* Electrical resistance is not fundamental. It is the friction caused by the thermal vibration of the lattice against the electron wave ($T/300K$). When the lattice is silent ($T \to 0$), the grid becomes transparent.
 * *Evidence:* Lead and Niobium entering "God Mode" at 4K (Entry 006).
 
 ---
@@ -264,4 +275,3 @@ The Universe is a Geometric Computer. Matter is the hardware. The laws of physic
 
 **Status:** PROVEN via Computational Proxy.
 **Next Step:** Experimental synthesis of calculated "Resonant Alloys."
-

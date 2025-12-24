@@ -105,4 +105,42 @@ We combined the logic into a unified algorithm:
 **Conclusion:**
 The System Tax is omnipresent. In soft metals, it leaks out. In armored metals, it is trapped and acts as a confinement barrier. We have successfully linked **Quantum Mechanics** (Work Function), **Solid Mechanics** (Yield), and **Surface Chemistry** (Oxidation).
 
+## ENTRY 004: The Interface Paradigm (Connection Physics)
+
+**Date:** December 2025
+**Objective:** Move from "Bulk Properties" to "Interface Compatibility" (v12 - v14).
+
+**The Problem:**
+Evaluating elements in isolation (Entry 003) is insufficient for engineering reality. A material like **Calcium** has a low Work Function (2.87 eV), which theoretically makes it an excellent electron emitter. However, in practice, Calcium makes for terrible electrical contacts.
+*Question: Why does the "Best" theoretical emitter fail as a component?*
+
+**The Pivot:**
+We shifted the simulation context from a single node to a **Junction**. We modeled the interface between a standard substrate (Tungsten Core, Vol=9.53) and candidate materials.
+
+**New Physics Introduced:**
+1.  **Acoustic Impedance (Density Mismatch):**
+    Just as sound reflects when moving from air to water, electron waves reflect when moving between lattices of different densities.
+    We defined a penalty based on Atomic Volume Mismatch:
+    $$\text{Penalty}_{dens} = \left| 1 - \frac{V_{candidate}}{V_{core}} \right| \times K$$
+    *Result:* Calcium (Vol 26.2) has a ~175% mismatch with Tungsten. It creates a "vacuum gap" at the interface.
+
+2.  **Wetting (The "Gold" Factor):**
+    We replaced the arbitrary "Dissipative Bonus" with a continuous function of Yield Strength:
+    $$\text{Bonus}_{wet} = \frac{K_{wet}}{\text{Yield Strength}}$$
+    *Logic:* Soft metals (Au, Ag) flow under pressure, filling microscopic voids in the rigid substrate. They maximize the effective contact area.
+
+**The "Zinc Trap" (Correction):**
+Initial runs (v13) falsely identified **Zinc (Zn)** as a perfect candidate because its volume (9.16) matches Tungsten (9.53).
+*Correction (v14):* We introduced a non-linear penalty for **Lattice Distortion** ($c/a$ ratio deviation). Zinc's twisted HCP structure creates a topological mismatch despite the correct volume.
+
+**Results (v14 Benchmark):**
+* **Gold (Au):** Score **100/100**. (High Wetting compensates for Energy Mismatch).
+* **Aluminum (Al):** Score **100/100**. (Oxide Tunneling Barrier + Good Wetting).
+* **Calcium (Ca):** Score **34/100 (FAIL)**. (Rejected due to extreme Volume Mismatch).
+
+**Conclusion:**
+"Quality" is not an intrinsic property. It is a measure of **Compatibility**.
+* Gold is "Good" because it adapts mechanically (Wetting).
+* Calcium is "Bad" because it creates impedance (Density Mismatch).
+We have successfully derived engineering best practices (using Au/Al contacts) from first principles.
 

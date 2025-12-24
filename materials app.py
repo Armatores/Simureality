@@ -9,7 +9,27 @@ st.set_page_config(
     page_icon="⚛️",
     layout="wide"
 )
+# --- DISCLAIMER / HOW TO READ ---
+with st.expander("ℹ️ How to interpret the Simureality Score (Read First!)"):
+    st.markdown("""
+    **1. What this tool DOES calculate:**
+    It calculates the **Geometric and Mechanical Potential** for an interface to exist at a specific Temperature ($T$).
+    * **Geometric Resonance:** Do the atomic lattices fit together? (Volume Mismatch).
+    * **Mechanical Wetting:** Can the material deform to fill voids? (Yield Strength).
+    * **Entropic Stability:** Does thermal noise disrupt the lattice connection?
 
+    **2. What this tool does NOT calculate:**
+    It ignores **Chemical Reactivity** and **Time-dependent degradation**.
+    * It does *not* predict intermetallic phase formation (e.g., Purple Plague in Au-Al).
+    * It does *not* predict corrosion or oxidation over time.
+    
+    **3. The "Gallium Paradox" (High Score Warning):**
+    A score of **100/100** means **Maximum Affinity**.
+    * In stable systems (like Ni-Cu), this means a perfect solid solution.
+    * In reactive systems (like Ga-Al), this means **aggressive wetting** which may lead to embrittlement.
+    
+    > **Rule of Thumb:** Use this tool to find materials that *physically fit*. Then check Phase Diagrams to ensure they are chemically safe.
+    """)
 # --- 1. LOAD DATABASE ---
 @st.cache_data
 def load_data():

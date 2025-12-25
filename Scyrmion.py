@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import math
 
-# --- МАТЕМАТИЧЕСКОЕ ЯДРО (Без внешних зависимостей) ---
+# --- 1. МАТЕМАТИЧЕСКОЕ ЯДРО (Без внешних зависимостей) ---
 def is_prime_manual(n):
     if n <= 1: return False
     if n <= 3: return True
@@ -24,93 +24,102 @@ def get_divisors_manual(n):
                 divs.append(n // i)
     return sorted(divs)
 
-# --- НАСТРОЙКА СТРАНИЦЫ ---
+# --- 2. НАСТРОЙКА СТРАНИЦЫ ---
 st.set_page_config(page_title="Skyrmion Pro Lab", layout="wide")
 
 st.title("🌪️ Skyrmion Pro: Topological Engineering")
 st.markdown("**Simureality Circuit 2:** Select a material from the DB, then fine-tune parameters to find the Prime Resonance.")
 
-# --- ЗАГРУЗКА БАЗЫ ДАННЫХ ---
+# --- 3. ЗАГРУЗКА БАЗЫ ДАННЫХ ---
 @st.cache_data
 def load_data():
     try:
+        # Пытаемся загрузить CSV
         df = pd.read_csv("scyrmions_db.csv")
         return df
     except FileNotFoundError:
-        st.error("Файл scyrmions_db.csv не найден! Создайте его в репозитории.")
+        st.error("⚠️ Файл scyrmions_db.csv не найден! Создайте его в корне репозитория.")
         return pd.DataFrame()
 
 df = load_data()
+
 if not df.empty:
-    # --- БОКОВАЯ ПАНЕЛЬ: ВЫБОР И ПОДСТРОЙКА ---
+    # --- 4. БОКОВАЯ ПАНЕЛЬ (CONTROL PANEL) ---
     st.sidebar.header("🎛️ Control Panel")
     
-    # 1. Выбор материала
+    # Список материалов
     material_names = df["Material"].tolist()
-    # Важно: добавляем key, чтобы отслеживать изменение
-    selected_name = st.sidebar.selectbox("Load Preset", material_names, key="material_select")
     
-    # Получаем данные из базы для выбранного материала
+    # Виджет выбора (ключ важен!)
+    selected_name = st.sidebar.selectbox("Load Preset", material_names, key="material_selector")
+    
+    # Получаем данные из базы для текущего выбора
     row = df[df["Material"] == selected_name].iloc[0]
     
-    # --- ЛОГИКА СОСТОЯНИЯ (FIXED) ---
-    # Проверяем, первый ли это запуск или смена материала
-    if "last_selected" not in st.session_state:
-        st.session_state.last_selected = selected_name
-        # Инициализация ключей виджетов
-        st.session_state.A_input = float(row["A_stiffness"])
-        st.session_state.D_input = float(row["D_dmi"])
-        st.session_state.a_input = float(row["a_lattice"])
+    # === ЛОГИКА ОБНОВЛЕНИЯ ПАРАМЕТРОВ (SESSION STATE MAGIC) ===
+    # Если мы только что сменили материал в списке, нам нужно ПРИНУДИТЕЛЬНО
+    # обновить значения в полях ввода (Input Fields).
+    
+    if "last_selected_mat" not in st.session_state:
+        st.session_state.last_selected_mat = None # Инициализация
 
-    # Если пользователь сменил материал в списке
-    if st.session_state.last_selected != selected_name:
-        st.session_state.last_selected = selected_name
-        # ПРИНУДИТЕЛЬНО перезаписываем значения в полях ввода
+    if st.session_state.last_selected_mat != selected_name:
+        # Материал изменился! Обновляем состояние.
+        st.session_state.last_selected_mat = selected_name
         st.session_state.A_input = float(row["A_stiffness"])
         st.session_state.D_input = float(row["D_dmi"])
         st.session_state.a_input = float(row["a_lattice"])
-        st.rerun() # Перезагрузка страницы для обновления интерфейса
+        st.rerun() # Перезагружаем страницу, чтобы показать новые цифры
 
     st.sidebar.markdown("---")
     st.sidebar.write("⚙️ **Fine-Tuning (Live)**")
     
-    # 2. Ручки управления
-    # Убрали аргумент 'value', так как мы управляем значением через 'key' в session_state
+    # Поля ввода. Обрати внимание: value здесь не нужно, так как есть key!
+    # Значения берутся напрямую из st.session_state[key]
     A_val = st.sidebar.number_input("Stiffness A (pJ/m)", step=0.01, format="%.2f", key="A_input")
     D_val = st.sidebar.number_input("DMI D (mJ/m²)", step=0.01, format="%.2f", key="D_input")
     a_val = st.sidebar.number_input("Lattice a (nm)", step=0.001, format="%.3f", key="a_input")
 
-    # Обновляем описание
-    st.sidebar.info(f"**Type:** 
+    # Информация о типе
+    st.sidebar.info(f"**Type:** {row['Type']}\n\n{row['Description']}")
 
-    # --- РАСЧЕТ ---
-    # 1. Физика
+    # --- 5. РАСЧЕТНАЯ ЧАСТЬ ---
+    # Физика (Magnetic Spiral)
+    # L = 4 * pi * A / D
+    if D_val == 0: D_val = 0.0001 # Защита от деления на ноль
     pitch_nm = (4 * np.pi * A_val) / D_val
     radius_nm = pitch_nm / 2
 
-    # 2. Геометрия Simureality
+    # Геометрия Simureality (Nodes Count)
     area_skyrmion = np.pi * (radius_nm ** 2)
     area_node = a_val ** 2
     num_nodes_raw = area_skyrmion / area_node
     num_nodes = int(round(num_nodes_raw))
 
-    # 3. Анализ Чисел
+    # Анализ Чисел (Number Theory)
     is_prime = is_prime_manual(num_nodes)
     divisors = get_divisors_manual(num_nodes)
     num_divs = len(divisors)
 
-    # --- ВЫВОД РЕЗУЛЬТАТОВ (ГЛАВНЫЙ ЭКРАН) ---
+    # --- 6. ВЫВОД РЕЗУЛЬТАТОВ (ГЛАВНЫЙ ЭКРАН) ---
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Vortex Radius (R)", f"{radius_nm:.2f} nm", delta=None)
+        st.metric("Vortex Radius (R)", f"{radius_nm:.2f} nm")
     with col2:
-        # Показываем отклонение от "заводских" настроек базы
-        diff_nodes = num_nodes - int(round((np.pi * ((4*np.pi*row["A_stiffness"]/row["D_dmi"])/2)**2) / row["a_lattice"]**2))
-        st.metric("Grid Nodes (N)", f"{num_nodes}", delta=f"{diff_nodes} vs Preset" if diff_nodes != 0 else None)
+        # Считаем "эталонное" число для этого материала (из базы), чтобы показать разницу
+        preset_pitch = (4 * np.pi * row["A_stiffness"]) / row["D_dmi"]
+        preset_nodes = int(round((np.pi * (preset_pitch/2)**2) / row["a_lattice"]**2))
+        diff_nodes = num_nodes - preset_nodes
+        
+        delta_str = f"{diff_nodes:+d} vs Preset" if diff_nodes != 0 else "Exact Preset"
+        delta_color = "off" if diff_nodes == 0 else "normal"
+        
+        st.metric("Grid Nodes (N)", f"{num_nodes}", delta=delta_str, delta_color=delta_color)
+        
     with col3:
         if is_prime:
-            st.success("💎 PRIME")
+            st.success("💎 PRIME FOUND")
         elif num_divs <= 4:
             st.warning("💾 ROBUST")
         else:
@@ -118,14 +127,14 @@ if not df.empty:
 
     st.divider()
 
-    # --- ВЕРДИКТ ---
+    # --- 7. ВЕРДИКТ И РЕКОМЕНДАЦИИ ---
     st.subheader("Simureality Verdict")
     
     if is_prime:
         st.success(f"### 💎 PRIME TOPOLOGY DETECTED: {num_nodes}")
         st.markdown(f"**Status: ABSOLUTE STABILITY.**\n\nГеометрия {selected_name} (с текущими настройками) образует неразрушимый узел.")
     else:
-        # Поиск ближайшего простого числа
+        # Поиск ближайшего простого
         lower_prime = num_nodes - 1
         while not is_prime_manual(lower_prime): lower_prime -= 1
         
@@ -137,24 +146,34 @@ if not df.empty:
         
         target = lower_prime if dist_down < dist_up else upper_prime
         diff = target - num_nodes
-        action = "Expand (+)" if diff > 0 else "Shrink (-)"
         
+        # Анализ текущего состояния
         if num_divs <= 4 and num_nodes % 2 == 0:
              st.info(f"### 💾 SEMI-PRIME: {num_nodes} = 2 × {num_nodes//2}")
-             st.write("Идеально для памяти (FeGe style).")
+             st.write("Статус: **Rewritable Memory** (Как FeGe). Идеальный баланс.")
         else:
              st.error(f"### ⚠️ COMPOSITE: {num_nodes} ({num_divs} divisors)")
-             st.write("Структура нестабильна.")
+             st.write("Статус: **Instability / Decay**. Вихрь слишком рыхлый.")
 
+        # Стратегия оптимизации
         st.markdown(f"""
-        **Optimization Strategy:**
-        Чтобы попасть в **Prime Resonance ({target})**, нужно изменить геометрию на **{abs(diff)} узлов**.
-        👉 Попробуйте изменить **A** на `{A_val + (diff * 0.001):.3f}` или **a** (нагрев).
+        ---
+        **🎯 Optimization Strategy:**
+        Nearest Prime Attractor: **{target} nodes** (Difference: **{abs(diff)}**).
         """)
+        
+        # Расчет подсказки
+        # Если нужно увеличить N, нужно увеличить A или уменьшить D, или уменьшить a
+        # Примерная дельта для A:
+        # N ~ A^2 -> dN/dA ~ 2A. dA ~ dN / 2A (грубо, но для подсказки пойдет)
+        approx_dA = (diff / num_nodes) * A_val * 0.5
+        new_A_target = A_val + approx_dA
+        
+        st.caption(f"👉 Try setting Stiffness **A** to **{new_A_target:.3f}** to hit the target.")
 
-    # --- ЛАНДШАФТ ---
+    # --- 8. ЛАНДШАФТ СТАБИЛЬНОСТИ ---
     st.write("---")
-    st.write("⛰️ **Stability Landscape**")
+    st.write("⛰️ **Stability Landscape (Neighborhood)**")
     
     range_width = 15
     start_x = max(1, num_nodes - range_width)
@@ -162,27 +181,20 @@ if not df.empty:
     
     x_vals = list(range(start_x, end_x + 1))
     y_vals = []
-    colors = []
     
     for x in x_vals:
         if x == num_nodes:
-            colors.append("#FF4B4B") # Красный (Мы здесь)
-            val = 50 # Маркер
+            val = 50 # Текущая позиция
         elif is_prime_manual(x):
-            colors.append("#00CC96") # Зеленый (Prime)
-            val = 100
+            val = 100 # Пик (Prime)
         else:
-            colors.append("#636EFA") # Синий (Обычный)
             d = len(get_divisors_manual(x))
-            val = max(10, 80 - d*8)
+            val = max(5, 85 - d*8) # Яма
         y_vals.append(val)
 
-    chart_data = pd.DataFrame({"Nodes": x_vals, "Stability": y_vals, "Color": colors})
-    
-    # Используем Altair или простой bar_chart (здесь простой, но цвета через Streamlit сложно передать в нативном bar_chart, 
-    # поэтому просто покажем пики)
-    st.bar_chart(chart_data.set_index("Nodes")["Stability"])
-    st.caption("Пики = Простые Числа. Текущее положение в центре.")
+    chart_data = pd.DataFrame({"Nodes": x_vals, "Stability Index": y_vals})
+    st.bar_chart(chart_data.set_index("Nodes"))
+    st.caption("Высокие столбцы = Простые Числа. Низкие = Составные. Ваша цель — высокий столбец.")
 
 else:
-    st.warning("Загрузите базу данных scyrmions_db.csv")
+    st.warning("⚠️ База данных пуста или не загружена. Проверьте файл scyrmions_db.csv")

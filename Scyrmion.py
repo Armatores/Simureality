@@ -165,23 +165,25 @@ if not df.empty:
              st.error(f"### ⚠️ COMPOSITE: {num_nodes} ({num_divs} divisors)")
              st.write("Status: **Instability / Decay**.")
 
-        # --- OPTIMIZATION LOGIC ---
+        # --- OPTIMIZATION LOGIC (FIXED) ---
         st.markdown(f"**Optimization Strategy:** Nearest Prime Attractor is **{target}** (Diff: {diff}).")
         
-        # Calculate Exact A required for the target
-        # N ~ A^2  =>  A_new = A_old * sqrt(N_target / N_current)
+        # Calculate Exact A required
         if num_nodes > 0:
             optimal_A = A_val * math.sqrt(target / num_nodes)
         else:
-            optimal_A = A_val # Safety
+            optimal_A = A_val
 
         col_opt1, col_opt2 = st.columns([3, 1])
         with col_opt1:
              st.caption(f"👉 Required Stiffness A ≈ **{optimal_A:.4f}**")
         with col_opt2:
-             if st.button(f"✨ Auto-Optimize"):
+             # --- ИСПРАВЛЕНИЕ: Используем callback функцию ---
+             def apply_optimization():
                  st.session_state.A_input = optimal_A
-                 st.rerun()
+                 
+             st.button(f"✨ Auto-Optimize", on_click=apply_optimization)
+             # ------------------------------------------------
 
     # --- 7. LANDSCAPE ---
     st.write("---")

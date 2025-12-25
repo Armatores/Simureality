@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import math
 
-# --- 1. МАТЕМАТИЧЕСКОЕ ЯДРО ---
+# --- 1. MATH CORE (No External Dependencies) ---
 def is_prime_manual(n):
     if n <= 1: return False
     if n <= 3: return True
@@ -24,44 +24,44 @@ def get_divisors_manual(n):
                 divs.append(n // i)
     return sorted(divs)
 
-# --- 2. НАСТРОЙКА СТРАНИЦЫ ---
+# --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Skyrmion Pro Lab", layout="wide")
 
 st.title("🌪️ Skyrmion Pro: Topological Engineering")
-st.markdown("**Simureality Circuit 2:** Select a material from the DB, then fine-tune parameters to find the Prime Resonance.")
+st.markdown("**Project Trilex (Simureality):** Select a material from the DB, then fine-tune parameters to find the Prime Resonance.")
 
-# --- 3. ЗАГРУЗКА БАЗЫ ДАННЫХ ---
+# --- 3. LOAD DATABASE ---
 @st.cache_data
 def load_data():
     try:
         df = pd.read_csv("scyrmions_db.csv")
         return df
     except FileNotFoundError:
-        st.error("⚠️ Файл scyrmions_db.csv не найден!")
+        st.error("⚠️ Database file 'scyrmions_db.csv' not found!")
         return pd.DataFrame()
 
 df = load_data()
 
 if not df.empty:
-    # --- 4. БОКОВАЯ ПАНЕЛЬ ---
+    # --- 4. SIDEBAR CONTROL PANEL ---
     st.sidebar.header("🎛️ Control Panel")
     
-    # Легенда (Пояснение параметров)
+    # Legend
     with st.sidebar.expander("📚 Parameter Legend (Read Me)"):
         st.markdown("""
-        **A — Stiffness (Жесткость):**
-        *Сила пружины.* Как сильно соседние атомы хотят смотреть в одну сторону.
-        * Высокий A = Жесткий магнит (трудно закрутить).
-        * Низкий A = Мягкий (вихри рассыпаются).
+        **A — Stiffness (Exchange):**
+        *Spring Force.* How strongly neighbors want to align.
+        * High A = Stiff magnet.
+        * Low A = Soft/Flexible.
         
-        **D — DMI (Закручивание):**
-        *Сила штопора.* Квантовая сила, которая заставляет спины вращаться.
-        * Высокий D = Маленькие, тугие вихри.
-        * Низкий D = Вихри большие или исчезают.
+        **D — DMI (Chirality):**
+        *Twist Force.* Quantum force inducing rotation.
+        * High D = Small, tight vortices.
+        * Low D = Large vortices.
         
-        **a — Lattice (Решетка):**
-        *Размер пикселя.* Расстояние между атомами.
-        * Это "разрешение" экрана реальности.
+        **a — Lattice Constant:**
+        *Pixel Size.* Distance between atoms.
+        * The resolution of the reality grid.
         """)
 
     material_names = df["Material"].tolist()
@@ -69,7 +69,7 @@ if not df.empty:
     
     row = df[df["Material"] == selected_name].iloc[0]
     
-    # ЛОГИКА ОБНОВЛЕНИЯ (SESSION STATE)
+    # SESSION STATE LOGIC
     if "last_selected_mat" not in st.session_state:
         st.session_state.last_selected_mat = None
 
@@ -83,7 +83,7 @@ if not df.empty:
     st.sidebar.markdown("---")
     st.sidebar.write("⚙️ **Fine-Tuning (High Precision)**")
     
-    # ПОЛЯ ВВОДА (4 знака после запятой)
+    # Input Fields (4 decimal places)
     A_val = st.sidebar.number_input("Stiffness A (pJ/m)", step=0.001, format="%.4f", key="A_input")
     D_val = st.sidebar.number_input("DMI D (mJ/m²)", step=0.001, format="%.4f", key="D_input")
     a_val = st.sidebar.number_input("Lattice a (nm)", step=0.0001, format="%.4f", key="a_input")
@@ -92,11 +92,13 @@ if not df.empty:
     mat_desc = str(row['Description'])
     st.sidebar.info(f"**Type:** {mat_type}\n\n{mat_desc}")
 
-    # --- 5. РАСЧЕТ ---
+    # --- 5. CALCULATION ENGINE ---
     if D_val == 0: D_val = 0.0001
+    # Physics: Helical Pitch L = 4*pi*A / D
     pitch_nm = (4 * np.pi * A_val) / D_val
     radius_nm = pitch_nm / 2
 
+    # Simureality Geometry
     area_skyrmion = np.pi * (radius_nm ** 2)
     area_node = a_val ** 2
     num_nodes_raw = area_skyrmion / area_node
@@ -106,11 +108,11 @@ if not df.empty:
     divisors = get_divisors_manual(num_nodes)
     num_divs = len(divisors)
 
-    # --- 6. ВЫВОД ---
+    # --- 6. MAIN DISPLAY ---
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Vortex Radius (R)", f"{radius_nm:.4f} nm") # Тоже 4 знака
+        st.metric("Vortex Radius (R)", f"{radius_nm:.4f} nm")
     with col2:
         preset_pitch = (4 * np.pi * row["A_stiffness"]) / row["D_dmi"]
         preset_nodes = int(round((np.pi * (preset_pitch/2)**2) / row["a_lattice"]**2))
@@ -142,8 +144,9 @@ if not df.empty:
     
     if is_prime:
         st.success(f"### 💎 PRIME TOPOLOGY DETECTED: {num_nodes}")
-        st.markdown(f"**Status: ABSOLUTE STABILITY.**\n\nГеометрия {selected_name} (с текущими настройками) образует неразрушимый узел.")
+        st.markdown(f"**Status: ABSOLUTE STABILITY.**\n\nThe geometry of {selected_name} (with current settings) forms an indestructible Prime Knot.")
     else:
+        # Find Target
         lower_prime = num_nodes - 1
         while not is_prime_manual(lower_prime): lower_prime -= 1
         upper_prime = num_nodes + 1
@@ -154,19 +157,33 @@ if not df.empty:
         target = lower_prime if dist_down < dist_up else upper_prime
         diff = target - num_nodes
         
+        # Display Status
         if num_divs <= 4 and num_nodes % 2 == 0:
              st.info(f"### 💾 SEMI-PRIME: {num_nodes} = 2 × {num_nodes//2}")
-             st.write("Статус: **Rewritable Memory**.")
+             st.write("Status: **Rewritable Memory** (Semi-Stable).")
         else:
              st.error(f"### ⚠️ COMPOSITE: {num_nodes} ({num_divs} divisors)")
-             st.write("Статус: **Instability / Decay**.")
+             st.write("Status: **Instability / Decay**.")
 
-        # Подсказка
-        approx_dA = (diff / num_nodes) * A_val * 0.5
-        new_A_target = A_val + approx_dA
-        st.caption(f"👉 Target Prime: **{target}**. Try setting Stiffness A ≈ **{new_A_target:.4f}**")
+        # --- OPTIMIZATION LOGIC ---
+        st.markdown(f"**Optimization Strategy:** Nearest Prime Attractor is **{target}** (Diff: {diff}).")
+        
+        # Calculate Exact A required for the target
+        # N ~ A^2  =>  A_new = A_old * sqrt(N_target / N_current)
+        if num_nodes > 0:
+            optimal_A = A_val * math.sqrt(target / num_nodes)
+        else:
+            optimal_A = A_val # Safety
 
-    # --- 7. ЛАНДШАФТ ---
+        col_opt1, col_opt2 = st.columns([3, 1])
+        with col_opt1:
+             st.caption(f"👉 Required Stiffness A ≈ **{optimal_A:.4f}**")
+        with col_opt2:
+             if st.button(f"✨ Auto-Optimize"):
+                 st.session_state.A_input = optimal_A
+                 st.rerun()
+
+    # --- 7. LANDSCAPE ---
     st.write("---")
     st.write("⛰️ **Stability Landscape**")
     
@@ -191,4 +208,4 @@ if not df.empty:
     st.bar_chart(chart_data.set_index("Nodes"))
 
 else:
-    st.warning("⚠️ База данных не загружена.")
+    st.warning("⚠️ Database not loaded.")

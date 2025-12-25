@@ -46,6 +46,24 @@ if not df.empty:
     # --- 4. БОКОВАЯ ПАНЕЛЬ ---
     st.sidebar.header("🎛️ Control Panel")
     
+    # Легенда (Пояснение параметров)
+    with st.sidebar.expander("📚 Parameter Legend (Read Me)"):
+        st.markdown("""
+        **A — Stiffness (Жесткость):**
+        *Сила пружины.* Как сильно соседние атомы хотят смотреть в одну сторону.
+        * Высокий A = Жесткий магнит (трудно закрутить).
+        * Низкий A = Мягкий (вихри рассыпаются).
+        
+        **D — DMI (Закручивание):**
+        *Сила штопора.* Квантовая сила, которая заставляет спины вращаться.
+        * Высокий D = Маленькие, тугие вихри.
+        * Низкий D = Вихри большие или исчезают.
+        
+        **a — Lattice (Решетка):**
+        *Размер пикселя.* Расстояние между атомами.
+        * Это "разрешение" экрана реальности.
+        """)
+
     material_names = df["Material"].tolist()
     selected_name = st.sidebar.selectbox("Load Preset", material_names, key="material_selector")
     
@@ -65,12 +83,10 @@ if not df.empty:
     st.sidebar.markdown("---")
     st.sidebar.write("⚙️ **Fine-Tuning (High Precision)**")
     
-    # --- ИСПРАВЛЕНИЕ ЗДЕСЬ: format="%.4f" и step=0.001 ---
-    # Теперь он показывает 4 знака и позволяет менять тысячные доли
+    # ПОЛЯ ВВОДА (4 знака после запятой)
     A_val = st.sidebar.number_input("Stiffness A (pJ/m)", step=0.001, format="%.4f", key="A_input")
     D_val = st.sidebar.number_input("DMI D (mJ/m²)", step=0.001, format="%.4f", key="D_input")
     a_val = st.sidebar.number_input("Lattice a (nm)", step=0.0001, format="%.4f", key="a_input")
-    # -----------------------------------------------------
 
     mat_type = str(row['Type'])
     mat_desc = str(row['Description'])
@@ -94,19 +110,18 @@ if not df.empty:
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Vortex Radius (R)", f"{radius_nm:.2f} nm")
+        st.metric("Vortex Radius (R)", f"{radius_nm:.4f} nm") # Тоже 4 знака
     with col2:
         preset_pitch = (4 * np.pi * row["A_stiffness"]) / row["D_dmi"]
         preset_nodes = int(round((np.pi * (preset_pitch/2)**2) / row["a_lattice"]**2))
         diff_nodes = num_nodes - preset_nodes
         
-        # Красивый вывод дельты
         if diff_nodes > 0:
             delta_str = f"+{diff_nodes} vs Preset"
-            delta_color = "normal" # Зеленый (обычно)
+            delta_color = "normal"
         elif diff_nodes < 0:
             delta_str = f"{diff_nodes} vs Preset"
-            delta_color = "off" # Красный/Серый
+            delta_color = "off"
         else:
             delta_str = "Exact Preset"
             delta_color = "off"

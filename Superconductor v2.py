@@ -5,174 +5,176 @@ import math
 import plotly.graph_objects as go
 
 # ==========================================
-# 🧠 SIMUREALITY PHYSICS ENGINE (MERGED)
+# 🧠 CORE LOGIC: PHASE TRANSITION
 # ==========================================
 
-def get_prime_bonus(n):
-    if n <= 1: return 0.0
-    if n % 2 == 0 and n > 2: return 0.0
+def get_prime_dampener(n):
+    """
+    If geometry is Prime, the 'Cost of Coherence' grows slower.
+    Primes are efficient geometric structures.
+    """
+    if n <= 1: return 1.0
+    if n % 2 == 0 and n > 2: return 1.0 # Composite (No dampening)
     for i in range(3, int(math.sqrt(n)) + 1, 2):
-        if n % i == 0: return 0.0
-    return 0.15 
+        if n % i == 0: return 1.0 # Composite
+    return 0.1 # PRIME: Massive reduction in coherence cost (10x stability)
 
-def calculate_budget(T, mass, debye_t, valence, is_2d):
+def calculate_phase_diagram(row, pressure_gpa, alpha_tune_factor):
     """
-    Simureality Budget Calculation v3.0 (Material Science Edition)
-    
-    1. Base Throughput: Global constant.
-    2. Frequency Tax (The "Al vs Pb" fix): Lighter atoms vibrate faster -> higher update rate -> MORE COST.
-       Heavy atoms (Pb) are slow -> LESS COST -> Higher Budget.
-    3. Traffic Tax (Valence): More electrons = more interaction checks = MORE COST.
-    4. Rigidity Bonus (Debye): Stiff lattice resists thermal noise better.
-    5. Folding Bonus: 2D saves 33% calculation.
+    Calculates two curves:
+    1. Chaos Cost (Threshold): Constant/Slow growth. Proportional to Mass.
+       High Mass = Expensive to simulate in Chaos Mode = System prefers Superconductivity longer.
+    2. Coherence Cost (The Burden): Starts at 0, grows with T, Alpha, Valence.
+       When Coherence Cost > Chaos Cost -> PHASE TRANSITION (Tc).
     """
     
-    base_throughput = 1.8 # Increased base to account for new taxes
+    temps = np.arange(0, 300, 0.5)
     
-    # 1. Frequency Tax (Inverse Mass)
-    # Light atoms (Al, Mass 27) -> High Tax
-    # Heavy atoms (Pb, Mass 207) -> Low Tax
-    freq_tax = 4.0 / math.sqrt(mass) 
+    # --- 1. THE CHAOS CEILING (Threshold) ---
+    # Heavier atoms create a higher "Information Inertia" barrier.
+    # The system resists breaking the optimized state because recalculating heavy atoms is 'expensive'.
+    # Mass Factor: simple sqrt scale for stability.
+    mass_inertia = math.sqrt(row["Mass_AMU"]) 
     
-    # 2. Traffic Tax (Valence)
-    # Al (3e) costs more than alkali (1e)
-    traffic_tax = 0.05 * valence
+    # System Tax Gamma ~ 1.04. Used as a baseline scaler.
+    chaos_threshold_base = mass_inertia * 1.04 
     
-    # 3. Thermal Tax (Entropy)
-    # Scaled by Rigidity (Debye Temp). High Debye = Harder to excite = Lower thermal cost.
-    thermal_cost = (T / debye_t) * 1.5
-    
-    # 4. Dimension Folding
-    folding_bonus = 0.5 if is_2d else 0.0
-    
-    current_budget = base_throughput - freq_tax - traffic_tax - thermal_cost + folding_bonus
-    return max(0, current_budget)
+    chaos_curve = [chaos_threshold_base for _ in temps] # Constant for simplicity (or slight tilt)
 
-def calculate_geometric_cost(N_ratio, material_class):
-    """
-    Cost based on Lattice Complexity from Material Science script.
-    Simple metals (Al) have higher chaos penalty.
-    Complex lattices (Nb, YBCO) have error correction (lower penalty).
-    """
-    nearest_int = round(N_ratio)
-    dist = abs(N_ratio - nearest_int)
+    # --- 2. THE COHERENCE BURDEN (Rising Cost) ---
+    coherence_curve = []
     
-    # Material Class Multiplier
-    # "Simple" = 2.0 (High penalty for mismatch)
-    # "Transition" = 1.2 (Robust)
-    # "Ceramic" = 1.0 (Self-correcting)
-    if material_class == "Simple": penalty = 2.5
-    elif material_class == "Transition": penalty = 1.2
-    elif material_class == "Ceramic": penalty = 0.8
-    else: penalty = 1.5
+    # Pressure Effect: Reduces Alpha exponentially
+    # At 150 GPa, expansion is effectively dead.
+    alpha_real = row["Alpha"] * np.exp(-pressure_gpa / 40.0) * alpha_tune_factor
     
-    cost = dist * penalty
+    # Valence Penalty: More electrons = harder to synchronize
+    valence_penalty = row["Valence"] ** 1.5 
     
-    if get_prime_bonus(nearest_int) > 0:
-        cost *= 0.6 # Prime Resonance Discount
+    # Topology Factor: 2D materials dump entropy into the void (Z-axis).
+    # This drastically slows down the cost accumulation.
+    is_2d = row["Lattice_C"] > (2.5 * row["Lattice_A"]) or "Layered" in row["Type"]
+    topology_dampener = 0.05 if is_2d else 1.0 
+    
+    # Initial Geometry
+    V_cell_0 = row["Lattice_A"]**2 * (1.0 if is_2d else row["Lattice_C"])
+    V_coh_0 = (4/3)*np.pi*(row["Xi"]*10)**3 
+    if is_2d: V_coh_0 = np.pi*(row["Xi"]*10)**2
+
+    for T in temps:
+        # A. Geometric Mismatch Cost
+        expansion_factor = (1 + alpha_real * 1e-6 * T)
+        dim = 2 if is_2d else 3
+        V_cell_T = V_cell_0 * (expansion_factor ** dim)
         
-    return cost
+        N_nodes = V_coh_0 / V_cell_T
+        nearest_int = round(N_nodes)
+        mismatch = abs(N_nodes - nearest_int) # 0 to 0.5
+        
+        # Prime Resonance Check
+        prime_factor = get_prime_dampener(nearest_int)
+        
+        # B. Thermal Entropy Cost
+        # T * Alpha * Valence = The rate of information decay
+        entropy_generation = T * alpha_real * valence_penalty * 0.05
+        
+        # C. Total Coherence Cost
+        # Mismatch adds instantaneous spikes
+        # Entropy adds cumulative trend
+        # Topology reduces the whole curve
+        current_cost = (entropy_generation + (mismatch * 20.0)) * topology_dampener * prime_factor
+        
+        coherence_curve.append(current_cost)
+
+    return temps, chaos_curve, coherence_curve
 
 # ==========================================
-# 🎛️ UI & SETUP
+# 🎛️ UI SETUP
 # ==========================================
+st.set_page_config(page_title="Simureality v4.0: Phase Transition", layout="wide")
+st.title("⚡ Simureality v4.0: The Phase Transition Model")
+st.markdown("""
+**New Paradigm:** Superconductivity is the **Optimal State**. It persists until the **Cost of Coherence** (Entropy) exceeds the **Cost of Chaos** (System Tax).
+* **Heavy Atoms:** High Chaos Cost (High Ceiling) -> Higher Tc.
+* **2D Topology:** Low Coherence Cost (Flat Curve) -> Higher Tc.
+* **Pressure:** Kills Expansion -> Higher Tc.
+""")
 
-st.set_page_config(page_title="Trilex: Materials Edition", layout="wide")
-st.title("⚡ Trilex: Superconductor (Materials Edition)")
-st.markdown("**Simureality v3.0:** Integrating Lattice Stiffness & Electron Traffic.")
-
-# --- DATABASE (The "Lost" Knowledge) ---
-# Added: Debye Temperature (Stiffness), Valence (Traffic), Mat_Class
+# DATABASE (Added Valence & Correct Masses)
 data = {
     "Material": ["Aluminum (Al)", "Tin (Sn)", "Lead (Pb)", "Mercury (Hg)", "Niobium (Nb)", "MgB2", "YBCO", "BSCCO", "H3S"],
+    "Type": ["Type I", "Type I", "Type I", "Type I", "Type II", "Type II", "Layered", "Layered", "Hydride"],
     "Tc_Real": [1.2, 3.7, 7.2, 4.2, 9.2, 39.0, 93.0, 96.0, 203.0],
     "Mass_AMU": [26.98, 118.7, 207.2, 200.6, 92.9, 45.9, 666.0, 800.0, 34.0],
-    "Debye_T": [428, 200, 105, 72, 275, 1000, 400, 300, 1500], # High = Stiff
-    "Valence": [3, 4, 4, 2, 5, 2, 2, 2, 1], # Electrons per atom approx
-    "Mat_Class": ["Simple", "Simple", "Simple", "Simple", "Transition", "Transition", "Ceramic", "Ceramic", "Hydride"],
+    "Valence": [3, 4, 4, 2, 5, 2, 2, 2, 1], # Key parameter for entropy generation
     "Lattice_A": [4.05, 5.83, 4.95, 3.00, 3.30, 3.08, 3.82, 5.40, 2.98],
+    "Lattice_C": [4.05, 3.18, 4.95, 3.00, 3.30, 3.52, 11.68, 30.80, 2.98],
     "Alpha": [23.1, 22.0, 29.0, 40.0, 7.3, 10.5, 11.0, 12.0, 2.0],
     "Xi": [160.0, 23.0, 83.0, 24.0, 38.0, 5.0, 1.5, 1.5, 2.0]
 }
 df = pd.DataFrame(data)
 
-# --- CONTROLS ---
 col1, col2 = st.columns([1, 2])
 
 with col1:
-    st.subheader("🧪 Material Config")
-    selected_mat = st.selectbox("Select Target", df["Material"])
+    st.subheader("🧪 Controls")
+    selected_mat = st.selectbox("Select Material", df["Material"])
     row = df[df["Material"] == selected_mat].iloc[0]
     
-    is_2d = "BSCCO" in row["Material"] or "YBCO" in row["Material"] # Simplified 2D check
-    if "YBCO" in row["Material"]: is_2d = False # YBCO is 3D-ish but layered, let's keep it complex 3D for now or toggle
-    
-    # Manual Override for Topology
-    topology = st.radio("Topology Mode", ["3D Volumetric", "2D Folded"], index=1 if is_2d else 0)
-    is_2d_active = topology == "2D Folded"
-
-    st.info(f"""
-    **Properties:**
-    * Mass: {row['Mass_AMU']} (Freq Tax: {4.0/math.sqrt(row['Mass_AMU']):.2f})
-    * Debye T: {row['Debye_T']} K (Rigidity)
-    * Valence: {row['Valence']} (Traffic)
-    * Class: {row['Mat_Class']}
-    """)
-    
     pressure = st.slider("Pressure (GPa)", 0, 200, 0)
-    alpha_eff = row["Alpha"] * np.exp(-pressure/50.0)
-    if pressure > 100: alpha_eff = 0.1
+    alpha_tune = st.slider("Global Sensitivity", 0.5, 2.0, 1.0, 0.1)
+
+    st.markdown("---")
+    st.info(f"""
+    **Material DNA:**
+    * **Mass:** {row['Mass_AMU']} (Chaos Ceiling Height)
+    * **Valence:** {row['Valence']} (Entropy Generator)
+    * **Alpha:** {row['Alpha']} (Expansion Rate)
+    """)
 
 # ==========================================
 # 🚀 SIMULATION
 # ==========================================
-temps = np.arange(0, 300, 0.5)
-budget_hist, cost_hist, net_hist = [], [], []
+temps, chaos_y, coherence_y = calculate_phase_diagram(row, pressure, alpha_tune)
+
+# Find Intersection (Tc)
 tc_pred = 0
-found = False
+for i in range(len(temps)):
+    if coherence_y[i] > chaos_y[i]:
+        tc_pred = temps[i]
+        break
 
-V_cell_0 = row["Lattice_A"]**2 * (1.0 if is_2d_active else row["Lattice_A"]) # Cube or Square
-V_coh_0 = (4/3)*np.pi*(row["Xi"]*10)**3 
-if is_2d_active: V_coh_0 = np.pi*(row["Xi"]*10)**2
-
-for T in temps:
-    # New Budget Calculation
-    budget = calculate_budget(T, row["Mass_AMU"], row["Debye_T"], row["Valence"], is_2d_active)
-    
-    # Geometric Cost
-    exp = (1 + alpha_eff*1e-6*T)
-    dim = 2 if is_2d_active else 3
-    V_cell = V_cell_0 * (exp**dim)
-    N_ratio = V_coh_0 / V_cell
-    
-    cost = calculate_geometric_cost(N_ratio, row["Mat_Class"])
-    
-    net = budget - cost
-    
-    budget_hist.append(budget)
-    cost_hist.append(cost)
-    net_hist.append(net)
-    
-    if net <= 0 and not found:
-        tc_pred = T
-        found = True
+# Special handling for "Never Intersected" (Room Temp Superconductor)
+if tc_pred == 0 and coherence_y[-1] < chaos_y[-1]:
+    tc_pred = 300.0 
 
 # ==========================================
 # 📊 VISUALIZATION
 # ==========================================
 with col2:
-    st.metric("Predicted Tc", f"{tc_pred} K", delta=f"{tc_pred - row['Tc_Real']:.1f} K")
+    st.metric("Predicted Tc (Phase Shift)", f"{tc_pred} K", delta=f"{tc_pred - row['Tc_Real']:.1f} K")
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=temps, y=budget_hist, name='Compute Budget (Supply)', line=dict(color='green', dash='dot')))
-    fig.add_trace(go.Scatter(x=temps, y=cost_hist, name='Geometric Cost (Demand)', line=dict(color='red')))
-    fig.add_trace(go.Scatter(x=temps, y=net_hist, name='Net Stability', line=dict(color='blue', width=3), fill='tozeroy'))
-    fig.add_vline(x=row["Tc_Real"], line_dash="dash", line_color="orange", annotation_text="Real Tc")
     
-    fig.update_layout(yaxis_title="Compute Units", template="plotly_white")
+    # 1. Chaos Ceiling (Blue Line) - The limit of System Stability
+    fig.add_trace(go.Scatter(x=temps, y=chaos_y, name='Chaos Cost (Threshold)', 
+                             line=dict(color='blue', width=4)))
+    
+    # 2. Coherence Burden (Red Line) - The Entropy Attack
+    fig.add_trace(go.Scatter(x=temps, y=coherence_y, name='Coherence Cost (Entropy)', 
+                             line=dict(color='red', width=2), fill='tozeroy', fillcolor='rgba(255, 0, 0, 0.1)'))
+    
+    # Tc Marker
+    fig.add_vline(x=row["Tc_Real"], line_dash="dash", line_color="green", annotation_text="Real Tc")
+    
+    fig.update_layout(title="Phase Transition Diagram: Order vs Chaos",
+                      xaxis_title="Temperature (K)", yaxis_title="Information Cost",
+                      template="plotly_white")
+    
     st.plotly_chart(fig, use_container_width=True)
-
-    if row["Material"] == "Aluminum (Al)":
-        st.success("✅ **Al Correction:** Low Tc due to High Frequency Tax (Low Mass) + High Valence Traffic.")
-    if row["Material"] == "Niobium (Nb)":
-        st.success("✅ **Nb Correction:** High Tc due to 'Transition' class stability (d-orbitals).")
+    
+    # Explanation
+    if row["Mass_AMU"] < 40 and row["Valence"] > 2:
+        st.caption("📉 **Why Low Tc?** Low Mass (Low Ceiling) + High Valence (Fast Entropy Growth) = Instant Phase Shift.")
+    if row["Lattice_C"] > 10:
+        st.caption("📈 **Why High Tc?** 2D Topology dumps entropy, keeping the Cost Curve flat.")

@@ -7,3 +7,7 @@ GaV4S8 (Neel),2.00,0.35,0.960,Neel Skyrmion,Huge Lattice / Geometric Mismatch
 Fe3GeTe2 (2D),1.50,0.80,0.400,2D Magnet,Van der Waals / Needs Tuning
 FeCoSi (Doped Ideal),6.00,1.20,0.456,Alloy,Theoretical Prime Stability (The Green Crystal)
 Mn1.4PtSn (Anti),12.00,3.50,0.600,Antiskyrmion,High Energy / Complex Topology
+Pt/Co/Ta (Multilayer),15.00,3.30,0.250,Thin Film,Industry Standard / Dense Packing
+MnGe (High Density),8.00,5.50,0.480,High Density,Ultra-small vortices (~3nm)
+Ir/Fe/Co/Pt (Stack),10.00,2.20,0.270,Multilayer,Tunable Interface DMI
+Pd/Fe/Ir (Surface),9.00,3.90,0.270,Surface,Nanoskyrmions on surface

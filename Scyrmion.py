@@ -37,7 +37,7 @@ def load_data():
         df = pd.read_csv("scyrmions_db.csv")
         return df
     except FileNotFoundError:
-        st.error("⚠️ Файл scyrmions_db.csv не найден! Создайте его в корне репозитория.")
+        st.error("⚠️ Файл scyrmions_db.csv не найден!")
         return pd.DataFrame()
 
 df = load_data()
@@ -49,7 +49,6 @@ if not df.empty:
     material_names = df["Material"].tolist()
     selected_name = st.sidebar.selectbox("Load Preset", material_names, key="material_selector")
     
-    # Данные из базы
     row = df[df["Material"] == selected_name].iloc[0]
     
     # ЛОГИКА ОБНОВЛЕНИЯ (SESSION STATE)
@@ -64,19 +63,18 @@ if not df.empty:
         st.rerun()
 
     st.sidebar.markdown("---")
-    st.sidebar.write("⚙️ **Fine-Tuning (Live)**")
+    st.sidebar.write("⚙️ **Fine-Tuning (High Precision)**")
     
-    A_val = st.sidebar.number_input("Stiffness A (pJ/m)", step=0.01, format="%.2f", key="A_input")
-    D_val = st.sidebar.number_input("DMI D (mJ/m²)", step=0.01, format="%.2f", key="D_input")
-    a_val = st.sidebar.number_input("Lattice a (nm)", step=0.001, format="%.3f", key="a_input")
+    # --- ИСПРАВЛЕНИЕ ЗДЕСЬ: format="%.4f" и step=0.001 ---
+    # Теперь он показывает 4 знака и позволяет менять тысячные доли
+    A_val = st.sidebar.number_input("Stiffness A (pJ/m)", step=0.001, format="%.4f", key="A_input")
+    D_val = st.sidebar.number_input("DMI D (mJ/m²)", step=0.001, format="%.4f", key="D_input")
+    a_val = st.sidebar.number_input("Lattice a (nm)", step=0.0001, format="%.4f", key="a_input")
+    # -----------------------------------------------------
 
-    # --- ИСПРАВЛЕНИЕ ОШИБКИ (SAFE STRING FORMATTING) ---
-    # Мы выносим переменные отдельно, чтобы f-string не ломался
     mat_type = str(row['Type'])
     mat_desc = str(row['Description'])
-    
     st.sidebar.info(f"**Type:** {mat_type}\n\n{mat_desc}")
-    # ----------------------------------------------------
 
     # --- 5. РАСЧЕТ ---
     if D_val == 0: D_val = 0.0001
@@ -101,8 +99,18 @@ if not df.empty:
         preset_pitch = (4 * np.pi * row["A_stiffness"]) / row["D_dmi"]
         preset_nodes = int(round((np.pi * (preset_pitch/2)**2) / row["a_lattice"]**2))
         diff_nodes = num_nodes - preset_nodes
-        delta_str = f"{diff_nodes:+d} vs Preset" if diff_nodes != 0 else "Exact Preset"
-        delta_color = "off" if diff_nodes == 0 else "normal"
+        
+        # Красивый вывод дельты
+        if diff_nodes > 0:
+            delta_str = f"+{diff_nodes} vs Preset"
+            delta_color = "normal" # Зеленый (обычно)
+        elif diff_nodes < 0:
+            delta_str = f"{diff_nodes} vs Preset"
+            delta_color = "off" # Красный/Серый
+        else:
+            delta_str = "Exact Preset"
+            delta_color = "off"
+        
         st.metric("Grid Nodes (N)", f"{num_nodes}", delta=delta_str, delta_color=delta_color)
         
     with col3:
@@ -133,7 +141,7 @@ if not df.empty:
         
         if num_divs <= 4 and num_nodes % 2 == 0:
              st.info(f"### 💾 SEMI-PRIME: {num_nodes} = 2 × {num_nodes//2}")
-             st.write("Статус: **Rewritable Memory** (Как FeGe).")
+             st.write("Статус: **Rewritable Memory**.")
         else:
              st.error(f"### ⚠️ COMPOSITE: {num_nodes} ({num_divs} divisors)")
              st.write("Статус: **Instability / Decay**.")
@@ -141,7 +149,7 @@ if not df.empty:
         # Подсказка
         approx_dA = (diff / num_nodes) * A_val * 0.5
         new_A_target = A_val + approx_dA
-        st.caption(f"👉 Try setting Stiffness **A** to **{new_A_target:.3f}** to hit the target ({target}).")
+        st.caption(f"👉 Target Prime: **{target}**. Try setting Stiffness A ≈ **{new_A_target:.4f}**")
 
     # --- 7. ЛАНДШАФТ ---
     st.write("---")
@@ -168,4 +176,4 @@ if not df.empty:
     st.bar_chart(chart_data.set_index("Nodes"))
 
 else:
-    st.warning("⚠️ База данных пуста или не загружена. Проверьте файл scyrmions_db.csv")
+    st.warning("⚠️ База данных не загружена.")

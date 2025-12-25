@@ -41,36 +41,47 @@ def load_data():
         return pd.DataFrame()
 
 df = load_data()
-
 if not df.empty:
     # --- БОКОВАЯ ПАНЕЛЬ: ВЫБОР И ПОДСТРОЙКА ---
     st.sidebar.header("🎛️ Control Panel")
     
     # 1. Выбор материала
     material_names = df["Material"].tolist()
-    selected_name = st.sidebar.selectbox("Load Preset", material_names)
+    # Важно: добавляем key, чтобы отслеживать изменение
+    selected_name = st.sidebar.selectbox("Load Preset", material_names, key="material_select")
     
-    # Получаем данные из базы
+    # Получаем данные из базы для выбранного материала
     row = df[df["Material"] == selected_name].iloc[0]
     
-    # --- ЛОГИКА СОСТОЯНИЯ (SESSION STATE) ---
-    # Чтобы параметры обновлялись при смене материала, но не сбрасывались при ручном вводе
-    if "last_selected" not in st.session_state or st.session_state.last_selected != selected_name:
+    # --- ЛОГИКА СОСТОЯНИЯ (FIXED) ---
+    # Проверяем, первый ли это запуск или смена материала
+    if "last_selected" not in st.session_state:
         st.session_state.last_selected = selected_name
-        st.session_state.A = float(row["A_stiffness"])
-        st.session_state.D = float(row["D_dmi"])
-        st.session_state.a = float(row["a_lattice"])
+        # Инициализация ключей виджетов
+        st.session_state.A_input = float(row["A_stiffness"])
+        st.session_state.D_input = float(row["D_dmi"])
+        st.session_state.a_input = float(row["a_lattice"])
+
+    # Если пользователь сменил материал в списке
+    if st.session_state.last_selected != selected_name:
+        st.session_state.last_selected = selected_name
+        # ПРИНУДИТЕЛЬНО перезаписываем значения в полях ввода
+        st.session_state.A_input = float(row["A_stiffness"])
+        st.session_state.D_input = float(row["D_dmi"])
+        st.session_state.a_input = float(row["a_lattice"])
+        st.rerun() # Перезагрузка страницы для обновления интерфейса
 
     st.sidebar.markdown("---")
     st.sidebar.write("⚙️ **Fine-Tuning (Live)**")
     
-    # 2. Ручки управления (связаны с session_state)
-    A_val = st.sidebar.number_input("Stiffness A (pJ/m)", value=st.session_state.A, step=0.01, format="%.2f", key="A_input")
-    D_val = st.sidebar.number_input("DMI D (mJ/m²)", value=st.session_state.D, step=0.01, format="%.2f", key="D_input")
-    a_val = st.sidebar.number_input("Lattice a (nm)", value=st.session_state.a, step=0.001, format="%.3f", key="a_input")
+    # 2. Ручки управления
+    # Убрали аргумент 'value', так как мы управляем значением через 'key' в session_state
+    A_val = st.sidebar.number_input("Stiffness A (pJ/m)", step=0.01, format="%.2f", key="A_input")
+    D_val = st.sidebar.number_input("DMI D (mJ/m²)", step=0.01, format="%.2f", key="D_input")
+    a_val = st.sidebar.number_input("Lattice a (nm)", step=0.001, format="%.3f", key="a_input")
 
     # Обновляем описание
-    st.sidebar.info(f"**Type:** {row['Type']}\n\n{row['Description']}")
+    st.sidebar.info(f"**Type:** 
 
     # --- РАСЧЕТ ---
     # 1. Физика

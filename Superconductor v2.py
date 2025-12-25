@@ -4,168 +4,215 @@ import pandas as pd
 import math
 import plotly.graph_objects as go
 
-# --- CORE LOGIC: SIMUREALITY ENGINE ---
+# ==========================================
+# 🧠 SIMUREALITY PHYSICS ENGINE (Circuit 2)
+# ==========================================
 
 def get_prime_bonus(n):
-    """Returns a stability bonus if N is Prime."""
+    """
+    Checks if N (node count) is Prime.
+    Prime numbers act as 'Hard Knots' in the lattice, resisting decay.
+    """
     if n <= 1: return 0.0
-    # Fast prime check for reasonable numbers
+    # Fast check for demonstration
     if n % 2 == 0 and n > 2: return 0.0
     for i in range(3, int(math.sqrt(n)) + 1, 2):
         if n % i == 0: return 0.0
-    return 0.15 # 15% bonus stability for Primes (The "Knot" effect)
+    return 0.20  # 20% Stability Bonus for Primes
 
-def calculate_complexity_budget(T, mass_amu, is_2d):
+def calculate_tolerance(material_type):
     """
-    Calculates the 'Thermal Tax' based on Temperature and Mass.
-    Heavier mass = More static complexity cost, but less vibration noise.
-    Higher T = Linear increase in entropy cost.
+    Determines how strict the geometry check is.
+    - Type I (Pure Elements): VERY STRICT. Structure must be perfect.
+    - Type II (Ceramics/Alloys): FORGIVING. Vortex lattice can pin defects.
     """
-    # Base Constants (tuned to Simureality)
-    base_budget = 1.0 
+    if "Type I" in material_type:
+        return 2.0 # Strict penalty (High Cost)
+    elif "Type II" in material_type or "Ceramic" in material_type:
+        return 1.2 # Lenient penalty (Low Cost)
+    else:
+        return 1.5 # Standard
+
+def calculate_budget(T, mass, is_2d):
+    """
+    Calculates Available Computational Power (Simureality Budget).
+    Limits:
+    1. Global Const: Fixed starting budget.
+    2. 2D Bonus: +33% if Z-coordinate is dropped (Trizistor Economy).
+    3. Mass Tax: Heavy atoms consume budget for inertial calc.
+    4. Thermal Tax: Entropy consumes budget linearly.
+    """
+    base_budget = 1.0
     
-    # 1. Dimension Folding Bonus
+    # 1. Dimension Folding (The "BSCCO Effect")
     if is_2d:
-        base_budget += 0.33 # +33% efficiency from dropping Z-coord
-        
-    # 2. Thermal Tax (Entropy)
-    # Amplitude of vibration ~ sqrt(T / M)
-    # Complexity Cost ~ T (linear thermodynamic cost)
-    thermal_cost = 0.008 * T # Empirical coefficient
-    
-    # 3. Mass Penalty (Gravity Lag)
-    # Heavier atoms consume more compute for position updates
-    mass_tax = 0.0001 * mass_amu 
-    
-    current_budget = base_budget - thermal_cost - mass_tax
-    return max(0, current_budget)
+        base_budget += 0.33 
 
-def calculate_geometric_cost(N_ratio):
+    # 2. Mass Penalty (The "Lead Effect")
+    # Heavier = More lag = Less budget for coherence
+    mass_tax = 0.00015 * mass 
+    
+    # 3. Thermal Tax (Entropy cost)
+    thermal_tax = 0.0075 * T
+    
+    current_budget = base_budget - mass_tax - thermal_tax
+    return current_budget
+
+def calculate_geometric_cost(N_ratio, tolerance_multiplier):
     """
     Calculates the 'Mismatch Cost'.
-    If N is Integer -> Cost is 0.
-    If N is X.5 -> Cost is Max (1.0).
-    Primes reduce the cost of neighboring integers.
+    Drifting away from Integer/Prime creates geometric friction.
     """
     nearest_int = round(N_ratio)
-    mismatch = abs(N_ratio - nearest_int) # 0 to 0.5
+    dist = abs(N_ratio - nearest_int) # 0.0 (Perfect) to 0.5 (Chaos)
     
-    # Base Geometric Cost (Linear penalty for mismatch)
-    cost = mismatch * 2.0 # Normalized 0 to 1
+    # Base Cost
+    cost = dist * tolerance_multiplier
     
-    # Prime Discount
-    # If the nearest integer is Prime, the "Well" is deeper, 
-    # making it harder to jump out even with mismatch.
+    # Prime Discount (Resonance)
     if get_prime_bonus(nearest_int) > 0:
-        cost *= 0.7 # 30% discount on cost if hovering near a Prime
+        cost *= 0.5 # Primes are very deep wells, hard to jump out
         
     return cost
 
-# --- UI SETUP ---
-st.set_page_config(page_title="Trilex: Unified Tc Solver", layout="wide")
-st.title("⚡ Trilex: Superconductor Compute Budget")
-st.markdown("Determining Tc via **Conservation of Complexity**.")
+# ==========================================
+# 🎛️ UI & SETUP
+# ==========================================
 
-# --- DATABASE ---
+st.set_page_config(page_title="Trilex: Tc Solver Pro", layout="wide")
+
+st.title("⚡ Trilex: Superconductor Compute Budget")
+st.markdown("""
+**Theory:** Superconductivity dies when **Computational Cost** > **Available Budget**.
+* **Cost** comes from Geometric Mismatch (Thermal Expansion).
+* **Budget** is limited by Mass (Inertia) and Temperature (Entropy).
+* **2D Materials** gain a +33% Budget Boost (Dimension Folding).
+""")
+
+# --- DATABASE (EXPANDED) ---
+# Xi (Coherence) is simplified "Effective Geometric Size" in nm for the model
 data = {
-    "Material": ["Mercury (Hg)", "Lead (Pb)", "YBCO (Ceramic)", "BSCCO (2D Layered)", "MgB2", "H3S (High Pressure)"],
-    "Type": ["Type I", "Type I", "Type II", "2D Folded", "Type II", "Hydride"],
-    "Tc_Real": [4.2, 7.2, 93.0, 96.0, 39.0, 203.0],
-    "Mass_AMU": [200.59, 207.2, 666.0, 800.0, 45.9, 34.0], # Approx molar mass
-    "Lattice_A": [3.00, 4.95, 3.82, 5.40, 3.08, 2.98],
-    "Lattice_C": [3.00, 4.95, 11.68, 30.80, 3.52, 2.98], # C-axis
-    "Alpha": [40.0, 29.0, 11.0, 12.0, 10.5, 2.0], # Expansion coeff
-    "Xi_Coherence": [24.0, 83.0, 1.5, 1.5, 5.0, 2.0] # In nm (simplified effective volume)
+    "Material": [
+        "Mercury (Hg)", "Lead (Pb)", "Aluminum (Al)", "Niobium (Nb)", "Tin (Sn)",
+        "YBCO (Ceramic)", "BSCCO (2D Layered)", "MgB2 (Binary)", "H3S (Hydride)"
+    ],
+    "Type": [
+        "Type I (Pure)", "Type I (Pure)", "Type I (Pure)", "Type II (Element)", "Type I (Pure)",
+        "Type II (Ceramic)", "2D Folded", "Type II (Binary)", "Type II (Hydride)"
+    ],
+    "Tc_Real": [4.2, 7.2, 1.2, 9.2, 3.7, 93.0, 96.0, 39.0, 203.0],
+    "Mass_AMU": [200.59, 207.2, 26.98, 92.9, 118.7, 666.0, 800.0, 45.9, 34.0],
+    "Lattice_A": [3.00, 4.95, 4.05, 3.30, 5.83, 3.82, 5.40, 3.08, 2.98],
+    "Lattice_C": [3.00, 4.95, 4.05, 3.30, 3.18, 11.68, 30.80, 3.52, 2.98],
+    "Alpha": [40.0, 29.0, 23.1, 7.3, 22.0, 11.0, 12.0, 10.5, 2.0], # Base Thermal Expansion
+    "Xi_Coherence": [24.0, 83.0, 160.0, 38.0, 23.0, 1.5, 1.5, 5.0, 2.0] 
 }
 df = pd.DataFrame(data)
 
-# --- SIDEBAR ---
-selected = st.sidebar.selectbox("Select Material Target", df["Material"])
-row = df[df["Material"] == selected].iloc[0]
+# --- CONTROLS ---
+col1, col2 = st.columns([1, 2])
 
-# Auto-detect 2D Folding
-is_2d_detected = row["Lattice_C"] > (2.5 * row["Lattice_A"])
-st.sidebar.write(f"**Topology:** {'2D Folded (Layered)' if is_2d_detected else '3D Volumetric'}")
+with col1:
+    st.subheader("🔬 Lab Controls")
+    selected_mat = st.selectbox("Select Material", df["Material"])
+    row = df[df["Material"] == selected_mat].iloc[0]
+    
+    # Auto-detect Physics
+    is_2d = row["Lattice_C"] > (2.5 * row["Lattice_A"])
+    tolerance = calculate_tolerance(row["Type"])
+    
+    st.info(f"**Class:** {row['Type']}")
+    st.write(f"**Topology:** {'2D (Folded)' if is_2d else '3D (Volumetric)'}")
+    st.write(f"**Tolerance:** {'Strict' if tolerance > 1.8 else 'Forgiving'}")
 
-# Tuning
-alpha_tune = st.sidebar.slider("Thermal Expansion Tuning", 0.5, 50.0, float(row["Alpha"]))
-coherence_tune = st.sidebar.slider("Coherence Factor", 0.8, 1.5, 1.0)
+    st.markdown("---")
+    st.write("**Simureality Calibration**")
+    
+    # Pressure Logic: Reduces Alpha
+    pressure = st.slider("Pressure (GPa)", 0, 200, 0, help="Pressure kills Thermal Expansion.")
+    
+    # Effective Alpha Calculation
+    # Simple model: Pressure reduces expansion exponentially
+    alpha_reduction = np.exp(-pressure / 50.0) 
+    alpha_eff = row["Alpha"] * alpha_reduction
+    if pressure > 100: alpha_eff = 0.1 # Limit for extreme pressure
+    
+    st.metric("Effective Expansion (α)", f"{alpha_eff:.2f}", delta=f"{alpha_eff - row['Alpha']:.2f}")
+    
+    coherence_tune = st.slider("Coherence Factor", 0.8, 1.2, 1.0)
 
-# --- SIMULATION ---
+# ==========================================
+# 🚀 SIMULATION LOOP
+# ==========================================
 temps = np.arange(0, 300, 0.5)
-budget_history = []
-cost_history = []
-net_stability = []
-
-# Initial Volumes
-V_cell_0 = row["Lattice_A"]**2 * row["Lattice_C"]
-if is_2d_detected:
-    # In 2D, we only care about Area of the plane
-    V_cell_0 = row["Lattice_A"]**2 
-
-V_coherence_eff = (4/3) * np.pi * (row["Xi_Coherence"] * 10 * coherence_tune)**3
-if is_2d_detected:
-    # In 2D, coherence is Area (Circle)
-    V_coherence_eff = np.pi * (row["Xi_Coherence"] * 10 * coherence_tune)**2
-
-tc_predicted = 0
+budget_hist, cost_hist, stability_hist = [], [], []
+tc_pred = 0
 found_break = False
 
+# Initial Geometry
+V_cell_0 = row["Lattice_A"]**2 * (1.0 if is_2d else row["Lattice_C"]) # If 2D, C is ignored for volume
+# Coherence Volume (Spherical approx scaled)
+V_coh_0 = (4/3) * np.pi * (row["Xi_Coherence"] * 10 * coherence_tune)**3 
+if is_2d: V_coh_0 = np.pi * (row["Xi_Coherence"] * 10 * coherence_tune)**2 # Area
+
 for T in temps:
-    # 1. Calculate Available Budget (Supply)
-    budget = calculate_complexity_budget(T, row["Mass_AMU"], is_2d_detected)
+    # 1. Budget Supply
+    budget = calculate_budget(T, row["Mass_AMU"], is_2d)
     
-    # 2. Calculate Expansion
-    # 2D only expands Area (2D), 3D expands Volume (3D)
-    exp_factor = (1 + alpha_tune * 1e-6 * T)
-    dim_power = 2 if is_2d_detected else 3
+    # 2. Geometric Demand (Cost)
+    # Expansion applies to dimensions
+    expansion = (1 + alpha_eff * 1e-6 * T)
+    dim_power = 2 if is_2d else 3
     
-    V_cell_T = V_cell_0 * (exp_factor ** dim_power)
+    V_cell_T = V_cell_0 * (expansion ** dim_power)
+    N_ratio = V_coh_0 / V_cell_T
     
-    # 3. Calculate Node Ratio
-    N_ratio = V_coherence_eff / V_cell_T
+    cost = calculate_geometric_cost(N_ratio, tolerance)
     
-    # 4. Calculate Geometric Cost (Demand)
-    cost = calculate_geometric_cost(N_ratio)
+    # 3. Net Stability
+    net = budget - cost
     
-    # 5. Net Stability
-    # Stability = Supply - Demand
-    stability = budget - cost
+    budget_hist.append(budget)
+    cost_hist.append(cost)
+    stability_hist.append(net)
     
-    budget_history.append(budget)
-    cost_history.append(cost)
-    net_stability.append(stability)
-    
-    # Check for Breakpoint
-    if stability <= 0 and not found_break:
-        tc_predicted = T
+    if net <= 0 and not found_break:
+        tc_pred = T
         found_break = True
 
-# --- VISUALIZATION ---
-st.metric("Predicted Tc (Break Point)", f"{tc_predicted} K", delta=f"{tc_predicted - row['Tc_Real']:.1f} K vs Real")
+# ==========================================
+# 📊 VISUALIZATION
+# ==========================================
+with col2:
+    st.subheader(f"Analysis: {selected_mat}")
+    
+    # Scorecard
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Real Tc", f"{row['Tc_Real']} K")
+    c2.metric("Simulated Tc", f"{tc_pred} K", delta_color="normal" if abs(tc_pred - row['Tc_Real']) < 5 else "inverse", delta=f"{tc_pred - row['Tc_Real']:.1f} K")
+    
+    # Logic Explanation
+    if is_2d:
+        c3.success("✨ 2D Bonus Active")
+    elif pressure > 50:
+        c3.warning("🔨 High Pressure")
+    else:
+        c3.info("📦 Standard 3D")
 
-fig = go.Figure()
+    # Plot
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=temps, y=budget_hist, name='Compute Budget (Supply)', line=dict(color='green', dash='dot')))
+    fig.add_trace(go.Scatter(x=temps, y=cost_hist, name='Geometric Cost (Demand)', line=dict(color='red')))
+    fig.add_trace(go.Scatter(x=temps, y=stability_hist, name='Net Stability', line=dict(color='blue', width=3), fill='tozeroy'))
+    
+    # Reference Line
+    fig.add_vline(x=row["Tc_Real"], line_dash="dash", line_color="orange", annotation_text="Real Tc")
+    
+    fig.update_layout(height=450, xaxis_title="Temperature (K)", yaxis_title="Computational Units", template="plotly_white")
+    st.plotly_chart(fig, use_container_width=True)
 
-# Plot Budget (Supply)
-fig.add_trace(go.Scatter(x=temps, y=budget_history, mode='lines', name='Compute Budget (Supply)', line=dict(color='green', dash='dot')))
-
-# Plot Cost (Demand)
-fig.add_trace(go.Scatter(x=temps, y=cost_history, mode='lines', name='Geometric Cost (Demand)', line=dict(color='red')))
-
-# Plot Net Stability
-fig.add_trace(go.Scatter(x=temps, y=net_stability, mode='lines', name='Net Stability', line=dict(color='blue', width=3), fill='tozeroy'))
-
-# Add Tc Line
-fig.add_vline(x=row["Tc_Real"], line_dash="dash", line_color="orange", annotation_text="Real Tc")
-
-fig.update_layout(title="Stability Analysis: Budget vs Geometric Cost", xaxis_title="Temperature (K)", yaxis_title="Computational Units")
-st.plotly_chart(fig, use_container_width=True)
-
-# --- INSIGHTS ---
-if is_2d_detected:
-    st.success("🧩 **Dimension Folding Active:** System ignored Z-axis expansion. +33% Budget Boost applied.")
-if tc_predicted > 250:
-    st.warning("🔥 **Room Temp Potential:** Stability holds above 250K! Check parameters.")
-elif tc_predicted < 10 and not is_2d_detected:
-    st.info("❄️ **Type I Limit:** Low Tc due to lack of topological protection and high mass penalty.")
-1
+    # Simureality Insights
+    if tc_pred < 2.0 and row['Type'] == "Type I (Pure)":
+        st.caption("ℹ️ **Simureality Note:** Low Tc caused by high 'Strictness' penalty for pure elements + Mass tax.")
+    if abs(tc_pred - row['Tc_Real']) > 20 and pressure == 0 and "Hydride" in row['Material']:
+        st.error("⚠️ **Mismatch Alert:** Hydrides require High Pressure to suppress Alpha expansion. Try increasing Pressure slider!")

@@ -1,0 +1,8 @@
+Material,Tc_critical,a_lattice,b_lattice,c_lattice,Xi_ab_coherence,Xi_c_coherence,Alpha_expansion,Type
+YBCO (YBa2Cu3O7),93.0,3.82,3.89,11.68,2.0,0.4,11.0,Cuprate High-Tc
+MgB2 (Magnesium Diboride),39.0,3.086,3.086,3.542,5.0,2.5,10.5,Binary Metal
+BSCCO (Bi-2212),96.0,5.40,5.40,30.80,2.0,0.4,12.0,Cuprate Layered
+Mercury (Hg),4.2,3.00,3.00,3.00,100.0,100.0,40.0,Classic Low-Tc
+Lead (Pb),7.2,4.95,4.95,4.95,83.0,83.0,29.0,Classic Metal
+Nb3Sn,18.0,5.29,5.29,5.29,3.0,3.0,8.0,Intermetallic
+LSCO (LaSrCuO),38.0,3.78,3.78,13.20,3.2,0.3,10.0,Cuprate Doped

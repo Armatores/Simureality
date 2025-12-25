@@ -2,7 +2,7 @@
 
 ### Geometric Resonance & Thermal Decoherence Analysis in FCC Lattices.
 
-**Author:** [Armatores / Your Name]  
+**Author:** Pavel Popov  
 **Theory:** Simureality (Simulation Hypothesis & Discrete Ontology)  
 **Status:** MVP / Research Preview
 
@@ -93,4 +93,4 @@ Ensure `superconductors_db.csv` is present in the root directory.
 This project is part of the **Simureality** research initiative.
 Code is provided under **MIT License**.
 
-**Contact:** [Your Email / GitHub Profile]
+**Contac*

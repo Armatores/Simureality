@@ -1,6 +1,6 @@
 # Simureality Material Science Logs
 **Project:** Macro-Scale Validation of System Instantiation Tax ($\gamma_{sys}$)
-**Principal Investigator:** Pavel Popov (System Architecor, Validator)
+**Principal Investigator:** Pavel Popov (System Architector, Validator)
 **AI Co-Author:** Gemini (Circuit 2, external subconscious)
 
 ---

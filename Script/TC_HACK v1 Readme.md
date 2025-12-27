@@ -84,7 +84,7 @@ Analyzes elemental superconductors to find geometric harmonics at $T_c$.
 Scans the Materials Project database for crystals matching the $\Gamma_{gate}$ metric at room temperature.
 *(Requires API Key)*
 
-    python gold_rush_scanner.py
+    python TC Scan API.py
 
 ---
 
@@ -108,5 +108,5 @@ This work is part of the **Simureality** unified field theory.
 
 ---
 
-**Author:** [Your Name/Username]
+**Author:** Pavel Popov
 **Date:** December 2025

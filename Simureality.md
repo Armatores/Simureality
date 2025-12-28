@@ -5022,7 +5022,7 @@ Building upon the established "Impedance Matching" hypothesis (Section 6), we no
 In Section 2, we derived the vacuum impedance $\alpha^{-1} \approx 137$. We now define the spatial expression of this impedance—the "Vacuum Gate"—which serves as the fundamental wavelength for coherent electron transport.
 
 $$
-\Gamma = 2\pi a_0 \approx 3.3249 \AA
+\Gamma = 2\pi a_0 \approx 3.3249 \text{ Å}
 $$
 
 Where $a_0$ is the Bohr radius. This metric represents the circumference of the lowest energy orbital, acting as the quantization step for the global vacuum grid.
@@ -5033,15 +5033,15 @@ As established in "The Iron Wall" (Section 4.3), the nuclear charge ($Z$) dictat
 
 1. **Compression Zone ($Z < 40$):** Dominated by strong nuclear force compression.
    * *Harmonic:* $k = 0.9$ (9:10 resonance).
-   * *Example:* Vanadium ($V$), $a \approx 3.02 \AA$.
+   * *Example:* Vanadium ($V$), $a \approx 3.02 \text{ Å}$.
 
 2. **Resonance Zone ($40 \le Z \le 74$):** Ideal balance between nuclear binding and Coulomb repulsion.
    * *Harmonic:* $k = 1.0$ (Fundamental resonance).
-   * *Example:* Niobium ($Nb$), $a \approx 3.30 \AA$.
+   * *Example:* Niobium ($Nb$), $a \approx 3.30 \text{ Å}$.
 
 3. **Coulomb Expansion Zone ($Z > 74$):** Coulomb repulsion overwhelms packing, forcing a phase shift to the next half-integer harmonic.
    * *Harmonic:* $k = 1.5$ (3:2 resonance).
-   * *Example:* Lead ($Pb$), $a \approx 4.95 \AA$.
+   * *Example:* Lead ($Pb$), $a \approx 4.95 \text{ Å}$.
 
 ### 9.3 The General Critical Temperature Equation
 
@@ -5057,7 +5057,7 @@ $$
 * $\gamma_{sys} \approx 1.0418$: The System Tax (Vacuum Impedance).
 * $S$: Resonance Sensitivity Factor (Empirically $S \approx 45-50$).
 * $a_0$: Lattice parameter at 0K.
-* $\Gamma$: The Vacuum Gate ($3.3249 \AA$).
+* $\Gamma$: The Vacuum Gate ($3.3249 \text{ Å}$).
 
 ### 9.4 Verification
 
@@ -5066,23 +5066,4 @@ Applying this law to the periodic table correctly predicts:
 1. **The Elite:** Niobium ($Nb$) achieves peak $T_c$ due to near-perfect alignment ($0.8\%$ deviation) with the fundamental gate ($k=1.0$).
 2. **The Heavyweights:** Lead ($Pb$) remains superconductive despite its large size because it locks into the $k=1.5$ harmonic, a consequence of the Coulomb Gap.
 3. **The Null Set:** Gold ($Au$) and Copper ($Cu$) exhibit $T_c = 0K$ because their lattice parameters fall into the "Dead Zones" between harmonics, creating maximized geometric friction.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

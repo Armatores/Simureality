@@ -5067,3 +5067,42 @@ Applying this law to the periodic table correctly predicts:
 2. **The Heavyweights:** Lead ($Pb$) remains superconductive despite its large size because it locks into the $k=1.5$ harmonic, a consequence of the Coulomb Gap.
 3. **The Null Set:** Gold ($Au$) and Copper ($Cu$) exhibit $T_c = 0K$ because their lattice parameters fall into the "Dead Zones" between harmonics, creating maximized geometric friction.
 
+   ## 10. The Law of Anisotropic Geometric Superconductivity
+
+While cubic materials (BCC/FCC) possess isotropic symmetry allowing for a single resonance check, Hexagonal Close-Packed (HCP) materials exhibit "Geometric Opportunism." Superconductivity arises if *at least one* crystallographic axis ($a$ or $c$) aligns with a valid harmonic of the Vacuum Gate.
+
+### 10.1 The Max-Flow Principle
+
+Current flows through the path of least resistance. Therefore, the critical temperature of an anisotropic material is determined by its best-fitting axis:
+
+$$
+T_c^{HCP} \approx \max \left( T_c(a), T_c(c) \right)
+$$
+
+### 10.2 The Technetium Harmonic (4:3)
+
+Our analysis of the hexagonal period (Tc, Ru, Re, Os) reveals a distinct stability node at the 4:3 ratio, corresponding to the "Technetium Gate":
+
+* **Harmonic:** $k = 1.333$ (4:3 resonance).
+* **Target:** $\approx 4.433 \text{ Å}$.
+* **Mechanism:** This harmonic governs the vertical ($c$-axis) conductivity in Group 7 and 8 metals.
+
+### 10.3 The Sensitivity Gradient (Z-Compression)
+
+The drop in superconductivity from Technetium ($T_c=7.8K$) to Ruthenium ($T_c=0.49K$) perfectly illustrates the sensitivity of the geometric lock.
+* **Tc ($Z=43$):** $c=4.40 \text{ Å}$ (0.7% deviation) $\rightarrow$ Strong Resonance.
+* **Ru ($Z=44$):** $c=4.28 \text{ Å}$ (3.5% deviation) $\rightarrow$ Degraded Resonance.
+
+This confirms that nuclear charge $Z$ acts as a "Lattice Compressor," tuning the material in and out of the vacuum resonance bands.
+
+### 10.4 The Unified Simureality Equation
+
+$$
+T_c \approx \Theta_D \cdot \mathcal{A} \cdot \max_{x \in \{a, c\}} \left[ \exp\left( - \gamma_{sys} \cdot S \cdot \min_{k} \left| \frac{x}{\Gamma} - k \right| \right) \right]
+$$
+
+**Where:**
+* **$x$**: Scans all available lattice dimensions ($a, c$).
+* **$\Gamma$**: The Vacuum Gate ($3.3249 \text{ Å}$).
+* **$k$**: The Allowed Harmonic Set derived from nuclear stability:
+  * $k \in \{0.9, 1.0, 1.33, 1.5\}$.

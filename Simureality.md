@@ -5130,3 +5130,27 @@ Applying the "Blind Resonance Search" to non-magnetic combinations identifies hi
 1.  **Ru-Sn System ($k=1.0$):** Predicted max resonance at $\sim$20% Sn.
 2.  **Ti-W System ($k=0.9$):** Titanium stabilized by Tungsten to match the compression harmonic.
 3.  **Nb-Ru System ($k=0.9$):** Bridging the gap between BCC and HCP stability zones.
+
+4.  ## 12. The Geometric Tuning of Alloys
+
+The principles of Simureality extend beyond pure elements to solid solution alloys. According to Vegard's Law, the lattice parameter of a substitutional alloy ($a_{mix}$) is a linear combination of its constituents:
+
+$$
+a_{mix} \approx a_1 (1-x) + a_2 x
+$$
+
+### 12.1 The Synthetic Resonance Principle
+
+Two elements with low critical temperatures ($T_c \approx 0$) can combine to form a high-$T_c$ superconductor if their mixture creates a "Synthetic Lattice" that aligns with the Vacuum Gate ($\Gamma$).
+
+* **Mechanism:** Tuning the composition ratio ($x$) acts as a geometric dial, shifting the average lattice parameter into a resonance band.
+* **The Mo-Re Effect:** Molybdenum ($3.15 \AA$) and Rhenium ($2.76 \AA$) are geometrically mismatched with the fundamental gate. However, a 60/40 mixture yields $a_{mix} \approx 2.99 \AA$, locking precisely into the **0.9x Compression Harmonic**. This explains the anomalously high $T_c$ of Mo-Re alloys.
+
+### 12.2 Prediction of New Candidates
+
+Applying the "Blind Resonance Search" to non-magnetic combinations identifies high-potential candidates where the geometric deviation $|\frac{a_{mix}}{\Gamma} - k| \to 0$.
+
+**Top Theoretical Candidates:**
+1.  **Ru-Sn System ($k=1.0$):** Predicted max resonance at $\sim$20% Sn.
+2.  **Ti-W System ($k=0.9$):** Titanium stabilized by Tungsten to match the compression harmonic.
+3.  **Nb-Ru System ($k=0.9$):** Bridging the gap between BCC and HCP stability zones.

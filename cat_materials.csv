@@ -9,20 +9,28 @@ Ru,2.70,hcp,8,300,Noble,2607,Oxygen lover
 Rh,3.80,fcc,9,800,Noble,2237,Expensive
 Ir,3.84,fcc,9,900,Noble,2719,Corrosion proof
 Au,4.08,fcc,11,1200,Noble,1337,Too inert
+Ag,4.09,fcc,11,500,Noble,1235,Too inert
 La,5.30,fcc,3,50,Giant,1193,Lattice Expander
 Ce,5.16,fcc,4,50,Giant,1068,Redox active
 Y,5.00,fcc,3,40,Giant,1799,Strong Expander
 Zr,4.60,fcc,4,30,Giant,2128,Glass former
 Hf,4.50,fcc,4,100,Giant,2506,Heavy Zr
-W,3.16,bcc,6,40,Scaffold,3695,Acid proof
-Mo,3.15,bcc,6,35,Scaffold,2896,Tough
-V,3.02,bcc,5,25,Scaffold,2183,Light scaffold
-Ta,3.30,bcc,5,150,Scaffold,3290,Corrosion proof
-Nb,3.30,bcc,5,45,Scaffold,2750,Superconductor base
+Sc,4.54,fcc,3,250,Giant,1814,Light Giant
 Ti,2.95,hcp,4,10,Armor,1941,Forms Oxide Armor
 Al,4.05,fcc,3,2,Armor,933,Forms Oxide Armor
 Cr,2.88,bcc,6,8,Armor,2180,Passivates
+Mn,8.91,bcc,7,5,Armor,1519,Complex structure
+V,3.02,bcc,5,25,Scaffold,2183,Light scaffold
+Nb,3.30,bcc,5,45,Scaffold,2750,Superconductor base
+Ta,3.30,bcc,5,150,Scaffold,3290,Corrosion proof
+Mo,3.15,bcc,6,35,Scaffold,2896,Tough
+W,3.16,bcc,6,40,Scaffold,3695,Acid proof
+Re,2.76,hcp,7,800,Scaffold,3459,Rare but hard
+Os,2.73,hcp,8,900,Scaffold,3306,Dense
 Zn,2.66,hcp,12,3,Soft,692,Melts too low
 Sn,5.83,tet,4,15,Soft,505,Melts too low
 Pb,4.95,fcc,4,2,Soft,600,Toxic & Soft
 Mg,3.21,hcp,2,3,Soft,923,Too reactive
+B,1.70,hex,3,50,Dwarf,2300,Lattice Contractor
+C,1.54,dia,4,5,Dwarf,3800,Lattice Contractor (Carbide)
+Si,5.43,dia,4,5,Dwarf,1687,Semiconductor base

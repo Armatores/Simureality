@@ -4,40 +4,42 @@ import numpy as np
 import itertools
 
 # ==============================================================================
-# TRILEX ORACLE: CATALYST DESIGNER (Streamlit Version)
-# Architecture: Simureality Research Group
+# TRILEX ORACLE v6.0: The Industrial Benchmarker
+# Features: Pure, Binary, Ternary Modes + Expanded Database
 # ==============================================================================
 
-# --- PHYSICS CONSTANTS ---
-PLATINUM_SITE = 2.775  # The Gold Standard for H2
-CU_CE_SITE = 2.772     # The Gold Standard for CO
-
-# --- MOLECULE DATABASE (The Lock) ---
+# --- PHYSICS CORE: SIMUREALITY HARMONICS ---
+# "The Quarter Law": Ideal catalyst site ~ Bond Length * (2.25 or 2.5 or 3.75)
 MOLECULES = {
     "Hydrogen (H2)": {
         "bond": 0.74, 
-        "target_site": 2.775, # Matches Pt
-        "desc": "Hydrogen Evolution (HER). Requires Geometry ~2.77 A."
+        "target_site": 2.775, # Pt (Harmonic 3.75)
+        "desc": "Hydrogen Evolution (HER). Standard: Pt. Target: 2.775 A."
     },
     "Carbon Monoxide (CO)": {
         "bond": 1.12, 
-        "target_site": 2.772, # Matches Cu-Ce
-        "desc": "CO Oxidation / Methanol. Requires Geometry ~2.77 A."
+        "target_site": 2.772, # Cu-Ce (Harmonic 2.5)
+        "desc": "CO Oxidation. Standard: CuO-CeO2. Target: 2.772 A."
     },
     "Nitrogen (N2)": {
         "bond": 1.09, 
-        "target_site": 2.480, # Matches Fe (Haber-Bosch)
-        "desc": "Ammonia Synthesis. Requires tight grip ~2.48 A."
+        "target_site": 2.480, # Fe (Harmonic 2.25)
+        "desc": "Ammonia Synthesis. Standard: Fe-K. Target: 2.48 A."
     },
-    "Oxygen (O2)": {
-        "bond": 1.21, 
-        "target_site": 2.600, # Approx Ru/Ir
-        "desc": "Fuel Cells / Electrolysis. Requires ~2.60 A."
+    "Methane (CH4)": {
+        "bond": 1.09,
+        "target_site": 2.720, # Ru/Rh (Harmonic 2.5)
+        "desc": "C-H Activation. Hard bond. Target: 2.72 A."
     },
-    "C-C Bond (Plastics)": {
-        "bond": 1.54,
-        "target_site": 1.54 * 1.2, # Harmonic 1.2 rule
-        "desc": "Plastic Depolymerization. Experimental."
+    "CO2 (Reduction)": {
+        "bond": 1.16,
+        "target_site": 2.610, # Cu is 2.55 (Too tight?), Ag is 2.89 (Too loose?)
+        "desc": "CO2 to Fuels. Target: 2.61 A (Between Cu and Au)."
+    },
+    "NOx (Reduction)": {
+        "bond": 1.15,
+        "target_site": 2.580, # Rh is standard
+        "desc": "Catalytic Converter. Standard: Rh. Target: 2.58 A."
     }
 }
 
@@ -46,152 +48,162 @@ def get_site_distance(row):
     """Calculates active surface step based on crystal structure."""
     a = row['a_angstrom']
     struct = row['structure']
-    if struct == 'fcc': return a / 1.414     # a / sqrt(2)
-    if struct == 'bcc': return a * 0.866     # a * sqrt(3) / 2
-    return a # Default for hcp/other
+    # HCP uses 'a' as basal site, FCC uses a/sqrt(2), BCC uses a*sqrt(3)/2
+    if struct == 'fcc': return a / 1.414
+    if struct == 'bcc': return a * 0.866
+    if struct == 'hcp': return a 
+    return a 
 
+@st.cache_data
 def load_data():
-    """Loads the material database."""
     try:
         df = pd.read_csv("cat_materials.csv")
-        # Pre-calculate site distance for speed
         df['site_dist'] = df.apply(get_site_distance, axis=1)
         return df
-    except FileNotFoundError:
-        st.error("File 'cat_materials.csv' not found. Please create it first!")
+    except Exception as e:
+        st.error(f"Error loading database: {e}")
         return pd.DataFrame()
 
-# --- CORE LOGIC ---
-def solve_alloy(base, m1, m2, ratios, target_site):
-    # Unpack ratios
-    r_b, r_1, r_2 = ratios
+def solve_alloy(components, ratios, target_site):
+    # components: list of rows (dicts or series)
+    # ratios: list of floats (sum=1.0)
     
-    # 1. Geometric Mix (Vegard's Law on Site Distance)
-    # This simulates the average surface topology
-    mix_site = (base['site_dist'] * r_b) + (m1['site_dist'] * r_1) + (m2['site_dist'] * r_2)
+    name_parts = []
+    mix_site = 0
+    mix_vec = 0
+    mix_cost = 0
     
-    # 2. VEC Mix (Electronic Structure)
-    mix_vec = (base['vec'] * r_b) + (m1['vec'] * r_1) + (m2['vec'] * r_2)
+    for comp, r in zip(components, ratios):
+        mix_site += comp['site_dist'] * r
+        mix_vec += comp['vec'] * r
+        mix_cost += comp['cost_index'] * r
+        name_parts.append(f"{comp['element']}{int(r*100)}")
+        
+    alloy_name = "-".join(name_parts)
     
-    # 3. Cost Mix
-    mix_cost = (base['cost_index'] * r_b) + (m1['cost_index'] * r_1) + (m2['cost_index'] * r_2)
-    
-    # --- SIMUREALITY SCORING ---
-    # Geometry Score: Exponential precision required
+    # SCORING
+    # 1. Geometry (Precision)
     dev = abs(mix_site - target_site)
     geo_score = np.exp(-30 * dev) * 100
     
-    # Electronic Score: Catalyst Needs Electrons (VEC > 7 is usually preferred for activity)
+    # 2. VEC Penalty (Activity)
+    # Generally, VEC < 6 is too empty (early transition), VEC > 11 is too full (noble)
+    # Sweet spot is 8-10.
     vec_penalty = 1.0
-    if mix_vec < 6.5: vec_penalty = 0.5 # Too empty d-shell
+    if mix_vec < 6.0: vec_penalty = 0.6
     
     final_score = geo_score * vec_penalty
     
     return {
-        "Alloy": f"{base['element']}{int(r_b*100)}-{m1['element']}{int(r_1*100)}-{m2['element']}{int(r_2*100)}",
+        "Alloy": alloy_name,
         "Site (A)": round(mix_site, 4),
         "VEC": round(mix_vec, 2),
         "Cost": round(mix_cost, 1),
         "Score": round(final_score, 1),
-        "Base": base['element'],
-        "M1": m1['element'],
-        "M2": m2['element']
+        "Components": [c['element'] for c in components]
     }
 
-# --- UI ---
-st.set_page_config(page_title="Trilex Catalyst Oracle", layout="wide")
+# --- MAIN UI ---
+st.set_page_config(page_title="Trilex Oracle v6", layout="wide", page_icon="🔮")
 
-st.title("🧪 Project Trilex: Catalyst Oracle")
-st.markdown("**Simureality Engineering:** Finding Geometric Resonance in Alloys.")
+st.title("🔮 Trilex Oracle v6.0")
+st.markdown("**Simureality Engineering:** From Pure Elements to Ternary Alloys.")
 
-# 1. Load Data
 df = load_data()
 if df.empty: st.stop()
 
-# 2. Sidebar Controls
-st.sidebar.header("1. Target")
-target_name = st.sidebar.selectbox("Select Reaction:", list(MOLECULES.keys()))
-target_data = MOLECULES[target_name]
-target_site = target_data['target_site']
+# SIDEBAR
+st.sidebar.header("Configuration")
+mode = st.sidebar.radio("Search Mode:", ["Pure Elements", "Binary Alloys", "Ternary Alloys"])
+target_name = st.sidebar.selectbox("Target Reaction:", list(MOLECULES.keys()))
 
-st.sidebar.info(f"**Target Geometry:** {target_site} Å\n\n{target_data['desc']}")
+t_data = MOLECULES[target_name]
+target_site = t_data['target_site']
+st.sidebar.info(f"**Target:** {target_site} Å\n\n{t_data['desc']}")
 
-st.sidebar.header("2. Filters")
-allow_noble = st.sidebar.checkbox("Allow Noble Metals (Pt, Pd...)", value=False)
-allow_armor = st.sidebar.checkbox("Allow Oxide Armor (Al, Ti...)", value=False)
-allow_soft = st.sidebar.checkbox("Allow Soft Metals (Zn, Pb...)", value=False)
+# FILTERS
+with st.sidebar.expander("Material Filters"):
+    allow_noble = st.checkbox("Allow Noble (Pt, Au...)", value=False)
+    allow_armor = st.checkbox("Allow Armor (Al, Ti...)", value=False)
+    allow_soft = st.checkbox("Allow Soft (Zn, Pb...)", value=False)
 
-# 3. Filtering Logic
+# APPLY FILTERS
 filtered_df = df.copy()
 if not allow_noble: filtered_df = filtered_df[filtered_df['role'] != 'Noble']
 if not allow_armor: filtered_df = filtered_df[filtered_df['role'] != 'Armor']
-if not allow_soft:  filtered_df = filtered_df[filtered_df['role'] != 'Soft']
+if not allow_soft: filtered_df = filtered_df[filtered_df['role'] != 'Soft']
 
-st.write(f"Scanning **{len(filtered_df)}** elements for optimal ternary combinations...")
+st.metric("Materials available", len(filtered_df))
 
-# 4. The Algorithm
-if st.button("RUN ORACLE SCAN"):
+# RUN BUTTON
+if st.button("RUN SCAN"):
     results = []
+    metal_list = filtered_df.to_dict('records')
     
-    # Categorize available elements
-    bases = filtered_df[filtered_df['role'].isin(['Base', 'Noble'])]
-    modifiers = filtered_df[filtered_df['role'].isin(['Giant', 'Scaffold', 'Armor', 'Soft'])]
-    
-    # Progress bar
     progress_bar = st.progress(0)
     
-    # Optimized Loops: Base + Mod1 + Mod2
-    # We assume Base is dominant (60-90%)
+    # --- MODE LOGIC ---
     
-    # Standard ternary ratios to test
-    ratios_list = [
-        (0.70, 0.20, 0.10), # Balanced Doping
-        (0.80, 0.15, 0.05), # Light Doping
-        (0.60, 0.20, 0.20)  # Heavy Mixing
-    ]
-    
-    total_ops = len(bases) * len(modifiers) * len(modifiers)
-    current_op = 0
-    
-    # Convert to list of dicts for faster iteration
-    base_records = bases.to_dict('records')
-    mod_records = modifiers.to_dict('records')
-    
-    for base in base_records:
-        # Combinations of modifiers
-        for m1, m2 in itertools.combinations(mod_records, 2):
-            for ratios in ratios_list:
-                res = solve_alloy(base, m1, m2, ratios, target_site)
-                if res['Score'] > 80.0: # Filter noise
-                    results.append(res)
+    if mode == "Pure Elements":
+        # Check every single element
+        for m in metal_list:
+            res = solve_alloy([m], [1.0], target_site)
+            results.append(res)
+        progress_bar.progress(100)
+            
+    elif mode == "Binary Alloys":
+        # Check pairs (Base + Any)
+        bases = [m for m in metal_list if m['role'] in ['Base', 'Noble']]
+        others = metal_list
+        total_ops = len(bases) * len(others)
+        idx = 0
         
-        # Update progress roughly
-        current_op += len(modifiers)**2
-        prog = min(current_op / total_ops, 1.0)
-        progress_bar.progress(prog)
+        for b in bases:
+            for o in others:
+                if b['element'] == o['element']: continue
+                # Standard ratios
+                for ratio in [0.5, 0.7, 0.8, 0.9]:
+                    ratios = [ratio, 1-ratio]
+                    res = solve_alloy([b, o], ratios, target_site)
+                    if res['Score'] > 75: results.append(res)
+                idx += 1
+            progress_bar.progress(min(idx / total_ops, 1.0))
+            
+    elif mode == "Ternary Alloys":
+        # Base + Mod1 + Mod2
+        bases = [m for m in metal_list if m['role'] in ['Base', 'Noble']]
+        modifiers = [m for m in metal_list if m['role'] not in ['Base', 'Noble', 'Soft']]
         
+        # Limit modifiers to avoid explosion
+        if len(modifiers) > 15: modifiers = modifiers[:15] 
+        
+        total_ops = len(bases)
+        idx = 0
+        
+        for b in bases:
+            for m1, m2 in itertools.combinations(modifiers, 2):
+                # Standard recipes
+                recipes = [(0.7, 0.2, 0.1), (0.6, 0.2, 0.2), (0.8, 0.15, 0.05)]
+                for r in recipes:
+                    res = solve_alloy([b, m1, m2], r, target_site)
+                    if res['Score'] > 85: results.append(res)
+            idx += 1
+            progress_bar.progress(min(idx / total_ops, 1.0))
+
     progress_bar.empty()
     
-    # 5. Results Display
+    # DISPLAY
     if results:
-        res_df = pd.DataFrame(results).sort_values(by="Score", ascending=False)
+        res_df = pd.DataFrame(results).sort_values(by="Score", ascending=False).head(50)
         
-        # Top Candidate Highlight
+        # Highlight Top 1
         top = res_df.iloc[0]
-        st.success(f"🏆 Top Candidate: **{top['Alloy']}** (Score: {top['Score']})")
+        st.success(f"🏆 Winner: **{top['Alloy']}** | Score: {top['Score']}")
         
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Site Distance", f"{top['Site (A)']} Å", delta=f"{round(top['Site (A)'] - target_site, 4)}")
-        col2.metric("VEC", top['VEC'])
-        col3.metric("Cost Index", top['Cost'])
+        st.dataframe(res_df, use_container_width=True)
         
-        st.subheader("Top 20 Candidates")
-        st.dataframe(res_df.head(20), use_container_width=True)
-        
-        # Download
-        csv = res_df.to_csv(index=False).encode('utf-8')
-        st.download_button("Download Full Report", csv, "trilex_catalysts.csv", "text/csv")
-        
+        # Graph for context
+        st.bar_chart(res_df.set_index("Alloy")['Score'].head(10))
     else:
-        st.warning("No high-performance alloys found with current filters. Try allowing Noble metals or changing the target.")
+        st.warning("No matches found. Try relaxing filters.")
 

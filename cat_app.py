@@ -4,35 +4,35 @@ import numpy as np
 import itertools
 
 # ==============================================================================
-# TRILEX ORACLE v7.0: UNCHAINED POTENTIAL
-# Philosophy: Pure Geometric Resonance first. Chemical Reality check second.
+# TRILEX ORACLE v7.1: CONTROLLED CHAOS
+# Features: Restored Filters, Risk Legend, Chemical Toggle
 # ==============================================================================
 
-# --- PHYSICS CORE ---
+# --- CORE PHYSICS ---
 MOLECULES = {
     "Hydrogen (H2)": {
         "bond": 0.74, "target_site": 2.775, "ref": "Pt (Harmonic 3.75)",
-        "desc": "Hydrogen Evolution. Standard: Pt."
+        "desc": "Standard: Pt. Target: 2.775 Å."
     },
     "Carbon Monoxide (CO)": {
         "bond": 1.12, "target_site": 2.772, "ref": "Cu-Ce (Harmonic 2.5)",
-        "desc": "CO Oxidation. Standard: CuO-CeO2."
+        "desc": "Standard: CuO-CeO2. Target: 2.772 Å."
     },
     "Nitrogen (N2)": {
         "bond": 1.09, "target_site": 2.480, "ref": "Fe (Harmonic 2.25)",
-        "desc": "Ammonia Synthesis. Standard: Fe-K."
+        "desc": "Standard: Fe-K. Target: 2.48 Å."
     },
     "Methane (CH4)": {
         "bond": 1.09, "target_site": 2.720, "ref": "Rh (Harmonic 2.5)",
-        "desc": "C-H Activation. Standard: Rh."
+        "desc": "Standard: Rh. Target: 2.72 Å."
     },
     "CO2 (Reduction)": {
         "bond": 1.16, "target_site": 2.610, "ref": "Cu/Au boundary",
-        "desc": "CO2 to Fuels."
+        "desc": "Target: 2.61 Å."
     },
     "NOx (Reduction)": {
         "bond": 1.15, "target_site": 2.580, "ref": "Rh",
-        "desc": "Catalytic Converter."
+        "desc": "Standard: Rh. Target: 2.58 Å."
     }
 }
 
@@ -55,134 +55,151 @@ def load_data():
         st.error(f"Error loading database: {e}")
         return pd.DataFrame()
 
-def check_chemical_risks(components, target_name):
-    """
-    Returns a list of warning tags based on chemical reality.
-    But does NOT affect the Score.
-    """
+def get_risk_tags(components, target_name):
     tags = []
-    
     elems = [c['element'] for c in components]
     roles = [c['role'] for c in components]
-    vecs  = [c['vec'] for c in components]
     
-    # 1. EXPLOSIVE RISK (Carbides of Group 11)
-    if 'C' in elems:
-        if 'Ag' in elems or 'Au' in elems or 'Cu' in elems:
-            tags.append("☢️ EXPLOSIVE")
+    # 1. EXPLOSIVE (Carbides of Group 11)
+    if 'C' in elems and any(x in elems for x in ['Ag', 'Au', 'Cu']):
+        tags.append("☢️")
     
-    # 2. INERTNESS RISK (Full d-shell trying to break strong bonds)
-    # Target N2 or CH4 (Hard bonds) using Noble/Coinage metals (VEC > 10)
+    # 2. INERT (Noble metals vs Hard Bonds)
     if target_name in ["Nitrogen (N2)", "Methane (CH4)"]:
-        # If Base is Au/Ag/Cu and no strong activator (like Fe, Ru, Os)
-        base_vec = components[0]['vec'] # Assume first is base
-        if base_vec >= 10.5: 
-             tags.append("❄️ INERT")
+        base_vec = components[0]['vec']
+        if base_vec >= 10.5 and 'Fe' not in elems and 'Ru' not in elems:
+            tags.append("❄️")
 
-    # 3. POISONING RISK (Oxide Armor)
-    if 'Armor' in roles:
-        tags.append("🛡️ OXIDE")
-        
-    # 4. STABILITY RISK (Soft metals)
-    if 'Soft' in roles:
-        tags.append("💧 SOFT")
-        
-    # 5. COST RISK
+    # 3. OXIDE ARMOR
+    if 'Armor' in roles: tags.append("🛡️")
+    
+    # 4. SOFT/UNSTABLE
+    if 'Soft' in roles: tags.append("💧")
+    
+    # 5. EXPENSIVE
     costs = [c['cost_index'] for c in components]
-    if max(costs) > 100:
-        tags.append("💰 $$$")
+    if max(costs) > 100: tags.append("💰")
+        
+    return tags
 
-    return " ".join(tags)
-
-def solve_alloy(components, ratios, target_site, target_name):
-    # Geometry Mix
+def solve_alloy(components, ratios, target_site, target_name, ignore_risks):
+    # Mix Properties
     mix_site = sum([c['site_dist'] * r for c, r in zip(components, ratios)])
-    # VEC Mix
     mix_vec = sum([c['vec'] * r for c, r in zip(components, ratios)])
-    # Cost Mix
     mix_cost = sum([c['cost_index'] * r for c, r in zip(components, ratios)])
     
     name_parts = [f"{c['element']}{int(r*100)}" for c, r in zip(components, ratios)]
     alloy_name = "-".join(name_parts)
     
-    # SCORING (PURE GEOMETRY)
+    # SCORING
     dev = abs(mix_site - target_site)
     geo_score = np.exp(-30 * dev) * 100
     
-    # We remove the VEC penalty to show "Pure Potential".
-    # Instead, we just show VEC.
-    final_score = geo_score 
+    tags = get_risk_tags(components, target_name)
     
-    # RISKS
-    risks = check_chemical_risks(components, target_name)
+    # CHEMICAL PENALTY LOGIC
+    penalty = 1.0
+    if not ignore_risks:
+        if "☢️" in tags: penalty *= 0.0  # Dead
+        if "❄️" in tags: penalty *= 0.1  # Very weak
+        if "💧" in tags: penalty *= 0.5  # Unstable
+        
+    final_score = geo_score * penalty
     
     return {
         "Alloy": alloy_name,
         "Site (A)": round(mix_site, 4),
         "VEC": round(mix_vec, 2),
         "Score": round(final_score, 1),
-        "Risks": risks,
+        "Hazards": " ".join(tags),
         "Components": [c['element'] for c in components]
     }
 
 # --- UI ---
-st.set_page_config(page_title="Trilex Oracle v7 (Unchained)", layout="wide", page_icon="⚡")
+st.set_page_config(page_title="Trilex Oracle v7.1", layout="wide", page_icon="⚡")
 
-st.title("⚡ Trilex Oracle v7.0: Unchained")
-st.markdown("**Philosophy:** Geometric Resonance is the Law. Chemistry is just a constraint.")
+st.title("⚡ Trilex Oracle v7.1")
+st.markdown("**Simureality Engineering:** Geometric Resonance & Chemical Reality.")
 
 df = load_data()
 if df.empty: st.stop()
 
-# CONFIG
-col1, col2 = st.columns([1, 2])
-with col1:
-    mode = st.radio("Search Mode:", ["Pure Elements", "Binary Alloys", "Ternary Alloys"])
-    
-with col2:
-    target_name = st.selectbox("Target Reaction:", list(MOLECULES.keys()))
-    t_data = MOLECULES[target_name]
-    st.info(f"**Target:** {t_data['target_site']} Å | {t_data['desc']}")
+# --- SIDEBAR CONFIG ---
+st.sidebar.header("1. Strategy")
+mode = st.sidebar.radio("Search Mode:", ["Pure Elements", "Binary Alloys", "Ternary Alloys"])
+target_name = st.sidebar.selectbox("Target Reaction:", list(MOLECULES.keys()))
+t_data = MOLECULES[target_name]
 
-# RUN
-if st.button("SCAN UNIVERSE"):
+st.sidebar.info(f"**Target:** {t_data['target_site']} Å\n\n{t_data['desc']}")
+
+st.sidebar.header("2. Ingredients (Filters)")
+col_f1, col_f2 = st.sidebar.columns(2)
+with col_f1:
+    allow_noble = st.checkbox("Noble (Pt, Au)", value=True)
+    allow_armor = st.checkbox("Armor (Al, Ti)", value=True)
+with col_f2:
+    allow_soft = st.checkbox("Soft (Zn, Pb)", value=False)
+    allow_dwarf = st.checkbox("Dwarfs (C, B)", value=True)
+
+st.sidebar.header("3. Philosophy")
+ignore_risks = st.sidebar.checkbox("Ignore Chemical Risks (Unchained Mode)", value=True, 
+                                   help="If checked, shows purely geometric potential (Score 100) even if chemically unstable.")
+
+# FILTER DATAFRAME
+filtered_df = df.copy()
+if not allow_noble: filtered_df = filtered_df[filtered_df['role'] != 'Noble']
+if not allow_armor: filtered_df = filtered_df[filtered_df['role'] != 'Armor']
+if not allow_soft: filtered_df = filtered_df[filtered_df['role'] != 'Soft']
+if not allow_dwarf: filtered_df = filtered_df[filtered_df['role'] != 'Dwarf']
+
+# LEGEND
+with st.sidebar.expander("ℹ️ Legend & Risks"):
+    st.markdown("""
+    * ☢️ **Explosive:** Unstable Carbides/Compounds.
+    * ❄️ **Inert:** Noble metal trying to break hard bond.
+    * 🛡️ **Oxide:** Forms passivating layer (Al, Ti).
+    * 💧 **Soft:** Low melting point, unstable surface.
+    * 💰 **High Cost:** Contains Precious Metals.
+    """)
+
+st.metric("Materials in Mix", len(filtered_df))
+
+# --- MAIN LOOP ---
+if st.button("RUN SCAN"):
     results = []
-    metal_list = df.to_dict('records')
-    
-    # Progress
+    metal_list = filtered_df.to_dict('records')
     progress_bar = st.progress(0)
     
+    # 1. PURE
     if mode == "Pure Elements":
         for m in metal_list:
-            results.append(solve_alloy([m], [1.0], t_data['target_site'], target_name))
+            results.append(solve_alloy([m], [1.0], t_data['target_site'], target_name, ignore_risks))
         progress_bar.progress(100)
             
+    # 2. BINARY
     elif mode == "Binary Alloys":
-        # Smart Filter: Only use 'Base' or 'Noble' as primary component to save time
         bases = [m for m in metal_list if m['role'] in ['Base', 'Noble']]
         others = metal_list
-        total = len(bases)
+        if not bases: bases = metal_list # Fallback
         
+        total = len(bases)
         for i, b in enumerate(bases):
             for o in others:
                 if b['element'] == o['element']: continue
-                # Ratios: 50/50, 80/20
-                for r in [0.5, 0.8]:
-                    results.append(solve_alloy([b, o], [r, 1-r], t_data['target_site'], target_name))
+                for r in [0.5, 0.8, 0.9]:
+                    results.append(solve_alloy([b, o], [r, 1-r], t_data['target_site'], target_name, ignore_risks))
             progress_bar.progress((i+1)/total)
             
+    # 3. TERNARY
     elif mode == "Ternary Alloys":
-        # Base + Mod + Mod
         bases = [m for m in metal_list if m['role'] in ['Base', 'Noble']]
-        modifiers = [m for m in metal_list if m['role'] != 'Soft'] # Exclude soft from ternary modifiers to speed up?
-        # Actually, let's include all but limit combinations
-        modifiers = metal_list[:25] # Limit search space for demo speed
+        modifiers = [m for m in metal_list if m['role'] not in ['Base', 'Noble']]
+        if len(modifiers) > 20: modifiers = modifiers[:20] # Optimization
         
         total = len(bases)
         for i, b in enumerate(bases):
             for m1, m2 in itertools.combinations(modifiers, 2):
-                # Standard Doping
-                results.append(solve_alloy([b, m1, m2], [0.7, 0.2, 0.1], t_data['target_site'], target_name))
+                results.append(solve_alloy([b, m1, m2], [0.7, 0.2, 0.1], t_data['target_site'], target_name, ignore_risks))
             progress_bar.progress((i+1)/total)
 
     progress_bar.empty()
@@ -191,20 +208,16 @@ if st.button("SCAN UNIVERSE"):
     if results:
         res_df = pd.DataFrame(results).sort_values(by="Score", ascending=False).head(50)
         
-        # Winner
         top = res_df.iloc[0]
-        st.success(f"🏆 Geometric Champion: **{top['Alloy']}** (Score: {top['Score']})")
-        if top['Risks']:
-            st.warning(f"⚠️ Reality Check: {top['Risks']}")
+        st.success(f"🏆 Champion: **{top['Alloy']}** (Score: {top['Score']})")
+        if top['Hazards']: st.warning(f"Hazards: {top['Hazards']}")
         
-        # Table
         st.dataframe(
-            res_df[['Alloy', 'Score', 'Site (A)', 'VEC', 'Risks']], 
+            res_df[['Alloy', 'Score', 'Site (A)', 'VEC', 'Hazards']], 
             use_container_width=True,
             column_config={
                 "Score": st.column_config.ProgressColumn(format="%.1f", min_value=0, max_value=100),
-                "Risks": st.column_config.TextColumn("Hazards")
             }
         )
     else:
-        st.error("No results.")
+        st.error("No matches. Check your filters.")

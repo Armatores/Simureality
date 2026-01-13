@@ -127,9 +127,6 @@ The V-LAM 10.0 algorithm uses the following **complete set** of 25 geometric res
 The algorithm allows a deviation margin of **<4% ($0.04$)**.
 > **Important:** This tolerance is not an arbitrary curve-fitting parameter. It represents the natural **Lattice Jitter** (Quantum/Thermal Noise). In a real physical system, no vector alignment is infinitely precise due to vacuum fluctuations. The 4% margin accounts for this unavoidable "breathing" of the grid.
 
-* **Result:** 187/187 matches (100% Success within physical noise limits).
-
-
 ## 📊 Results
 
 The script was tested against a database of **187 molecules**, including:

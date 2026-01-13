@@ -42,24 +42,28 @@ The model is built upon two hardcoded constants derived from the **Simureality O
 
 ---
 
-## 🧮 The Algorithm
+## 🧮 The Algorithm: Reverse Engineering Nature
 
-The script performs "Reverse Engineering" of bond mechanics:
+Standard physics uses complex wave functions. V-LAM uses simple **Vector Geometry**.
 
-### Step 1: Effective Nuclear Charge ($Z_{eff}$)
-We calculate the effective charge purely through ionization data, treating atoms as energy accumulators:
+### Step 1: Calculate Simureality Effective Charge ($Z_{eff}$)
+Unlike standard Slater's rules, we derive the *effective* vector length of an atom purely from its experimental Ionization Energy ($IE$) and Principal Quantum Number ($n$).
+*Logic: An atom is an energy accumulator. Its "size" in the lattice is proportional to the square root of its energy density.*
+
 $$Z_{eff} = n \cdot \sqrt{\frac{IE}{Ry}}$$
-*(Where $n$ is the principal quantum number and $IE$ is Ionization Energy)*
 
-### Step 2: Base Energy ($E_{base}$)
-We calculate the energy of an "Ideal Coulomb Link" between two vector entities:
+### Step 2: Calculate Base "Ideal" Energy ($E_{base}$)
+We calculate what the bond energy *would* be if it were a perfect, loss-less Coulomb interaction between these two vectors:
+
 $$E_{base} = Ry \cdot \frac{Z_{eff}^{(1)} \cdot Z_{eff}^{(2)}}{n_{avg}^2}$$
+*(Where $n_{avg}$ is the average principal quantum number of the two atoms)*
 
-### Step 3: Geometric Factor ($F$)
-We derive the geometric efficiency by comparing Reality ($E_{real}$) vs. Ideal Theory ($E_{base}$):
+### Step 3: Extract the Geometric Factor ($F$)
+We compare the **Real World Energy** (from NIST databases) with the **Ideal Base Energy**.
+
 $$F = \frac{E_{real}}{E_{base}}$$
 
-**The Result:** The value $F$ always lands on a specific "Quantized Shelf" (The Geometric Alphabet).
+**The Discovery:** The resulting factor $F$ is never random. It always snaps to a discrete value from the "Geometric Alphabet" below.
 
 ---
 

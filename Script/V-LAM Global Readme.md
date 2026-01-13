@@ -82,12 +82,3 @@ We subjected the theory to adversarial review by an external AI ("Grok").
 
 ---
 
-## 5. Usage
-
-### Prerequisite
-* Python 3.x
-* `numpy`
-
-### Running the Core Vector Analysis
-```bash
-python src/vlam_final_batch.py

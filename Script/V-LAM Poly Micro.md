@@ -71,7 +71,7 @@ The database contains **~115 unique bond scenarios** (approx. 200 checks total),
 Run the script to see the "Deep Structure" analysis:
 
 ```bash
-python V-LAM micro.py
+python V-LAM Poly Micro.py
 ```
 
 **Output format:**

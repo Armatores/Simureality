@@ -23,51 +23,94 @@ If atoms are vector structures in a lattice, then the energy of their bond ($E_{
 
 ---
 
-## 🧮 The Algorithm
 
-The script performs a "Reverse Engineering" of chemical bonds using the following logic:
+## 🏗 Fundamental Constants & Logic
 
-### 1. Calculate Base Energy ($E_{base}$)
-We calculate the theoretical "Ideal Electrostatic Energy" based on the Rydberg constant and effective nuclear charge ($Z_{eff}$), derived from Ionization Energy:
+The model is built upon two hardcoded constants derived from the **Simureality Ontology**:
 
-$$Z_{eff} = n \cdot \sqrt{\frac{IE}{Ry}}$$
+### 1. The Rydberg Constant ($Ry$)
+`RYDBERG = 13.606` (eV)
+* **Role:** The base unit of energy for atomic interactions.
+* **Application:** Used to calculate the theoretical "Ideal Electrostatic Potential" of the bond.
 
-$$E_{base} = Ry \cdot \frac{Z_{eff}^{(1)} \cdot Z_{eff}^{(2)}}{n_{avg}^2}$$
-
-Where:
-* $Ry$ = 13.606 eV (Rydberg constant)
-* $n$ = Principal quantum number
-* $IE$ = First Ionization Energy of the atom
-
-### 2. Determine Geometric Factor ($F$)
-We compare the real-world Bond Dissociation Energy (from NIST/CRC handbook) with the Base Energy:
-
-$$F = \frac{E_{real}}{E_{base}}$$
-
-### 3. Geometric Matching
-The algorithm checks if calculated Factor $F$ matches one of the **Fundamental Geometric Resonances** of the Lattice (The "Geometric Alphabet").
+### 2. The System Tax ($\gamma_{sys}$)
+`GAMMA_SYS = 1.0418` (+4.18%)
+* **Role:** The "Grid Impedance" or "Cost of Existence". It represents the resistance the Vacuum Lattice exerts on complex structures.
+* **Application:**
+    * In light molecules, geometry dominates ($1/3$, $1/\pi$, etc.), and the tax is negligible or integrated into the shape.
+    * In **Heavy/Hyper Bonds** (Transition metals like Tantalum, Hafnium), the bond energy exceeds the "Unity" limit ($1.0$). The bond stabilizes exactly at the **System Tax level** ($1.0418$), turning the impedance itself into a resonance mode. This explains anomalies in high-energy physics (e.g., Ta-O bonds).
 
 ---
 
-## 📐 The Geometric Alphabet (Target Modes)
+## 🧮 The Algorithm
 
-The model identifies specific "Modes of Interaction" corresponding to how vectors align in the lattice. Here are the key discovered resonances:
+The script performs "Reverse Engineering" of bond mechanics:
 
-| Mode Name | Geometric Value | Approx | Description | Example |
-| :--- | :--- | :--- | :--- | :--- |
-| **Unity** | $1.0$ | `1.000` | Perfect Vector Alignment | Zr-O |
-| **Super** | $9/10$ | `0.900` | High-Density Packing | C=O |
-| **Glass** | $\sqrt{2/3}$ | `0.816` | Silicate/Vitreous Geometry | Si-O |
-| **Golden** | $\phi - 1$ | `0.618` | Golden Ratio Resonance | Al-O |
-| **Rect** | $1 - 1/\sqrt{5}$ | `0.553` | Rectangular Planar | Ti-N |
-| **Half** | $1/2$ | `0.500` | Half-Voxel Occupancy | Si-C |
-| **Mag** | $1/\sqrt{5}$ | `0.447` | Magnetic/Diagonal Vector | Fe-O |
-| **Void** | $\sqrt{2}-1$ | `0.414` | Geometric Void Space | S-S |
-| **Octant** | $3/8$ | `0.375` | Octahedral Sub-structure | O=O |
-| **Decay** | $1/e$ | `0.368` | Natural Logarithmic Limit | P-N |
-| **Line** | $1/3$ | `0.333` | Linear Alignment | H-H |
-| **Tube** | $1/\pi$ | `0.318` | Cylindrical/Vortex Geometry | Cu-O |
-| **Tetra** | $1/4$ | `0.250` | Tetrahedral Packing | Pd-O |
+### Step 1: Effective Nuclear Charge ($Z_{eff}$)
+We calculate the effective charge purely through ionization data, treating atoms as energy accumulators:
+$$Z_{eff} = n \cdot \sqrt{\frac{IE}{Ry}}$$
+*(Where $n$ is the principal quantum number and $IE$ is Ionization Energy)*
+
+### Step 2: Base Energy ($E_{base}$)
+We calculate the energy of an "Ideal Coulomb Link" between two vector entities:
+$$E_{base} = Ry \cdot \frac{Z_{eff}^{(1)} \cdot Z_{eff}^{(2)}}{n_{avg}^2}$$
+
+### Step 3: Geometric Factor ($F$)
+We derive the geometric efficiency by comparing Reality ($E_{real}$) vs. Ideal Theory ($E_{base}$):
+$$F = \frac{E_{real}}{E_{base}}$$
+
+**The Result:** The value $F$ always lands on a specific "Quantized Shelf" (The Geometric Alphabet).
+
+---
+
+
+## 📐 The Full Geometric Alphabet (Target Modes)
+
+The V-LAM 10.0 algorithm uses the following **complete set** of 25 geometric resonances to classify all 187 materials.
+
+### 1. Vacuum Noise & Weak Interactions
+| Mode Name | Factor | Value | Application |
+| :--- | :--- | :--- | :--- |
+| **Dust/VdW** | $0$ | `0.000` | Noble Gases (He-He), Van der Waals forces |
+| **Jam** | $1/11$ | `0.091` | Ultra-weak repulsion zones (F-F) |
+| **Oct** | $1/8$ | `0.125` | Heavy weak metals (Pb-Pb) |
+| **Sept** | $1/7$ | `0.143` | Halogen solids (I-I) |
+| **Hex** | $1/6$ | `0.167` | Hexagonal Packing limits (Br-Br) |
+| **Pent** | $1/5$ | `0.200` | Pentagonal symmetry (Cl-Cl) |
+| **Tetra** | $1/4$ | `0.250` | Tetrahedral Packing (Pd-O, Ag-O) |
+
+### 2. Medium Bonds (Orbital/Vortex Geometry)
+| Mode Name | Factor | Value | Application |
+| :--- | :--- | :--- | :--- |
+| **Tube** | $1/\pi$ | `0.318` | Cylindrical/Vortex geometry (Cu-O) |
+| **Line** | $1/3$ | `0.333` | Linear Vector Alignment (H-H, Si-Si) |
+| **Decay** | $1/e$ | `0.368` | Natural Log Stability Limit (P-N, As-S) |
+| **Octant** | $3/8$ | `0.375` | Octahedral filling (O=O) |
+| **Void** | $\sqrt{2}-1$ | `0.414` | Geometric Void Space (S-S, Ca-O) |
+| **Mag** | $1/\sqrt{5}$ | `0.447` | Magnetic/Diagonal Vector (Fe-O, Ni-O) |
+| **Half** | $1/2$ | `0.500` | Half-Voxel Occupancy (Si-C, P-P) |
+
+### 3. Strong Bonds (Covalent/Resonant)
+| Mode Name | Factor | Value | Application |
+| :--- | :--- | :--- | :--- |
+| **Rect** | $1 - 1/\sqrt{5}$ | `0.553` | Rectangular Planar (Ti-N) |
+| **Golden** | $\phi - 1$ | `0.618` | Golden Ratio Resonance (Al-O, Ga-F) |
+| **Circle** | $2/\pi$ | `0.636` | Circular Loop Closure (CS2) |
+| **Plane** | $2/3$ | `0.667` | 2D Planar Stability (N=N, CO2) |
+| **Root** | $1/\sqrt{2}$ | `0.707` | Root-Mean-Square Stability (C=S) |
+| **Ceramic** | $\sqrt{\phi}$ | `0.786` | Ceramic Lattice Hardness (B-O) |
+| **Glass** | $\sqrt{2/3}$ | `0.816` | Vitreous/Silicate Geometry (Si-O) |
+| **Super** | $9/10$ | `0.900` | High-Density Carbonyls (C=O) |
+| **MaxPack** | $12/13$ | `0.923` | Maximum Sphere Packing (Y-O) |
+
+### 4. Hyper-Bonds (Heavy/Nuclear Limits)
+| Mode Name | Factor | Value | Application |
+| :--- | :--- | :--- | :--- |
+| **Unity** | $1.0$ | `1.000` | Perfect Vector Alignment (Zr-O) |
+| **Tax** | $\gamma_{sys}$ | `1.042` | **System Impedance Limit** (Ta-O) |
+| **SeptInv** | $8/7$ | `1.143` | Inverse Septenary (Hf-O) |
+| **Expand** | $5/4$ | `1.250` | Expanded Lattice (La-O) |
+| **Diag** | $\sqrt{2}$ | `1.414` | Diagonal Tensor Load (Th-O) |
 
 ---
 

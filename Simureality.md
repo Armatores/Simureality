@@ -5305,3 +5305,41 @@ $S_{bit} = \Gamma^2 \approx (3.325)^2 \approx 11.055 \text{ \AA}^2$
 
 **Conclusion of Part III:**
 The mathematical requirement for Gaussian and Eisenstein primes in singularity models is not proof of a 5D universe. It is the ultimate geometric proof that the underlying structure of reality is a discrete 3D FCC lattice. The Holographic Principle is simply the System projecting 3D data onto the 2D (100) and (111) planes of this lattice, storing reality as compressed prime-number coordinates separated by the 3.325 Angstrom vacuum gate.
+
+# APPENDIX Q-3: THE HOLOGRAPHIC BIT AND THE YOTTABYTE CAPACITY OF BLACK HOLES
+
+**Subject:** Correcting the Bekenstein-Hawking entropy formula by replacing the Planck area with the Vacuum Gate 2D-bit, and calculating the absolute hardware capacity of a singularity.
+**Core Thesis:** The mainstream assumption that the event horizon is pixelated at the Planck scale ($l_p^2$) violates the Principle of Optimization ($\Sigma K \to \min$) and leads to absurd data capacities (e.g., $10^{77}$ bits for a solar mass). The Holographic Principle is valid, but it operates on the macro-blocks of the FCC lattice, yielding finite, purely engineering storage limits.
+
+### 1. The "Infinite Hard Drive" Fallacy
+
+The Bekenstein-Hawking formula correctly established that the information of a black hole is proportional to its surface area, effectively proving the 3D $\to$ 2D Dimensional Fold. However, standard physics incorrectly assumes the minimal unit of this surface is the Planck area ($l_p^2 \approx 10^{-70} \text{ m}^2$).
+    
+In the Simureality framework, the Planck length is not a physical geometric pixel; it is merely the floating-point precision limit of the System's rendering engine. Utilizing $10^{77}$ memory cells to archive a single dead star is a catastrophic waste of the global computational budget ($\Sigma K_{global} = const$). The System does not format its ultimate ZIP archives using microscopic floating-point limits.
+
+### 2. The Hardware Size of a Holographic Bit
+
+When the $\Sigma$-Algorithm executes an emergency archive (forming an event horizon), it formats the surface using the standard macro-blocks of the FCC vacuum grid. As proven in Appendix Q-2, the holographic surface consists of the 2D (100) and (111) planes of the lattice.
+
+The physical dimension of a single bit of compressed information is dictated by the fundamental Vacuum Gate ($\Gamma \approx 3.325 \text{ \AA}$).
+The area of one hardware bit on the event horizon is:
+
+$$S_{bit} = \Gamma^2 \approx (3.325)^2 \approx 11.055 \text{ \AA}^2$$
+
+This is the definitive size of a systemic cluster in the universe's file system.
+
+### 3. The 127 Yottabyte Archive (Calculating Solar Mass Capacity)
+
+By applying this hardware bit size, we can calculate the true, finite data capacity of a black hole with the mass of our Sun ($1 M_\odot$).
+
+1. The Schwarzschild radius for $1 M_\odot$ is approximately $3,000$ meters.
+2. The total surface area of the event horizon ($A = 4\pi r^2$) is $\approx 1.13 \times 10^8 \text{ m}^2$.
+3. Converting to Angstroms squared: $A \approx 1.13 \times 10^{28} \text{ \AA}^2$.
+4. Dividing the total area by the size of our geometric bit ($11.055 \text{ \AA}^2$):
+   $$\text{Capacity} = \frac{1.13 \times 10^{28}}{11.055} \approx 1.02 \times 10^{27} \text{ bits}$$
+5. Converting bits to bytes (dividing by 8): $\approx 1.27 \times 10^{26} \text{ bytes}$.
+
+**Result: $\approx 127$ Yottabytes.**
+
+**Conclusion of Part IV:**
+A solar-mass black hole does not contain $10^{77}$ bits of abstract entropy. It is a strictly formatted storage drive containing exactly 127 Yottabytes of compressed prime-number coordinate data. This brings astrophysics out of the realm of mathematical infinity and directly into the domain of finite data science and systemic engineering.

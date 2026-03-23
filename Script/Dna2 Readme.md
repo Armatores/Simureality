@@ -37,7 +37,7 @@ Running this script yields deterministic proof of geometric resonance:
 
 Run the scanner directly via Python to observe the phase matching in real-time. Execute the following command in your terminal:
 
-**python dna\_phase\_scanner.py**
+**python dna2.py**
 
 **Expected Output:**
 The console will display the baseline metric lag for random noise, followed by the precise X, Y, Z shift required to achieve perfect structural resonance. The system will output [STRUCTURAL RESONANCE CONFIRMED], proving the physical architecture of DNA is mathematically tuned to the $\Gamma = 3.325$ Å vacuum lattice.

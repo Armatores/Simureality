@@ -152,3 +152,39 @@ Every sequence begins with the `START_BOOTLOADER` initialization via the AUG cod
 
 ---
 
+
+## 9. Reverse-Compilation Example: Disassembling Insulin (Chain B)
+To demonstrate the Simureality ISA in action, we disassemble the B-chain of Insulin. This is a highly optimized code fragment: short, yet containing complex instructions for managing glucose metabolism.
+
+We isolate the first 8 instructions (amino acids) of this chain: **F-V-N-Q-H-L-C-G**.
+
+### Listing: `Insulin_Chain_B.bin`
+
+| Pos | Command (AA) | OpCode Type | FCC Lattice Operation Description |
+| :--- | :--- | :--- | :--- |
+| **01** | **F** (Phe) | `COMPUTE_HIGH` | Initialization of a high-frequency node (20% resonance). Creates a computational attraction point (Active Center). |
+| **02** | **V** (Val) | `MOVE_BACK` | Linear shift along the Z-axis by 3.325 Å. Calibration to the vacuum port step. |
+| **03** | **N** (Asn) | `SIGNAL_LOW` | Setting logical zero. Formation of a polar interface for water coupling. |
+| **04** | **Q** (Gln) | `SIGNAL_LOW` | Signal duplication (Checksum). Amplification of the polar port. |
+| **05** | **H** (His) | `INT_GATE` | Hardware Interrupt. A pH-dependent switch. Conditional execution: `IF pH < 7.0 JUMP`. |
+| **06** | **L** (Leu) | `MOVE_BACK` | Standard lattice step. Maintains the physical length of the "antenna". |
+| **07** | **C** (Cys) | `HW_LOCK` | Hardware lock command (Save Point). Awaits a paired Cysteine to create a rigid physical jumper. |
+| **08** | **G** (Gly) | `NULL_OP` | Zero vector. Maximum flexibility. A "pivot" command allowing the execution chain to bend freely in 3D space. |
+
+### Algorithm Analysis: What does this code execute?
+Reading this sequence as a unified executable program reveals a strict hardware boot sequence:
+1.  **System Bootup (F, V):** The sequence establishes a rigid framework, snapping the molecule into the vacuum ports and initiating a high-power computational node.
+2.  **Interface Configuration (N, Q):** Generates a "data cloud" (polar interface) around the molecule, preparing it for a handshake with the target receptor.
+3.  **Logic Gate (H):** Histidine acts as the environmental sensor. It dynamically alters its charge based on the surrounding medium. Functionally, it is a conditional branch: *"If the environment is acidic, alter the execution geometry!"*
+4.  **Runtime Safety (C):** The protein executes a hardware lock, ensuring the 3D structure does not crash or denature during runtime execution.
+
+### Reverse-Engineering an "Error" (Diabetes)
+Consider a point mutation where the initial **F** (Phenylalanine) is replaced by an **S** (Serine).
+* **Expected (Wild Type):** `COMPUTE_HIGH` (20% resonance) — A strong transmission signal.
+* **Actual (Mutation):** `FINE_TUNE` (5% resonance) — Weak background noise.
+* **System Result:** The receptor fails to detect the protein. The voltage is too low, and the command to absorb glucose does not pass through the data bus. At the biophysical level, this is a classic **Error 404: Device Not Found**.
+
+**Conclusion:** By defining amino acids as executable OpCodes (e.g., Cysteine = `HW_LOCK`, Proline = `JUMP_ANGLE`), we transcend traditional biochemistry. We are establishing the **Programming Language of Matter**, allowing us to compile custom proteins that fold into perfect 3D geometries to act as ultra-efficient catalysts.
+
+---
+

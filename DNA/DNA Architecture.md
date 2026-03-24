@@ -220,3 +220,33 @@ We can design a molecular "dummy plug" programmed with an `ANTI_INTERRUPT` seque
 
 ---
 
+## 11. The Prion Anomaly: Infinite Loop in Hardware
+We now enter the domain of biological system crashes. Prions represent the most terrifying and elegant "bug" in the Vector Computer architecture. If a virus is a malicious executable file, a prion is a self-replicating logic loop (Infinite Loop) hardcoded directly into the protein's hardware. It contains no DNA or RNA; it is pure data corruption at the compiled binary level.
+
+### 11.1 The Prion Ontology: The "Stuck Bit"
+Under normal conditions, the $PrP^C$ protein is an optimized and functional waveguide.
+* **Wild Type ($PrP^C$):** Dominated by Alpha-helices (`MOVE_BACKBONE` commands). This is "soft" code that flows easily through the FCC lattice without accumulating critical metric noise.
+* **Prion Form ($PrP^{Sc}$):** The exact same amino acid sequence (source code), but compiled with a different geometry. The Alpha-helices collapse into Beta-sheets (`ARRAY_LOCK` commands). This forms "rigid" code, densely packed and incredibly resistant to disruption.
+
+### 11.2 The "Infection" Mechanism: Recursive Overflow
+When the Prion ($PrP^{Sc}$) comes into physical contact with a normal protein ($PrP^C$), it acts as a corrupted hardware stencil:
+1.  **Node Alignment:** The prion aligns with the normal protein port-to-port across the $3.325$ Å lattice.
+2.  **Error Induction:** Due to its dense voltage signature (clustered 10% and 20% phase shifts), the prion exerts extreme metric tension, effectively forcing the normal protein out of its spatial alignment.
+3.  **Bit Flip:** The normal protein undergoes a forced phase transition, adopting the prion's rigid geometry.
+4.  **Recursion:** We now have two prions. The loop repeats.
+
+In Simureality terms, this is a **Runtime Error** that overwrites adjacent memory sectors. The prion acts as a "bad sector" that forces healthy sectors to corrupt themselves to resolve local lattice tension.
+
+### 11.3 Hardware Invulnerability
+Standard antiviral enzymes search for "incorrect instructions" (mutations). But in a prion, all instructions are syntactically correct; the amino acids remain unchanged. 
+
+The prion is so tightly latched into the FCC lattice (maximizing the resonance of its Beta-sheets) that the system cannot unmount it. To the vacuum, the prion appears as an ideal, perfectly stable waste crystal. It falls into a false minimum of computational complexity ($\Sigma K \to \min_{false}$), creating an energy well the system cannot escape.
+
+### 11.4 Disassembling the "Loop of Death"
+If we analyze the prion's executable code, we observe endless repetitions of the `ARRAY_LOCK` command. It is the equivalent of a processor executing a continuous `NOP` (No Operation) loop while consuming 100% of the bus bandwidth.
+* **Result:** Proteins aggregate into massive, insoluble amyloid plaques.
+* **System Crash:** The cell's working memory (RAM) is choked. Neurons cease computation, the vacuum lattice at that coordinate becomes clogged with "logical slag," and a total hardware crash ensues (spongiform encephalopathy).
+
+**Conclusion:** Prions prove that biology is not just chemistry; it is a state of data. The exact same line of code can function as a vital system process or a lethal hardware bug, depending entirely on its 3D spatial execution.
+
+---

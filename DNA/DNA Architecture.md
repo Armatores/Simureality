@@ -106,3 +106,49 @@ Where:
 ---
 
 
+## 8. Simureality ISA: The Vacuum Assembler Instruction Set (AsmGen 1.0)
+If DNA is the executable code, amino acids are not mere "building blocks"—they are **compiled macros**. Every codon (triplet) functions as a 3-bit instruction word for the FCC vacuum lattice.
+
+### 8.1 Codon OpCode Architecture
+Each nucleotide in a codon represents a state in a 3-bit command word:
+* **A / T (0):** Low voltage state (10% lattice tension drop).
+* **G / C (1):** High voltage state (20% lattice tension drop, triggering the System Tax).
+
+A triplet (e.g., G-A-G $\to [1, 0, 1]$) forms a precise vector value that determines the ultimate geometric shift of the amino acid relative to the $3.325$ Å lattice step.
+
+### 8.2 Command Dictionary (Instruction Groups)
+
+**1. STRUCT Group (Structural Vectors)**
+* **Amino Acids:** Valine, Leucine, Isoleucine.
+* **OpCode:** `MOVE_BACKBONE [Lattice_Step]`
+* **Hardware Logic:** These commands dictate the linear progression of the protein chain. They are the "NOP" (No Operation) or empty clock cycles of the processor, ensuring the waveguide stretches perfectly across the lattice nodes to minimize the System Tax and maintain physical length.
+
+**8.3 LOGIC Group (Computational Gates)**
+* **Amino Acids:** Phenylalanine, Tryptophan, Tyrosine (Aromatics).
+* **OpCode:** `COMPUTE_RESONANCE [Frequency]`
+* **Hardware Logic:** Due to their high resonance ($\approx 20\%$), these act as logical multipliers. They create "Active Zones" in the hardware. Where Tryptophan is placed, the system concentrates maximum computational power (e.g., for photon capture or enzymatic catalysis).
+
+**8.4 LINK Group (Interface Ports)**
+* **Amino Acids:** Cysteine, Methionine.
+* **OpCode:** `HARDWARE_LOCK [Node_ID]`
+* **Hardware Logic:** Sulfur possesses a highly specific response in the FCC lattice. Cysteine executes a "port latch" command. Disulfide bridges are physical hardware jumpers that permanently fix the 3D geometry of the code, preventing it from being desynchronized by thermal metric noise.
+
+**. BRANCH Group (Conditional Jumps & Folds)**
+* **Amino Acids:** Proline, Glycine.
+* **OpCode:** `JUMP_RELATIVE [Angle]` or `NULL_OP`
+* **Hardware Logic:** Glycine acts as a zero-vector (`NULL`), while Proline introduces a rigid phase distortion. Proline forces the code to change its execution direction. Without `BRANCH` commands, the protein would be an infinite straight line; these instructions fold the code into a functional 3D object.
+
+**8.5. INTERRUPT Group (Electrostatics & Interrupts)**
+* **Amino Acids:** Lysine, Arginine, Glutamate.
+* **OpCode:** `CALL_SYSTEM_TAX (Force_Field)`
+* **Hardware Logic:** These commands intentionally fall into the "Dead Zone" (12.5-15% phase shift), creating a localized lag in the lattice. This lag manifests in the macro-world as an electrical charge. They are used to pull external substrates (other systems) toward the protein "processor".
+
+### 873 Bootloader Execution Example: Methionine (AUG)
+Every sequence begins with the `START_BOOTLOADER` initialization via the AUG codon:
+* **A (0):** Port initialization.
+* **U (0):** Water phase calibration (environment sync).
+* **G (1):** Supplying 1.2 eV power to the execution bus.
+* **Result:** The system allocates lattice memory and begins assembling a new 3D device.
+
+---
+

@@ -143,7 +143,7 @@ A triplet (e.g., G-A-G $\to [1, 0, 1]$) forms a precise vector value that determ
 * **OpCode:** `CALL_SYSTEM_TAX (Force_Field)`
 * **Hardware Logic:** These commands intentionally fall into the "Dead Zone" (12.5-15% phase shift), creating a localized lag in the lattice. This lag manifests in the macro-world as an electrical charge. They are used to pull external substrates (other systems) toward the protein "processor".
 
-### 873 Bootloader Execution Example: Methionine (AUG)
+### 8.6 Bootloader Execution Example: Methionine (AUG)
 Every sequence begins with the `START_BOOTLOADER` initialization via the AUG codon:
 * **A (0):** Port initialization.
 * **U (0):** Water phase calibration (environment sync).

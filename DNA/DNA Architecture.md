@@ -188,3 +188,35 @@ Consider a point mutation where the initial **F** (Phenylalanine) is replaced by
 
 ---
 
+## 10. Cyber-Exorcism: Disassembling the Viral Exploit (SARS-CoV-2 Furin Cleavage Site)
+To demonstrate the diagnostic power of the Simureality ISA, we reverse-engineer the S-protein (Spike) of the coronavirus, focusing on its most critical and efficient segment: the Furin Cleavage Site.
+
+In our hardware paradigm, this fragment is a literal **"code injection"** that allows the virus to bypass the cellular firewall.
+
+### Listing: `Spike_Furin_Hack.bin`
+*Target Sequence:* **P-R-R-A-R** (Proline - Arginine - Arginine - Alanine - Arginine)
+
+| Pos | Command (AA) | OpCode Type | Hack Description in the FCC Lattice |
+| :--- | :--- | :--- | :--- |
+| **01** | **P** (Pro) | `JUMP_ANGLE` | **HARD BEND.** Command for a sharp chain fold. Creates a geometric "hook" to latch onto the ACE2 port. |
+| **02** | **R** (Arg) | `INTERRUPT` | **SYSTEM_TAX_CALL.** Massive positive charge ($15-18\%$ phase shift). Creates a powerful localized "lag" in the vacuum lattice. |
+| **03** | **R** (Arg) | `INTERRUPT` | **DOUBLE INTERRUPT.** Repeated interrupt call. Doubles the localized voltage. The cell registers this as a critical input error. |
+| **04** | **A** (Ala) | `MOVE_BACK` | **LATTICE_SYNC.** A short step to synchronize with the $3.325$ Å node. Stabilizes the vector of the "hack". |
+| **05** | **R** (Arg) | `INTERRUPT` | **FINAL OVERLOAD.** Third interrupt cascade. Cumulative voltage peaks, maximizing the System Tax. |
+
+### Exploit Analysis: How the "Hack" Works
+Standard cellular proteins operate under the Optimization Principle, striving to minimize the System Tax ($\Sigma K \to \min$). The viral spike, however, utilizes a **Denial of Service (DoS) attack** strategy:
+1.  **Geometric Boarding:** Proline (P) bends the waveguide execution path specifically to expose the three Arginines (RRR) outward.
+2.  **Electrostatic Overload:** Three consecutive `INTERRUPT` commands create a massive spike in metric noise. At this exact coordinate, the FCC vacuum lattice experiences extreme overvoltage. The local System Tax skyrockets.
+3.  **Hardware Reset (Cleavage):** The cellular enzyme Furin functions as the host system's built-in "Garbage Collector." It scans the lattice, detects this severe energetic "noise" (a $15-20\%$ shift per step), and registers it as a corrupted data packet.
+4.  **Viral Execution:** Furin attempts to "fix" the error by physically cutting the waveguide (cleaving the protein) at this coordinate. However, this is exactly what the virus requires! The cleavage physically activates the membrane fusion mechanism.
+
+**Verdict:** This is not standard biology; it is a pure hardware exploit. The virus feeds the cell a malicious code sequence specifically designed to trick the host's own antivirus (Furin) into hitting "Execute" on the malware payload.
+
+### The Engineering Solution (Patching the Kernel)
+By utilizing the Simureality Command Dictionary, virology transitions from "guessing antibodies" to "patching the kernel." 
+
+We can design a molecular "dummy plug" programmed with an `ANTI_INTERRUPT` sequence (e.g., negatively charged amino acids). This patch will nullify the Arginine overvoltage. If the local lattice voltage drops below the resonance threshold ($10\%$), Furin will no longer register a "syntax error," the spike will not be cleaved, and the virus will remain locked outside the cell—rendered as harmless as a flash drive with corrupted boot code.
+
+---
+

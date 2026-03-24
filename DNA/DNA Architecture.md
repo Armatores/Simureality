@@ -75,5 +75,23 @@ Where $\Delta_{miss}$ is the geometric distance between the end of the intron ve
 
 ---
 
+## 6. System Stress Score (SSS): The Metric Noise Equation
+In the Simureality architecture, protein folding is not driven by chemical thermodynamics, but by the strict requirement to minimize the metric noise within the FCC lattice. We define this noise as the **System Stress Score (SSS)**.
+
+When a sequence of codons is executed, its cumulative 3D path must align with the discrete nodes of the vacuum grid. Any deviation creates computational impedance (heat/noise). If the SSS exceeds the structural tolerance limit, the protein denatures (the waveguide breaks).
+
+The SSS is calculated as the Root Mean Square (RMS) deviation of the execution path from the ideal FCC nodes, scaled by the system tax:
+
+$$SSS = \gamma_{sys} \cdot \sqrt{ \frac{1}{N} \sum_{i=1}^{N} \left\| \vec{P}_i - \vec{N}_{FCC} \right\|^2 }$$
+
+Where:
+* **$N$** = The total number of executed steps (amino acid lags) in the sequence.
+* **$\vec{P}_i$** = The absolute geometric coordinate of the vector at step $i$.
+* **$\vec{N}_{FCC}$** = The coordinate of the nearest valid node in the Face-Centered Cubic lattice (where the port step $\Gamma = 3.325$ Å).
+* **$\gamma_{sys}$** = The System Tax ($1.0418$), representing the vacuum impedance multiplier for heavy computing load.
+
+**Architectural implication:** A perfect sequence (like the theoretical ideal Stop-codon termination) achieves an $SSS \to 0$. Evolutionary mutations are simply an iterative compilation process aimed at reducing this specific SSS value for a given Environmental Key. High SSS indicates a "noisy" sequence that requires excess energy to maintain its 3D form, making it susceptible to thermal disruption (denaturation).
+
+---
 
 

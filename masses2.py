@@ -16,12 +16,9 @@ JITTER_COST = 0.0131   # Пинг пустых портов
 st.set_page_config(page_title="Simureality OS | Task Dispatcher", layout="wide")
 
 @st.cache_data
-def load_local_masses(filename="mass.txt"):
-    """Бронебойный парсинг локального текстового справочника масс."""
+def load_raw_data(filename="mass.txt"):
+    """Читает файл как есть, игнорируя кривую разметку."""
     try:
-        # sep=r'\s+' - режет по любому количеству пробелов или табов
-        # quoting=csv.QUOTE_NONE - жестко игнорирует любые кавычки в тексте
-        # comment='#' - игнорирует строки-комментарии
         df = pd.read_csv(
             filename, 
             sep=r'\s+', 
@@ -30,23 +27,9 @@ def load_local_masses(filename="mass.txt"):
             comment='#',
             on_bad_lines='skip'
         )
-        
-        # Проверяем, есть ли нужные колонки
-        if 'Z' in df.columns and 'N' in df.columns:
-            df.set_index(['Z', 'N'], inplace=True)
-            # Убираем дубликаты индексов (если есть изомеры), оставляем первый (базовое состояние)
-            df = df[~df.index.duplicated(keep='first')]
-        else:
-            st.error("Файл прочитан, но парсер не нашел колонок 'Z' и 'N'. Добавь эти буквы в первую строку mass.txt над нужными колонками.")
-            
         return df
     except Exception as e:
-        st.warning(f"Критическая ошибка чтения: {e}")
-        # Резервная мини-база, чтобы интерфейс не падал
-        return pd.DataFrame({
-            'Z': [6, 6, 7], 'N': [6, 8, 7], 
-            'Mass_MeV': [11174.862, 13040.868, 13040.201]
-        }).set_index(['Z', 'N'])
+        return None
 
 class SimurealityMacroCore:
     def compile_mass(self, Z, N):
@@ -76,14 +59,49 @@ class SimurealityMacroCore:
 st.title("Simureality OS: Ядерный Диспетчер Задач")
 st.markdown("Аналитический расчет ΣK на базе ГЦК-матрицы без эмпирической подгонки.")
 
-df_masses = load_local_masses("mass.txt")
 engine = SimurealityMacroCore()
+df_raw = load_raw_data("mass.txt")
 
-# Панель управления
-st.sidebar.header("Ввод Данных (Таргет)")
+# --- БОКОВАЯ ПАНЕЛЬ: МАППИНГ ДАННЫХ И ВВОД ---
+st.sidebar.header("1. Конфигурация Парсера")
+
+if df_raw is not None and not df_raw.empty:
+    cols = list(df_raw.columns)
+    
+    # Пытаемся угадать колонки, если они стандартные
+    idx_z = cols.index('Z') if 'Z' in cols else 0
+    idx_n = cols.index('N') if 'N' in cols else min(1, len(cols)-1)
+    
+    col_z = st.sidebar.selectbox("Где лежат Протоны (Z)?", cols, index=idx_z)
+    col_n = st.sidebar.selectbox("Где лежат Нейтроны (N)?", cols, index=idx_n)
+    col_mass = st.sidebar.selectbox("Где лежит Масса?", cols, index=len(cols)-1)
+    
+    # Собираем чистый датафрейм на основе выбора пользователя
+    df_masses = df_raw.copy()
+    
+    # Принудительно конвертируем в числа, отбрасывая текстовый мусор
+    df_masses[col_z] = pd.to_numeric(df_masses[col_z], errors='coerce')
+    df_masses[col_n] = pd.to_numeric(df_masses[col_n], errors='coerce')
+    df_masses.dropna(subset=[col_z, col_n], inplace=True)
+    
+    df_masses['Z_clean'] = df_masses[col_z].astype(int)
+    df_masses['N_clean'] = df_masses[col_n].astype(int)
+    
+    df_masses.set_index(['Z_clean', 'N_clean'], inplace=True)
+    df_masses = df_masses[~df_masses.index.duplicated(keep='first')]
+    
+    st.sidebar.success("✅ База масс подключена.")
+else:
+    st.sidebar.error("❌ Ошибка чтения mass.txt.")
+    df_masses = pd.DataFrame()
+    col_mass = None
+
+st.sidebar.write("---")
+st.sidebar.header("2. Ввод Данных (Таргет)")
 target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=6, step=1)
 target_N = st.sidebar.number_input("Нейтроны (N)", min_value=1, max_value=177, value=8, step=1)
 
+# --- ОСНОВНОЙ ЭКРАН ---
 st.write("---")
 col1, col2, col3 = st.columns(3)
 
@@ -92,24 +110,20 @@ calc_mass = engine.compile_mass(target_Z, target_N)
 col1.metric(label="Масса Simureality (ΣK)", value=f"{calc_mass:.3f} МэВ")
 
 # 2. Поиск в mass.txt
-if (target_Z, target_N) in df_masses.index:
-    # Динамически берем колонку с массой
-    col_name = 'Mass_MeV' if 'Mass_MeV' in df_masses.columns else df_masses.columns[-1]
-    exp_mass = df_masses.loc[(target_Z, target_N), col_name]
+if not df_masses.empty and (target_Z, target_N) in df_masses.index:
+    exp_mass_raw = df_masses.loc[(target_Z, target_N), col_mass]
     
-    # Защита от изомеров
-    if isinstance(exp_mass, pd.Series):
-        exp_mass = exp_mass.iloc[0]
+    if isinstance(exp_mass_raw, pd.Series):
+        exp_mass_raw = exp_mass_raw.iloc[0]
         
     try:
-        # Принудительная конвертация в число для безопасности
-        exp_mass = float(exp_mass)
+        exp_mass = float(exp_mass_raw)
         delta = calc_mass - exp_mass
-        col2.metric(label=f"Справочник ({col_name})", value=f"{exp_mass:.3f} МэВ", delta=f"{delta:.3f} МэВ (Погрешность)", delta_color="inverse")
+        col2.metric(label=f"Справочник (Эксперимент)", value=f"{exp_mass:.3f} МэВ", delta=f"{delta:.3f} МэВ (Погрешность)", delta_color="inverse")
     except ValueError:
-        col2.metric(label="Справочник", value="Ошибка формата (не число)")
+        col2.metric(label="Справочник", value="Ошибка формата")
 else:
-    col2.metric(label="Справочник (Эксперимент)", value="Нет данных в mass.txt")
+    col2.metric(label="Справочник (Эксперимент)", value="Нет данных в базе")
 
 # 3. Маршрутизация Диспетчера
 st.subheader("Анализ Интерфейсных Патчей (Распад)")

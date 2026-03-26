@@ -2,13 +2,15 @@ import streamlit as st
 import pandas as pd
 import math
 import os
+import plotly.express as px
+import io
 
 # ==========================================================================================
-# SIMUREALITY: NUCLEAR CAD V6.1 (STREAMLIT CLOUD EDITION)
-# FULL AME2020 DATASET PARSER + GRID PHYSICS ENGINE
+# SIMUREALITY: CHRONOS ENGINE V7.0 (STREAMLIT EDITION)
+# AME2020 (MASS) + NUBASE2020 (HALF-LIVES) -> TOPOLOGICAL DEBT RESOLUTION
 # ==========================================================================================
 
-st.set_page_config(page_title="Simureality Nuclear CAD", layout="wide")
+st.set_page_config(page_title="Simureality Chronos Engine", layout="wide")
 
 class GridPhysicsEngine:
     def __init__(self):
@@ -60,98 +62,142 @@ class GridPhysicsEngine:
             return E_macro - self.geometric_shell_penalty(Z, N)
 
 def parse_ame2020(text_content):
-    """Парсер сырого текста формата FORTRAN (AME2020)"""
     dataset = []
     for line in text_content.split('\n'):
         if len(line) < 67 or line.startswith('1N-Z') or 'MASS EXCESS' in line or 'A T O M I C' in line:
             continue
         try:
-            N = int(line[4:9])
             Z = int(line[9:14])
             A = int(line[14:19])
             el = line[20:23].strip()
+            iso_name = f"{A}{el}"
             
             be_str = line[54:67].replace('#', '').strip()
             if not be_str or be_str == '*': continue
             
-            be_per_n_kev = float(be_str)
-            real_be_mev = (A * be_per_n_kev) / 1000.0
-            
-            if real_be_mev > 0:
-                dataset.append((f"{A}{el}", Z, A, real_be_mev))
+            real_be_mev = (A * float(be_str)) / 1000.0
+            if real_be_mev > -100: # Позволяем отрицательные (недострои)
+                dataset.append((iso_name, Z, A, real_be_mev))
         except ValueError:
             continue
     return dataset
 
-# ==========================================================================================
-# ИНТЕРФЕЙС STREAMLIT
-# ==========================================================================================
-st.title("Simureality: Grid Physics Binding Engine ⚛️")
-st.markdown("**Движок валидации ГЦК-матрицы.** Аппаратный бенчмарк по сырым данным AME2020.")
+def parse_nubase(text_content):
+    nubase_data = {}
+    unit_multipliers = {
+        's': 1, 'ms': 1e-3, 'us': 1e-6, 'ns': 1e-9, 'ps': 1e-12,
+        'fs': 1e-15, 'as': 1e-18, 'zs': 1e-21, 'ys': 1e-24,
+        'm': 60, 'h': 3600, 'd': 86400, 'y': 3.1536e7,
+        'ky': 3.1536e10, 'My': 3.1536e13, 'Gy': 3.1536e16, 'Py': 3.1536e22
+    }
+    
+    for line in text_content.split('\n'):
+        if len(line) < 70 or line.startswith('#') or 'NUBASE' in line:
+            continue
+        try:
+            zzzi = line[4:8].strip()
+            if not zzzi.endswith('0'): continue # Только Ground States
+            
+            iso_name = line[11:16].strip().replace(' ', '')
+            
+            hl_val_str = line[60:69].strip().replace('#', '').replace('>', '').replace('<', '').replace('~', '')
+            hl_unit = line[69:72].strip()
+            
+            if 'stbl' in hl_unit.lower() or 'infty' in hl_val_str.lower() or 'stable' in hl_val_str.lower():
+                nubase_data[iso_name] = float('inf')
+            elif hl_val_str and hl_unit in unit_multipliers:
+                nubase_data[iso_name] = float(hl_val_str) * unit_multipliers[hl_unit]
+        except Exception:
+            continue
+    return nubase_data
 
-file_path_txt = "mass.txt"
-file_path_mas = "mass.mas20"
+# ==========================================================================================
+# ИНТЕРФЕЙС
+# ==========================================================================================
+st.title("Simureality: Chronos Engine ⏳")
+st.markdown("**Валидация Времени Жизни.** Интеграция топологического долга ГЦК ($\Delta K$) и распада (NUBASE2020).")
 
-dataset = None
+file_path_ame = "mass.txt"
+file_path_nubase = "NUBASE2020.txt"
+
+dataset_ame = None
+dataset_nubase = None
 engine = GridPhysicsEngine()
 
-# 1. АВТОМАТИЧЕСКИЙ ЗАХВАТ ФАЙЛА ИЗ РЕПОЗИТОРИЯ
-if os.path.exists(file_path_txt):
-    with open(file_path_txt, "r", encoding="utf-8") as f:
-        dataset = parse_ame2020(f.read())
-    st.success(f"База данных `{file_path_txt}` автоматически загружена из ядра.")
-elif os.path.exists(file_path_mas):
-    with open(file_path_mas, "r", encoding="utf-8") as f:
-        dataset = parse_ame2020(f.read())
-    st.success(f"База данных `{file_path_mas}` автоматически загружена из ядра.")
+# Чтение AME2020
+if os.path.exists(file_path_ame):
+    with open(file_path_ame, "r", encoding="utf-8") as f:
+        dataset_ame = parse_ame2020(f.read())
 else:
-    st.warning("Локальный файл не найден в репозитории. Используйте ручную загрузку.")
-    uploaded_file = st.file_uploader("Загрузить файл базы масс", type=["txt", "mas20", "csv"])
-    if uploaded_file is not None:
-        dataset = parse_ame2020(uploaded_file.getvalue().decode("utf-8"))
+    upl_ame = st.file_uploader("Загрузить mass.txt (AME2020)", type=["txt", "mas20"])
+    if upl_ame: dataset_ame = parse_ame2020(upl_ame.getvalue().decode("utf-8"))
 
-# 2. РЕНДЕР И ВЫЧИСЛЕНИЯ
-if dataset:
+# Чтение NUBASE2020
+if os.path.exists(file_path_nubase):
+    with open(file_path_nubase, "r", encoding="utf-8") as f:
+        dataset_nubase = parse_nubase(f.read())
+else:
+    upl_nubase = st.file_uploader("Загрузить NUBASE2020.txt", type=["txt"])
+    if upl_nubase: dataset_nubase = parse_nubase(upl_nubase.getvalue().decode("utf-8"))
+
+if dataset_ame and dataset_nubase:
+    st.success("Базы AME2020 и NUBASE2020 загружены. Выполняю слияние матриц...")
+    
     results = []
-    total_acc = 0
-    total_items = len(dataset)
-    
-    st.info("Выполняю расчет графов ГЦК-решетки...")
-    progress_bar = st.progress(0)
-    
-    for i, (name, Z, A, real_be) in enumerate(dataset):
-        sim_val = engine.calculate_energy(Z, A)
-        acc = 100 * (1 - abs(sim_val - real_be)/real_be)
-        if acc < 0: acc = 0
-        total_acc += acc
-        
-        results.append({
-            "Isotope": name,
-            "Z": Z,
-            "A": A,
-            "AME2020 Exp (MeV)": round(real_be, 4),
-            "Simureality (MeV)": round(sim_val, 4),
-            "Accuracy (%)": round(acc, 2)
-        })
-        
-        # Обновляем UI каждые 50 шагов
-        if i % 50 == 0:
-            progress_bar.progress(i / total_items)
+    for name, Z, A, real_be in dataset_ame:
+        if name in dataset_nubase:
+            hl_sec = dataset_nubase[name]
+            sim_val = engine.calculate_energy(Z, A)
             
-    progress_bar.progress(1.0)
-    
+            # Дельта К (Топологический долг в МэВ)
+            delta_k = abs(sim_val - real_be)
+            
+            if hl_sec == float('inf'):
+                log_hl = 35 # Условно-бесконечное время (стабильные)
+                status = "Stable"
+            else:
+                log_hl = math.log10(hl_sec) if hl_sec > 0 else -30
+                status = "Unstable"
+                
+            results.append({
+                "Isotope": name,
+                "Z": Z,
+                "A": A,
+                "ΔK Debt (MeV)": round(delta_k, 3),
+                "Log10(T_1/2)": round(log_hl, 3),
+                "Status": status,
+                "AME Exp (MeV)": round(real_be, 3),
+                "Simureality (MeV)": round(sim_val, 3)
+            })
+
     df = pd.DataFrame(results)
-    avg_acc = total_acc / total_items
     
-    st.metric(label="Средняя точность ГЦК-модели", value=f"{avg_acc:.3f}%")
+    # Фильтруем экстремальные недострои (Drip Line) для чистоты графика
+    df_plot = df[df["ΔK Debt (MeV)"] < 50]
+
+    # График Plotly
+    fig = px.scatter(
+        df_plot, 
+        x="ΔK Debt (MeV)", 
+        y="Log10(T_1/2)", 
+        color="Status",
+        hover_name="Isotope",
+        hover_data=["Z", "A", "AME Exp (MeV)", "Simureality (MeV)"],
+        title="Зависимость времени жизни от Топологического Долга (ΔK)",
+        labels={"ΔK Debt (MeV)": "Топологический Долг ΔK (МэВ)", "Log10(T_1/2)": "Логарифм времени распада (Log10 Sec)"},
+        color_discrete_map={"Stable": "#00CC96", "Unstable": "#EF553B"}
+    )
+    
+    fig.update_layout(template="plotly_dark", height=600)
+    
+    st.plotly_chart(fig, use_container_width=True)
     st.dataframe(df, use_container_width=True)
     
-    csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="Скачать результаты (CSV)",
-        data=csv,
-        file_name='simureality_ame2020_benchmark.csv',
+        label="Скачать объединенный дамп (CSV)",
+        data=df.to_csv(index=False).encode('utf-8'),
+        file_name='simureality_chronos_benchmark.csv',
         mime='text/csv',
     )
-elif not os.path.exists(file_path_txt) and not os.path.exists(file_path_mas):
-    st.error("Жду входных данных для компиляции.")
+elif dataset_ame or dataset_nubase:
+    st.warning("Ожидание второй базы данных для перекрестного слияния...")

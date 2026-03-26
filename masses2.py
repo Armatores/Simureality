@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import csv
 
 # --- ОНТОЛОГИЧЕСКИЕ КОНСТАНТЫ SIMUREALITY ---
 MASS_P = 938.272
@@ -16,17 +17,31 @@ st.set_page_config(page_title="Simureality OS | Task Dispatcher", layout="wide")
 
 @st.cache_data
 def load_local_masses(filename="mass.txt"):
-    """Парсинг локального текстового справочника масс."""
+    """Бронебойный парсинг локального текстового справочника масс."""
     try:
-        # engine='python' и sep=None заставляют Pandas автоматически определить разделитель (пробелы, табы, запятые)
-        df = pd.read_csv(filename, sep=None, engine='python')
+        # sep=r'\s+' - режет по любому количеству пробелов или табов
+        # quoting=csv.QUOTE_NONE - жестко игнорирует любые кавычки в тексте
+        # comment='#' - игнорирует строки-комментарии
+        df = pd.read_csv(
+            filename, 
+            sep=r'\s+', 
+            engine='python',
+            quoting=csv.QUOTE_NONE,
+            comment='#',
+            on_bad_lines='skip'
+        )
         
-        # Задаем индекс для быстрого поиска по протонам и нейтронам
-        # Предполагается, что колонки называются Z и N. Если в mass.txt они называются иначе — переименуй их.
-        df.set_index(['Z', 'N'], inplace=True)
+        # Проверяем, есть ли нужные колонки
+        if 'Z' in df.columns and 'N' in df.columns:
+            df.set_index(['Z', 'N'], inplace=True)
+            # Убираем дубликаты индексов (если есть изомеры), оставляем первый (базовое состояние)
+            df = df[~df.index.duplicated(keep='first')]
+        else:
+            st.error("Файл прочитан, но парсер не нашел колонок 'Z' и 'N'. Добавь эти буквы в первую строку mass.txt над нужными колонками.")
+            
         return df
     except Exception as e:
-        st.warning(f"Ошибка чтения файла {filename}. Убедись, что он лежит в папке со скриптом. \n\nСистемный лог: {e}")
+        st.warning(f"Критическая ошибка чтения: {e}")
         # Резервная мини-база, чтобы интерфейс не падал
         return pd.DataFrame({
             'Z': [6, 6, 7], 'N': [6, 8, 7], 
@@ -59,7 +74,7 @@ class SimurealityMacroCore:
 
 # --- ИНТЕРФЕЙС STREAMLIT ---
 st.title("Simureality OS: Ядерный Диспетчер Задач")
-st.markdown(r"Аналитический расчет $\Sigma K$ на базе ГЦК-матрицы без эмпирической подгонки.")
+st.markdown("Аналитический расчет ΣK на базе ГЦК-матрицы без эмпирической подгонки.")
 
 df_masses = load_local_masses("mass.txt")
 engine = SimurealityMacroCore()
@@ -78,16 +93,21 @@ col1.metric(label="Масса Simureality (ΣK)", value=f"{calc_mass:.3f} МэВ
 
 # 2. Поиск в mass.txt
 if (target_Z, target_N) in df_masses.index:
-    # Динамически берем колонку с массой (если она называется не Mass_MeV)
+    # Динамически берем колонку с массой
     col_name = 'Mass_MeV' if 'Mass_MeV' in df_masses.columns else df_masses.columns[-1]
     exp_mass = df_masses.loc[(target_Z, target_N), col_name]
     
-    # Защита от изомеров (если в базе несколько строк с одинаковыми Z и N, берем базовое состояние)
+    # Защита от изомеров
     if isinstance(exp_mass, pd.Series):
         exp_mass = exp_mass.iloc[0]
         
-    delta = calc_mass - exp_mass
-    col2.metric(label=f"Справочник ({col_name})", value=f"{exp_mass:.3f} МэВ", delta=f"{delta:.3f} МэВ (Погрешность)", delta_color="inverse")
+    try:
+        # Принудительная конвертация в число для безопасности
+        exp_mass = float(exp_mass)
+        delta = calc_mass - exp_mass
+        col2.metric(label=f"Справочник ({col_name})", value=f"{exp_mass:.3f} МэВ", delta=f"{delta:.3f} МэВ (Погрешность)", delta_color="inverse")
+    except ValueError:
+        col2.metric(label="Справочник", value="Ошибка формата (не число)")
 else:
     col2.metric(label="Справочник (Эксперимент)", value="Нет данных в mass.txt")
 
@@ -103,4 +123,4 @@ elif mass_beta_plus < calc_mass:
     profit = calc_mass - mass_beta_plus
     st.error(f"**FATAL DEBT.** Геометрия невыгодна. \n\n**Решение Диспетчера:** БЕТА-ПЛЮС РАСПАД (Z={target_Z-1}, N={target_N+1}). Выброс позитрона сэкономит **{profit:.3f} МэВ** тактов процессора.")
 else:
-    st.success(r"**[OK] Аппаратная сборка стабильна.** Выброс патчей математически невыгоден. $\Sigma K$ в глобальном минимуме.")
+    st.success("**[OK] Аппаратная сборка стабильна.** Выброс патчей математически невыгоден. ΣK в глобальном минимуме.")

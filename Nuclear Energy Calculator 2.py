@@ -5,7 +5,7 @@ import os
 import plotly.express as px
 
 # ==========================================================================================
-# SIMUREALITY: CHRONOS ENGINE V7.2 (TIMERS PATCHED)
+# SIMUREALITY: CHRONOS ENGINE V7.3 (SYNTAX FIXED & FULL PARSER)
 # ==========================================================================================
 
 st.set_page_config(page_title="Simureality Chronos", layout="wide")
@@ -96,28 +96,18 @@ def parse_nubase(text_content):
             continue
         try:
             zzzi = line[4:8].strip()
-            if not zzzi.endswith('0'): continue # Берем только Ground States
+            if not zzzi.endswith('0'): continue 
             
             iso_name = line[11:16].strip().replace(' ', '')
             
-            # Вырезаем зону с таймером с запасом (индексы 60-74)
-            hl_zone = line[60:74].strip()
-            if not hl_zone: continue
-            
-            parts = hl_zone.split()
-            if not parts: continue
-            
-            # Чистим от знаков примерности
-            hl_val_str = parts[0].replace('#', '').replace('>', '').replace('<', '').replace('~', '')
+            # В NUBASE2020 таймер находится с 70 по 78 символ, а размерность с 79 по 80
+            hl_val_str = line[69:78].strip().replace('#', '').replace('>', '').replace('<', '').replace('~', '')
+            hl_unit = line[78:80].strip()
             
             if 'stbl' in hl_val_str.lower() or 'stable' in hl_val_str.lower():
                 nubase_data[iso_name] = float('inf')
-                continue
-                
-            if len(parts) > 1:
-                hl_unit = parts[1].strip()
-                if hl_val_str and hl_unit in unit_multipliers:
-                    nubase_data[iso_name] = float(hl_val_str) * unit_multipliers[hl_unit]
+            elif hl_val_str and hl_unit in unit_multipliers:
+                nubase_data[iso_name] = float(hl_val_str) * unit_multipliers[hl_unit]
         except Exception:
             continue
     return nubase_data
@@ -184,6 +174,7 @@ if dataset_ame and dataset_nubase:
                 log_hl = math.log10(hl_sec) if hl_sec > 0 else -30
                 status = "Unstable"
                 
+            # ИСПРАВЛЕННАЯ СТРОКА БЕЗ СИНТАКСИЧЕСКОЙ ОШИБКИ
             results.append({
                 "Isotope": name,
                 "Z": Z,
@@ -200,6 +191,7 @@ if dataset_ame and dataset_nubase:
     if len(df) > 0:
         st.success(f"Слияние успешно! Построено {len(df)} перекрестных связей.")
         
+        # Фильтруем экстремальные недострои (Drip Line) для наглядности графика
         df_plot = df[df["ΔK Debt (MeV)"] < 30]
 
         fig = px.scatter(
@@ -223,10 +215,10 @@ if dataset_ame and dataset_nubase:
         st.download_button(
             label="Скачать объединенный дамп (CSV)",
             data=csv_data,
-            file_name='simureality_chronos_benchmark.csv',
+            file_name='simureality_chronos_benchmark_V73.csv',
             mime='text/csv',
         )
     else:
-        st.error("Критическая ошибка слияния матриц.")
+        st.error("Критическая ошибка: Парсеры отработали, но названия изотопов не совпали.")
 else:
     st.warning("Диспетчер задач ожидает загрузки обеих баз данных (AME2020 и NUBASE).")

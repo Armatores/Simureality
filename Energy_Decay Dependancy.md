@@ -26,30 +26,35 @@ However, the true discovery emerged not within the stable nuclei, but at the ext
 
 ### Simureality: The Geometric Determinism of Nuclear Decay and the Illusion of the Drip Line
 
-**Part 2. The Drip Line Illusion and Vacuum Runtime Exceptions**
+**Part 2. The Drip Line Illusion, Internal Processing Volume, and Vacuum Runtime Exceptions**
 
 Official nuclear physics utilizes the concept of the "Drip Line" to denote the boundary beyond which nuclei can no longer bind additional nucleons. Traditionally, the behavior of matter beyond this line is described through the probabilistic quantum decay of super-short-lived states. 
 
-Analysis through the lens of FCC architecture completely alters this picture. When the computational engine analyzed isotopes located beyond the Drip Line, the algorithm yielded deeply negative binding energy values. 
+However, to understand why the Drip Line exists, we must first resolve the fundamental misconception regarding nuclear mass and binding energy within the Standard Model.
 
-Let us examine this hardware paradox using Hydrogen-6 ($^6$H) as an example. In colliders, physicists record a resonance spike with an energy of $\approx 5.77$ MeV and classify it as a new, highly unstable isotope. However, a rigorous calculation of its geometric assembly on the FCC matrix outputs a strict mathematical prohibition: $\approx -30$ MeV.
+**2.1 Decompiling Rest Energy vs. Interface Link Energy**
+In standard quantum chromodynamics, the rest mass of a proton ($\approx 938.27$ MeV) is attributed mostly to the kinetic energy of its constituent quarks and the binding energy of gluons. In the Simureality ontology, this 938 MeV represents the **Internal Computational Volume** ($\Sigma K$). A proton is not a monolithic sphere; it is a complex, closed-loop dynamic process rendered on the 3D Face-Centered Cubic (FCC) lattice. The Task Dispatcher expends massive computational resources in every vacuum clock cycle just to maintain this internal architecture. This 938 MeV is "locked" internal processing power; it cannot be spent on external bonds without destroying the proton itself.
 
-**The Mechanics of Hardware Failure**
-In a discrete space, a base node (proton) possesses a strict geometric limit of routing ports. 
-The compilation of the nucleus begins nominally: attaching two neutrons forms a dense planar triangle (Tritium, $^3$H). The system creates 2 fully functional links, saving $\approx 4.72$ MeV of processing time. This is a stable, computationally profitable structure.
+Binding energy, therefore, does not come from a proton's internal reserve. It is an **external interface bonus**. 
+Think of a proton as a processor with a strict geometric limit of symmetric routing ports (docking faces) on the FCC matrix. When a neutron aligns perfectly with one of these ports, the vacuum no longer needs to render the boundary layer twice. A Shared Node is created. This optimization saves the system a fraction of processing time, equivalent to our baseline link energy ($E_{link} = 2.36$ MeV). 
 
-However, the attempt to integrate 4 additional neutrons into this exact same local coordinate leads to a fatal topological distortion. To close the bonds without available symmetric ports, the 3D lattice must undergo extreme tension. The linear and volumetric resistance of the vacuum (that very $\gamma_{sys}$ tax) at this moment vastly exceeds any potential processing gain from creating shared nodes. The complexity minimization algorithm ($\Sigma K \to \min$) encounters an infinite load spike.
+**2.2 The Hydrogen-6 Compilation Failure**
+When our computational engine analyzed isotopes located far beyond the Drip Line, the algorithm yielded deeply negative binding energy values. We can deconstruct this hardware paradox using Hydrogen-6 ($^6$H) as an example.
 
+The compilation of a hydrogen nucleus begins nominally: attaching two neutrons to the base proton forms a dense planar triangle (Tritium, $^3$H). The system utilizes the available symmetric routing ports, creates 2 fully functional links, and saves $\approx 4.72$ MeV of processing time. This is a stable, computationally highly profitable structure.
+
+However, a proton possesses a finite number of 3D topological slots. Attempting to force 4 additional neutrons into this exact same local coordinate leads to a hardware conflict. The available symmetric ports are exhausted. To force a connection, the 3D lattice must undergo extreme geometric tension. 
+
+At this point, the System Tax ($\gamma_{sys}$)—the vacuum's impedance fee for spatial distortion—spikes exponentially. For $^6$H, the tax for this deformed assembly exceeds 30 MeV. The complexity minimization algorithm ($\Sigma K \to \min$) detects that maintaining this monstrous topological node will consume vastly more resources than the interface links could ever save. 
+
+**2.3 The "Ping" Energy and Runtime Exceptions**
 What official science perceives as a "super-short-lived nucleus" is classified in the Simureality architecture as a **Runtime Exception**. 
 
-The assembly is aborted by the vacuum's Task Dispatcher before it can even be completed. The 5.77 MeV energy recorded by spectrometers is not the mass of a finished nucleus. By subtracting the mass of the stable Tritium core (4.72 MeV) from it, we are left with a remainder of $\approx 1.05$ MeV. Dividing this by the 4 "extra" neutrons, we see a yield of only $0.26$ MeV per particle (whereas the base cost of a valid link is 2.36 MeV). 
+The assembly of $^6$H is aborted by the vacuum's Task Dispatcher before compilation finishes. In colliders, physicists record a resonance spike of $\approx 5.77$ MeV and classify it as the mass of a new isotope. But by subtracting the mass of the stable Tritium core (4.72 MeV), we are left with a remainder of $\approx 1.05$ MeV. Divided among the 4 "extra" neutrons, this yields a mere $0.26$ MeV per particle—far below the 2.36 MeV required for a valid topological link.
 
-This is neither a chemical nor a nuclear bond. This is **ping energy**—a memory dump released in that microscopic clock cycle when the neutrons collided with the Tritium FCC matrix, requested a system resource, received a denial due to asymmetry overload, and were forcefully rejected by the system. Hydrogen-6 does not exist as a bound structure. 
+This 5.77 MeV is neither a chemical nor a nuclear bond. It is **ping energy**—a thermal memory dump released in the microscopic clock cycle when the neutrons collided with the Tritium FCC matrix, requested a system resource, received a denial due to port exhaustion and asymmetry overload, and were forcefully rejected. 
 
-Therefore, the negative calculated energy in our algorithm is not a formulaic error. It is a direct mathematical marker indicating that the compilation of this specific crystal is hardware-blocked at the source-code level of space.
-
-
-### Simureality: The Geometric Determinism of Nuclear Decay and the Illusion of the Drip Line
+Hydrogen-6 does not exist as a bound state. Therefore, the negative calculated energy in our algorithm is not a formulaic error; it is a direct mathematical marker that the compilation of this specific crystal is hardware-blocked at the source-code level of space.
 
 **Part 3. Topological Debt and the Statistical Proof of Deterministic Decay**
 

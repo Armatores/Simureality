@@ -61,7 +61,7 @@ class GridPhysicsEngine:
 
 def parse_ame2020(text_content):
     dataset = []
-    lines = text_content.splitlines() # Универсальный разделитель
+    lines = text_content.splitlines()
     for line in lines:
         if len(line) < 67 or line.startswith('1N-Z') or 'MASS EXCESS' in line or 'A T O M I C' in line:
             continue
@@ -96,7 +96,7 @@ def parse_nubase(text_content):
             continue
         try:
             zzzi = line[4:8].strip()
-            if not zzzi.endswith('0'): continue # Только Ground States (основные состояния)
+            if not zzzi.endswith('0'): continue 
             
             iso_name = line[11:16].strip().replace(' ', '')
             
@@ -115,9 +115,8 @@ def parse_nubase(text_content):
 # ИНТЕРФЕЙС
 # ==========================================================================================
 st.title("Simureality: Chronos Engine ⏳")
-st.markdown("**Валидация Времени Жизни.** Доказательство связи Топологического долга ГЦК ($\Delta K$) и распада (NUBASE2020).")
+st.markdown("**Валидация Времени Жизни.** Доказательство связи Топологического долга ГЦК (ΔK) и распада (NUBASE2020).")
 
-# Ищем файлы в любом регистре
 def find_file(possible_names):
     for name in possible_names:
         if os.path.exists(name): return name
@@ -132,24 +131,22 @@ engine = GridPhysicsEngine()
 
 col1, col2 = st.columns(2)
 
-# БЛОК ЗАГРУЗКИ AME2020
 with col1:
     if ame_path:
         with open(ame_path, "r", encoding="utf-8", errors="ignore") as f:
             dataset_ame = parse_ame2020(f.read())
-        st.success(f"✅ Массы загружены из гитхаба ({ame_path}). Найдено изотопов: {len(dataset_ame)}")
+        st.success(f"✅ Массы загружены ({ame_path}). Найдено изотопов: {len(dataset_ame)}")
     else:
         upl_ame = st.file_uploader("Загрузить mass.txt (AME2020)", type=["txt", "mas20"])
         if upl_ame:
             dataset_ame = parse_ame2020(upl_ame.getvalue().decode("utf-8", errors="ignore"))
             st.success(f"Найдено изотопов: {len(dataset_ame)}")
 
-# БЛОК ЗАГРУЗКИ NUBASE
 with col2:
     if nub_path:
         with open(nub_path, "r", encoding="utf-8", errors="ignore") as f:
             dataset_nubase = parse_nubase(f.read())
-        st.success(f"✅ Таймеры загружены из гитхаба ({nub_path}). Найдено таймеров: {len(dataset_nubase)}")
+        st.success(f"✅ Таймеры загружены ({nub_path}). Найдено таймеров: {len(dataset_nubase)}")
     else:
         upl_nubase = st.file_uploader("Загрузить NUBASE2020.txt", type=["txt"])
         if upl_nubase:
@@ -158,9 +155,8 @@ with col2:
 
 st.divider()
 
-# БЛОК РАСЧЕТОВ
 if dataset_ame and dataset_nubase:
-    st.info("Выполняю аппаратное слияние матриц (JOIN) и расчет $\Sigma K$...")
+    st.info("Выполняю аппаратное слияние матриц (JOIN) и расчет ΣK...")
     
     results = []
     for name, Z, A, real_be in dataset_ame:
@@ -168,11 +164,10 @@ if dataset_ame and dataset_nubase:
             hl_sec = dataset_nubase[name]
             sim_val = engine.calculate_energy(Z, A)
             
-            # Топологический долг (Абсолютная дельта)
             delta_k = abs(sim_val - real_be)
             
             if hl_sec == float('inf'):
-                log_hl = 30 # Условно-стабильный (бесконечность)
+                log_hl = 30 
                 status = "Stable"
             else:
                 log_hl = math.log10(hl_sec) if hl_sec > 0 else -30
@@ -183,4 +178,44 @@ if dataset_ame and dataset_nubase:
                 "Z": Z,
                 "A": A,
                 "ΔK Debt (MeV)": round(delta_k, 3),
-                "Log10(T_1/2)": round(log
+                "Log10(T_1/2)": round(log_hl, 3),
+                "Status": status,
+                "AME Exp (MeV)": round(real_be, 3),
+                "Simureality (MeV)": round(sim_val, 3)
+            })
+
+    df = pd.DataFrame(results)
+    
+    if len(df) > 0:
+        st.success(f"Слияние успешно! Построено {len(df)} перекрестных связей.")
+        
+        df_plot = df[df["ΔK Debt (MeV)"] < 30]
+
+        fig = px.scatter(
+            df_plot, 
+            x="ΔK Debt (MeV)", 
+            y="Log10(T_1/2)", 
+            color="Status",
+            hover_name="Isotope",
+            hover_data=["Z", "A", "AME Exp (MeV)", "Simureality (MeV)"],
+            title="Ось X: Топологический долг ГЦК-геометрии | Ось Y: Время до распада (Логарифм сек.)",
+            labels={"ΔK Debt (MeV)": "Топологический Долг ΔK (МэВ)", "Log10(T_1/2)": "Логарифм времени распада (Log10 Sec)"},
+            color_discrete_map={"Stable": "#00CC96", "Unstable": "#EF553B"}
+        )
+        
+        fig.update_layout(template="plotly_dark", height=600)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.dataframe(df, use_container_width=True)
+        
+        csv_data = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Скачать объединенный дамп (CSV)",
+            data=csv_data,
+            file_name='simureality_chronos_benchmark.csv',
+            mime='text/csv',
+        )
+    else:
+        st.error("Критическая ошибка: Парсеры отработали, но названия изотопов не совпали.")
+else:
+    st.warning("Диспетчер задач ожидает загрузки обеих баз данных (AME2020 и NUBASE).")

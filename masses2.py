@@ -115,13 +115,18 @@ st.markdown("Analytical calculation of ΣK (Mass) based on FCC-matrix without em
 with st.expander("📚 How it works: Ontology & Formulas"):
     st.markdown("""
     ### The Grid Physics Paradigm (Simureality)
-    In this framework, the nucleus is not a "liquid drop", but a deterministic spatial processor on a 3D Face-Centered Cubic (FCC) lattice. Mass is a measure of computational tax ($\Sigma K$).
+    In this framework, the nucleus is not a "liquid drop", but a deterministic spatial processor on a 3D Face-Centered Cubic (FCC) lattice. Mass is a measure of computational tax (ΣK).
+    
+    #### The Universal Compilation Formula
+    The final mass (ΣK) is calculated as the raw weight of unbound nucleons minus the structural profit, penalized by the dynamic noise of empty ports:
+    
+    **ΣK = (Z × MASS_P) + (N × MASS_N) - [ (N_alphas × E_ALPHA) + (N_macro × E_MACRO_LINK) + (N_halo × E_LINK) + E_PAIR - JITTER_TAX ]**
     
     #### Hardware Routing Constants:
-    * **$E_{link}$ (2.36 MeV):** The profit from a Shared Node between valence nucleons.
-    * **$E_{pair}$ (1.18 MeV):** The instancing bonus for spin symmetry (exactly 50% of the link cost).
-    * **$Jitter$ (0.0131 MeV):** The cost of an empty interface port on the lattice. Generates computational noise.
-    * **Alpha-Cache ($^4$He):** Pre-rendered macroscopic primitive (28.295 MeV) used by the system to prevent combinatorial explosion during compilation.
+    * **E_link (2.36 MeV):** The profit from a Shared Node between valence nucleons.
+    * **E_pair (1.18 MeV):** The instancing bonus for spin symmetry (exactly 50% of the link cost).
+    * **Jitter (0.0131 MeV):** The cost of an empty interface port on the lattice. Generates computational noise.
+    * **Alpha-Cache (4He):** Pre-rendered macroscopic primitive (28.295 MeV) used by the system to prevent combinatorial explosion during compilation.
     
     #### Beta Decay (Garbage Collection):
     Beta decay is an algorithmic code optimization. If the Topological Debt (geometric error) of the current assembly exceeds the hardware cost of compiling an electron patch (**0.511 MeV**), the Task Dispatcher ejects the patch to save processing time.

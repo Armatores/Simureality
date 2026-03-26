@@ -109,7 +109,11 @@ def generate_global_matrix(_engine, df_ame):
 
 # --- UI RENDERING ---
 st.title("Simureality OS: Nuclear Task Dispatcher")
-st.markdown("Analytical calculation of ΣK (Mass) based on FCC-matrix without empirical fitting.")
+st.markdown("""
+**Core Capabilities:**
+1. Analytical calculation of ΣK (Mass) based on the FCC-matrix without empirical fitting.
+2. Deterministic prediction of Beta Decay as a **Garbage Collection** transaction driven by Topological Debt.
+""")
 
 # --- THEORY & FORMULAS EXPANDER ---
 with st.expander("📚 How it works: Complete Formula & Variables"):

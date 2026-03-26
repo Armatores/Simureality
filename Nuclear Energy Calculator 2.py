@@ -5,7 +5,7 @@ import os
 import plotly.express as px
 
 # ==========================================================================================
-# SIMUREALITY: CHRONOS ENGINE V7.1 (BULLETPROOF EDITION)
+# SIMUREALITY: CHRONOS ENGINE V7.2 (TIMERS PATCHED)
 # ==========================================================================================
 
 st.set_page_config(page_title="Simureality Chronos", layout="wide")
@@ -96,17 +96,28 @@ def parse_nubase(text_content):
             continue
         try:
             zzzi = line[4:8].strip()
-            if not zzzi.endswith('0'): continue 
+            if not zzzi.endswith('0'): continue # Берем только Ground States
             
             iso_name = line[11:16].strip().replace(' ', '')
             
-            hl_val_str = line[60:69].strip().replace('#', '').replace('>', '').replace('<', '').replace('~', '')
-            hl_unit = line[69:72].strip()
+            # Вырезаем зону с таймером с запасом (индексы 60-74)
+            hl_zone = line[60:74].strip()
+            if not hl_zone: continue
             
-            if 'stbl' in hl_unit.lower() or 'infty' in hl_val_str.lower() or 'stable' in hl_val_str.lower():
+            parts = hl_zone.split()
+            if not parts: continue
+            
+            # Чистим от знаков примерности
+            hl_val_str = parts[0].replace('#', '').replace('>', '').replace('<', '').replace('~', '')
+            
+            if 'stbl' in hl_val_str.lower() or 'stable' in hl_val_str.lower():
                 nubase_data[iso_name] = float('inf')
-            elif hl_val_str and hl_unit in unit_multipliers:
-                nubase_data[iso_name] = float(hl_val_str) * unit_multipliers[hl_unit]
+                continue
+                
+            if len(parts) > 1:
+                hl_unit = parts[1].strip()
+                if hl_val_str and hl_unit in unit_multipliers:
+                    nubase_data[iso_name] = float(hl_val_str) * unit_multipliers[hl_unit]
         except Exception:
             continue
     return nubase_data
@@ -167,7 +178,7 @@ if dataset_ame and dataset_nubase:
             delta_k = abs(sim_val - real_be)
             
             if hl_sec == float('inf'):
-                log_hl = 30 
+                log_hl = 30 # Бесконечность для графика
                 status = "Stable"
             else:
                 log_hl = math.log10(hl_sec) if hl_sec > 0 else -30
@@ -216,6 +227,6 @@ if dataset_ame and dataset_nubase:
             mime='text/csv',
         )
     else:
-        st.error("Критическая ошибка: Парсеры отработали, но названия изотопов не совпали.")
+        st.error("Критическая ошибка слияния матриц.")
 else:
     st.warning("Диспетчер задач ожидает загрузки обеих баз данных (AME2020 и NUBASE).")

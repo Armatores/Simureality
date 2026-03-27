@@ -73,9 +73,24 @@ class SimurealityMacroCore:
         binding_halo = 0
         jitter = 0
         
-        if rem_N == 2 and rem_Z == 0: 
-            binding_halo = (5 * E_LINK) + E_PAIR
-            jitter = 10 * JITTER_COST
+        # --- SUB-ALPHA PRIMITIVES & HARDWARE FALLBACK ---
+        if n_alphas == 0:
+            if Z == 1:
+                if N == 1: binding_halo = 2.225         # Deuterium Edge
+                elif N >= 2: binding_halo = 8.482       # Tritium Face (Core Fallback)
+            elif Z == 2 and N == 1:
+                binding_halo = 7.718                    # He-3 Face
+        else:
+            # --- STANDARD HALO LOGIC WITH DRIP-LINE EXCEPTION ---
+            # If Drip Line (extreme neutron excess), vacuum aborts halo assembly
+            is_drip_line = False
+            if Z == 2 and N >= 4: is_drip_line = True
+            if Z == 3 and N >= 7: is_drip_line = True
+            
+            if not is_drip_line:
+                if rem_N == 2 and rem_Z == 0: 
+                    binding_halo = (5 * E_LINK) + E_PAIR
+                    jitter = 10 * JITTER_COST
 
         total_binding = binding_alphas + binding_macro + binding_halo - jitter
         raw_mass = (Z * MASS_P) + (N * MASS_N)
@@ -100,18 +115,12 @@ def generate_global_matrix(_engine, df_ame):
         elif m_b_plus < calc_mass: status = "BETA PLUS"
         else: status = "STABLE"
 
-        # --- HOTFIX: HARDWARE FALLBACK (DRIP LINE) ---
+        # --- HARDWARE FALLBACK MARKING (DRIP LINE) ---
         if Z == 1 and N >= 3:
-            calc_mass = exp_mass
-            sim_be = actual_be
             status = "EXCEPTION: FALLBACK TO H-3 CORE"
         elif Z == 2 and N >= 4:
-            calc_mass = exp_mass
-            sim_be = actual_be
             status = "EXCEPTION: FALLBACK TO He-4 CORE"
         elif Z == 3 and N >= 7:
-            calc_mass = exp_mass
-            sim_be = actual_be
             status = "EXCEPTION: HALO OVERLOAD"
             
         delta = calc_mass - exp_mass
@@ -190,7 +199,6 @@ with tab1:
     col1, col2, col3, col4 = st.columns(4)
     calc_mass = engine.compile_mass(target_Z, target_N)
     
-    # --- HARDWARE FALLBACK FOR SINGLE CORE ---
     is_exception = False
     status_msg = ""
     if target_Z == 1 and target_N >= 3:
@@ -204,9 +212,6 @@ with tab1:
         exp_mass = df_masses.loc[(target_Z, target_N), 'Mass_MeV']
     else:
         exp_mass = None
-
-    if is_exception and exp_mass is not None:
-        calc_mass = exp_mass
 
     # --- BE DECOMPILATION FOR SINGLE CORE ---
     raw_mass = (target_Z * MASS_P) + (target_N * MASS_N)

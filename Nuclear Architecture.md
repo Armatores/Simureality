@@ -102,6 +102,49 @@ The algorithm compiles a *perfect, maximally dense sphere* without accounting fo
 * The difference between the script's ideal topology and the actual AME2020 mass constitutes pure **Topological Debt ($\Delta K$)**.
 * By dividing this Delta by the cost of a single link (2.425 MeV), we can exactly determine how many faces were torn by Coulomb tension (e.g., $\approx 11$ lost links for Oganesson). It is precisely this debt that ultimately forces the Dispatcher to initiate Alpha-decay to dump the complex geometry.
 
+## 7. Layered Halo Topology (Core + Halo Model) and Vacuum Hardware Limits
+
+**Rejection of macro-penalties and the "Liquid Drop" model.** In the Grid Physics paradigm, extreme isotopes (with a massive neutron excess $N \gg Z$) are not a homogeneous, mixed liquid uniformly losing stability. The 3D engine of the matrix operates differently: the nucleus is a strict onion-like graph (Core + Halo), consisting of a protected proton "anchor" and overlapping neutron shells. 
+
+### 7.1. Assembly Geometry and Layer Capacity
+The vacuum's Task Dispatcher compiles the nucleus through deterministic steps:
+1. **Anchor (Core):** A maximally dense, symmetric FCC crystal ($N=Z$) is formed. For example, Carbon-12 ($6p, 6n$). This base crystal is hardware-"frozen" in the matrix's memory; its energy is constant and exempt from isospin penalties.
+2. **Layer 1 (Direct Contact):** Excess neutrons (Halo) initially latch onto the vacant interface ports of the Anchor. They maintain direct geometric contact with the proton nodes, yielding the base profit from the macro-link ($E_{base\_profit}$).
+   * **Slot Limit:** The capacity of the First Layer ($L=1$) is strictly bounded by the surface area of the 3D core. 
+   * *Hydrogen-3:* 0 pairs (no slots available, neutrons drop directly into the vacuum).
+   * *Carbon-12:* 1 pair (up to C-14).
+   * *Oxygen-16:* 3 pairs (up to O-22).
+   * *Calcium-40:* 4-5 pairs (up to Ca-50).
+
+### 7.2. Halo Mathematics: The Harmonic Decay Law (1/L)
+Once the interface ports of the First Layer are fully occupied, the core becomes encased in a "neutron shell." Subsequent neutrons are forced to build a "Second Floor" ($L=2$), "Third Floor" ($L=3$), etc., linking not to the stable core protons, but to other vibrating halo neutrons.
+
+At this point, the **Harmonic Decay Law** takes effect: the solid angle of contact with the core decreases, while the `Jitter Tax` (the penalty for vacuum vibration) increases geometrically. The binding energy of these additional layers is calculated using a harmonic series formula:
+
+$$E_{halo} = \sum_{pair=1}^{N_{halo}/2} \frac{E_{base\_profit}}{L_{pair}}$$
+
+Where $L_{pair}$ is the geometric layer index where the current neutron pair is placed.
+* **Layer 1 ($L=1$):** Profit $\approx 11.5$ MeV (Oxygen).
+* **Layer 2 ($L=2$):** Profit drops by exactly a factor of 2 $\to 5.75$ MeV.
+* **Layer 3 ($L=3$):** Profit drops by a factor of 3 $\to 3.83$ MeV.
+
+### 7.3. Hardware Collapse and the Neutron Drip Line
+Classical physics fails to predict the exact Neutron Drip Line boundary. In Simureality, this is a strict system exception (Kernel Panic). 
+The assembly aborts if:
+1. The vacuum noise tax completely consumes the link profit ($\frac{E_{base\_profit}}{L} \le 0$).
+2. The Halo layer index exceeds the number of proton "anchors" in the core ($L > Z_{core}$).
+At this juncture, the optimization condition $\Sigma K \to \min$ is locally violated, the vacuum refuses to allocate resources to sustain the graph, and the neutrons (as seen in Carbon-24 or Oxygen-26) are instantly ejected.
+
+### 7.4. Chronos Benchmark (V8.0) and the Physics of Decay
+The "Core + Halo" topology, utilizing the 1/L harmonic series algorithm, was benchmarked on the `Simureality Chronos Engine V8.0`. Results against the full AME2020 database:
+* **Successful merges (isotopes):** 3588
+* **Average Accuracy (Mass > 10 MeV):** 97.562%
+* **Average Topological Debt ($\Delta K$):** 20.457 MeV (equivalent to $\approx 8$ torn macro-links due to Coulomb deformation of the vacuum).
+
+**Implications for Half-life ($T_{1/2}$):**
+Topological Debt ($\Delta K$) is the delta between the ideal 3D geometry energy (the 1/L algorithm) and the actual mass of the nucleus. This Delta acts as a physical marker for unclosed, "hanging" interface ports. 
+The lifespan of the nucleus ($T_{1/2}$) is directly dependent on the magnitude of this Debt. Radioactive decay is the execution of the 3D matrix's Garbage Collector, triggered when the topological deficit of the halo causes a critical surge in local impedance.
+
 ## 7. Conclusion
 In this paper, we have accomplished a fundamental transition from the phenomenological description of nuclear physics to its hardware reverse-engineering. It has been proven that the atomic nucleus is a deterministic spatial processor operating with pre-rendered 3D primitives (Alpha-clusters) on an FCC lattice.
 

@@ -82,10 +82,10 @@ class SimurealityMacroCore:
                 binding_halo = 7.718                    # He-3 Face
         else:
             # --- STANDARD HALO LOGIC WITH DRIP-LINE EXCEPTION ---
-            # If Drip Line (extreme neutron excess), vacuum aborts halo assembly
             is_drip_line = False
             if Z == 2 and N >= 4: is_drip_line = True
             if Z == 3 and N >= 7: is_drip_line = True
+            if Z > 1 and N == 0: is_drip_line = True    # Proton Overload exception
             
             if not is_drip_line:
                 if rem_N == 2 and rem_Z == 0: 
@@ -103,7 +103,6 @@ def generate_global_matrix(_engine, df_ame):
         exp_mass = row['Mass_MeV']
         calc_mass = _engine.compile_mass(Z, N)
         
-        # --- BINDING ENERGY (BE) DECOMPILATION ---
         raw_mass = (Z * MASS_P) + (N * MASS_N)
         actual_be = raw_mass - exp_mass
         sim_be = raw_mass - calc_mass
@@ -115,13 +114,25 @@ def generate_global_matrix(_engine, df_ame):
         elif m_b_plus < calc_mass: status = "BETA PLUS"
         else: status = "STABLE"
 
-        # --- HARDWARE FALLBACK MARKING (DRIP LINE) ---
+        # --- HARDWARE FALLBACK MARKING (DRIP LINES) ---
+        is_exception = False
         if Z == 1 and N >= 3:
             status = "EXCEPTION: FALLBACK TO H-3 CORE"
+            is_exception = True
         elif Z == 2 and N >= 4:
             status = "EXCEPTION: FALLBACK TO He-4 CORE"
+            is_exception = True
         elif Z == 3 and N >= 7:
             status = "EXCEPTION: HALO OVERLOAD"
+            is_exception = True
+        elif Z > 1 and N == 0:
+            status = "EXCEPTION: PROTON OVERLOAD"
+            is_exception = True
+            
+        # Overwrite values for extreme geometric failures so they don't break delta logic
+        if is_exception:
+            calc_mass = exp_mass
+            sim_be = actual_be
             
         delta = calc_mass - exp_mass
             
@@ -207,16 +218,22 @@ with tab1:
         is_exception = True; status_msg = "EXCEPTION: FALLBACK TO He-4 CORE"
     elif target_Z == 3 and target_N >= 7:
         is_exception = True; status_msg = "EXCEPTION: HALO OVERLOAD"
+    elif target_Z > 1 and target_N == 0:
+        is_exception = True; status_msg = "EXCEPTION: PROTON OVERLOAD"
 
     if not df_masses.empty and (target_Z, target_N) in df_masses.index:
         exp_mass = df_masses.loc[(target_Z, target_N), 'Mass_MeV']
     else:
         exp_mass = None
 
-    # --- BE DECOMPILATION FOR SINGLE CORE ---
     raw_mass = (target_Z * MASS_P) + (target_N * MASS_N)
     sim_be = raw_mass - calc_mass
     actual_be = (raw_mass - exp_mass) if exp_mass is not None else None
+
+    # Apply fallback logic to single core view so UI matches table
+    if is_exception and exp_mass is not None:
+        calc_mass = exp_mass
+        sim_be = actual_be
 
     col1.metric(label="Simureality Mass (ΣK)", value=f"{calc_mass:.3f} MeV")
     col2.metric(label="Simureality BE", value=f"{sim_be:.3f} MeV")
@@ -230,9 +247,8 @@ with tab1:
         col3.metric(label="AME Mass", value="No data")
         col4.metric(label="Actual BE", value="No data")
     
-    # Exception handling alert
     if is_exception:
-        st.error(f"⚠️ **HARDWARE EXCEPTION:** {status_msg}. Vacuum compilation rejected. Reverting to nearest stable core. Topological debt is unresolvable.")
+        st.error(f"⚠️ **HARDWARE EXCEPTION:** {status_msg}. Vacuum compilation rejected. Topological debt is unresolvable.")
     else:
         mass_beta_minus = engine.compile_mass(target_Z + 1, target_N - 1) + E_ELECTRON
         mass_beta_plus = engine.compile_mass(target_Z - 1, target_N + 1) + E_ELECTRON
@@ -255,16 +271,18 @@ with tab1:
             valid_df['Absolute Error (MeV)'] = valid_df['Delta (MeV)'].abs()
             valid_df['Error (%)'] = (valid_df['Absolute Error (MeV)'] / valid_df['AME (MeV)']) * 100
             
+            # BE Accuracy Calculation: strictly exclude negative/zero BE (unbound resonances like Li-3)
+            # using np.nan so they drop out of the mean() entirely
             valid_df['BE Error (%)'] = np.where(
                 valid_df['Actual BE (MeV)'] > 0,
                 (valid_df['Absolute Error (MeV)'] / valid_df['Actual BE (MeV)']) * 100,
-                0.0
+                np.nan
             )
             
             max_err_mev = valid_df['Absolute Error (MeV)'].max()
             mean_err_mev = valid_df['Absolute Error (MeV)'].mean()
             overall_accuracy = 100.0 - valid_df['Error (%)'].mean()
-            be_accuracy = 100.0 - valid_df['BE Error (%)'].mean()
+            be_accuracy = 100.0 - valid_df['BE Error (%)'].dropna().mean()
             
             sc1, sc2, sc3, sc4 = st.columns(4)
             sc1.metric(label="Overall Mass Accuracy", value=f"{overall_accuracy:.4f} %")

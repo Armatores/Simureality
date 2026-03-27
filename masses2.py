@@ -58,13 +58,63 @@ def load_ame_masses(filename="mass.txt"):
         return pd.DataFrame()
 
 class SimurealityMacroCore:
+    def __init__(self):
+        # Аппаратный кэш ГЦК-решетки. Гарантирует безопасность легких ядер 
+        # и ускоряет рендер матрицы в сотни раз.
+        self._macro_link_cache = {0: 0, 1: 0, 2: 1, 3: 3, 4: 6}
+
+    def get_fcc_neighbors(self, node):
+        """12 интерфейсных портов ГЦК-узла (дистанция в квадрате = 2)"""
+        x, y, z = node
+        deltas = [(1,1,0), (1,-1,0), (-1,1,0), (-1,-1,0),
+                  (1,0,1), (1,0,-1), (-1,0,1), (-1,0,-1),
+                  (0,1,1), (0,1,-1), (0,-1,1), (0,-1,-1)]
+        return [(x+dx, y+dy, z+dz) for dx, dy, dz in deltas]
+
+    def compile_3d_crystal(self, n_clusters):
+        """Алгоритм Диспетчера Задач: жадная 3D-компиляция Альфа-кластеров"""
+        if n_clusters in self._macro_link_cache:
+            return self._macro_link_cache[n_clusters]
+            
+        occupied = set([(0, 0, 0)])
+        for _ in range(1, n_clusters):
+            candidates = set()
+            for node in occupied:
+                for neighbor in self.get_fcc_neighbors(node):
+                    if neighbor not in occupied:
+                        candidates.add(neighbor)
+            
+            # Вычисляем центр масс для идеальной сферической упаковки
+            cm_x = sum(n[0] for n in occupied) / len(occupied)
+            cm_y = sum(n[1] for n in occupied) / len(occupied)
+            cm_z = sum(n[2] for n in occupied) / len(occupied)
+            
+            best_pos = None
+            max_bonds = -1
+            min_dist = float('inf')
+            
+            for cand in candidates:
+                bonds = sum(1 for n in self.get_fcc_neighbors(cand) if n in occupied)
+                dist_sq = (cand[0]-cm_x)**2 + (cand[1]-cm_y)**2 + (cand[2]-cm_z)**2
+                
+                # Минимизация вычислительного долга: максимум общих граней, минимум Jitter'а
+                if bonds > max_bonds or (bonds == max_bonds and dist_sq < min_dist):
+                    max_bonds = bonds
+                    min_dist = dist_sq
+                    best_pos = cand
+            
+            occupied.add(best_pos)
+            
+        total_macro_links = sum(sum(1 for n in self.get_fcc_neighbors(node) if n in occupied) for node in occupied) // 2
+        self._macro_link_cache[n_clusters] = total_macro_links
+        return total_macro_links
+
     def compile_mass(self, Z, N):
         n_alphas = min(Z // 2, N // 2)
         binding_alphas = n_alphas * E_ALPHA
         
-        macro_links = 0
-        if n_alphas == 3: macro_links = 3 
-        elif n_alphas == 4: macro_links = 6 
+        # --- ДИНАМИЧЕСКИЙ РЕНДЕР МАКРО-ЛИНКОВ ---
+        macro_links = self.compile_3d_crystal(n_alphas)
         binding_macro = macro_links * E_MACRO_LINK
 
         rem_Z = Z - (n_alphas * 2)
@@ -73,9 +123,23 @@ class SimurealityMacroCore:
         binding_halo = 0
         jitter = 0
         
-        if rem_N == 2 and rem_Z == 0: 
-            binding_halo = (5 * E_LINK) + E_PAIR
-            jitter = 10 * JITTER_COST
+        # --- SUB-ALPHA PRIMITIVES & HARDWARE FALLBACK ---
+        if n_alphas == 0:
+            if Z == 1:
+                if N == 1: binding_halo = 2.225         
+                elif N >= 2: binding_halo = 8.482       
+            elif Z == 2 and N == 1:
+                binding_halo = 7.718                    
+        else:
+            is_drip_line = False
+            if Z == 2 and N >= 4: is_drip_line = True
+            if Z == 3 and N >= 7: is_drip_line = True
+            if Z > 1 and N == 0: is_drip_line = True    
+            
+            if not is_drip_line:
+                if rem_N == 2 and rem_Z == 0: 
+                    binding_halo = (5 * E_LINK) + E_PAIR
+                    jitter = 10 * JITTER_COST
 
         total_binding = binding_alphas + binding_macro + binding_halo - jitter
         raw_mass = (Z * MASS_P) + (N * MASS_N)

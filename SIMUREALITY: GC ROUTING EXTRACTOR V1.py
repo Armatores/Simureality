@@ -6,15 +6,15 @@ import plotly.express as px
 import os
 
 # ==========================================================================================
-# SIMUREALITY: GC ROUTING EXTRACTOR V1.0 (STREAMLIT EDITION)
-# Декомпиляция аппаратных констант радиоактивного распада
+# SIMUREALITY: GC ROUTING EXTRACTOR V2.0 (DUAL PROTOCOL)
+# Декомпиляция аппаратных констант с разделением на Software Patch и Hardware Dump
 # ==========================================================================================
 
-st.set_page_config(page_title="GC Routing Extractor", layout="wide")
-st.title("Simureality: Декомпилятор Сборщика Мусора 🗑️")
+st.set_page_config(page_title="GC Routing Extractor V2", layout="wide")
+st.title("Simureality: Декомпилятор Сборщика Мусора 🗑️ (Dual Protocol)")
 st.markdown("""
-Этот модуль доказывает, что распад — это не "квантовая случайность", а строгий сетевой алгоритм очистки памяти. 
-Мы извлекаем скрытые константы пропускной способности 3D-матрицы напрямую из базы AME2020/NUBASE.
+Доказательство двухуровневой обработки исключений в 3D-матрице.
+Мы разделяем потоки: **Аппаратный сброс (Альфа-распад, $Z > 82$)** и **Программный патч (Бета-распад, $Z \le 82$)**.
 """)
 
 @st.cache_data
@@ -27,96 +27,88 @@ def load_data():
 df = load_data()
 
 if df is None:
-    st.warning("Критическая ошибка: Файл `simureality_chronos_benchmark_V73.csv` не найден в корне. Загрузите его:")
-    uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
+    st.warning("Критическая ошибка: Файл `simureality_chronos_benchmark_V73.csv` не найден в корне.")
+    st.stop()
 
-if df is not None:
-    # --- 1. ОЧИСТКА И ПОДГОТОВКА ДАННЫХ ---
-    df_unstable = df[(df['Status'] == 'Unstable') & (df['Log10(T_1/2)'] > -25)].copy()
-    
-    # Считаем открытые порты (Parity Lock)
-    df_unstable['N'] = df_unstable['A'] - df_unstable['Z']
-    df_unstable['Unpaired_Ports'] = (df_unstable['Z'] % 2) + (df_unstable['N'] % 2)
-    
-    # Считаем мощность ошибки (корень из долга)
-    df_unstable['sqrt_dK'] = np.sqrt(np.maximum(df_unstable['ΔK Debt (MeV)'], 0.1))
-    
-    st.success(f"База данных подключена. Анализируется {len(df_unstable)} нестабильных изотопов.")
-    
-    # --- 2. МАШИННОЕ ОБУЧЕНИЕ (REVERSE ENGINEERING) ---
-    X = np.column_stack((df_unstable['Z'], df_unstable['sqrt_dK'], df_unstable['Unpaired_Ports']))
-    y = df_unstable['Log10(T_1/2)'].values
-    
+# --- 1. ОЧИСТКА И ПОДГОТОВКА ДАННЫХ ---
+df_unstable = df[(df['Status'] == 'Unstable') & (df['Log10(T_1/2)'] > -25)].copy()
+
+# Считаем открытые порты (Parity Lock) и мощность ошибки
+df_unstable['N'] = df_unstable['A'] - df_unstable['Z']
+df_unstable['Unpaired_Ports'] = (df_unstable['Z'] % 2) + (df_unstable['N'] % 2)
+df_unstable['sqrt_dK'] = np.sqrt(np.maximum(df_unstable['ΔK Debt (MeV)'], 0.1))
+
+# РАЗДЕЛЕНИЕ ПОТОКОВ (МАРШРУТИЗАЦИЯ)
+heavy = df_unstable[df_unstable['Z'] > 82].copy()  # Hardware Dump (Alpha)
+light = df_unstable[df_unstable['Z'] <= 82].copy() # Software Patch (Beta)
+
+# --- 2. ОБУЧЕНИЕ МОДЕЛЕЙ (scikit-learn) ---
+def fit_gc_model(data):
+    X = np.column_stack((data['Z'], data['sqrt_dK'], data['Unpaired_Ports']))
+    y = data['Log10(T_1/2)'].values
     reg = LinearRegression().fit(X, y)
-    r_squared = reg.score(X, y)
-    
-    # Получаем коэффициенты
-    t_base = reg.intercept_
-    z_imp = reg.coef_[0]
-    e_pow = reg.coef_[1]
-    p_lock = reg.coef_[2]
-    
-    # Добавляем предсказанное время в датафрейм для графика
-    df_unstable['Predicted_Log10(T)'] = reg.predict(X)
-    
-    st.header("1. Аппаратные константы Сборщика Мусора (GC Constants)")
-    st.markdown(f"**Точность декомпиляции (R²):** `{r_squared:.4f}`")
-    st.latex(r"\log_{10}(T_{1/2}) = T_{base} + Z_{imp} \cdot Z + E_{pow} \cdot \sqrt{\Delta K} + P_{lock} \cdot Unpaired")
-    
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("T_base (Базовый такт)", f"{t_base:+.3f}", "Базовый лимит сброса")
-    c2.metric("Z_imp (Сопротивление Z)", f"{z_imp:+.3f}", "Тормозит удаление (Packet Loss)")
-    c3.metric("E_pow (Тяжесть Ошибки)", f"{e_pow:+.3f}", "Ускоряет удаление", delta_color="inverse")
-    c4.metric("P_lock (Штраф Порта)", f"{p_lock:+.3f}", "Ускоряет удаление", delta_color="inverse")
-    
-    st.divider()
+    r2 = reg.score(X, y)
+    data['Predicted_Log10(T)'] = reg.predict(X)
+    return reg, r2
 
-    # --- 3. ГРАФИК ПРЕДСКАЗАНИЙ ---
-    st.header("2. Визуализация Уравнения Маршрутизации")
-    st.markdown("Сравнение реального времени жизни из базы NUBASE с расчетным временем по нашей выведенной аппаратной формуле.")
+reg_heavy, r2_heavy = fit_gc_model(heavy)
+reg_light, r2_light = fit_gc_model(light)
+
+# --- 3. ИНТЕРФЕЙС АНАЛИЗА ---
+st.header("1. Декомпиляция констант по протоколам")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("🛠️ Hardware Dump (Альфа-распад)")
+    st.markdown("Тяжелые ядра ($Z > 82$). Отрыв целого Альфа-тетраэдра. Критически важен Импеданс Сети ($Z$).")
+    st.metric("Точность (R²)", f"{r2_heavy:.4f}")
     
-    fig = px.scatter(
-        df_unstable, 
-        x="Predicted_Log10(T)", 
-        y="Log10(T_1/2)", 
-        color="Unpaired_Ports",
-        hover_name="Isotope",
-        hover_data=["Z", "A", "ΔK Debt (MeV)"],
-        labels={
-            "Predicted_Log10(T)": "Расчетное время (Simureality GC Equation)", 
-            "Log10(T_1/2)": "Реальное время распада (AME2020)"
-        },
-        title="Корреляция: Аппаратный Алгоритм vs Реальность",
-        template="plotly_dark",
-        color_continuous_scale="Viridis"
+    st.code(f"""
+T_base (Базовый такт) : {reg_heavy.intercept_:.3f}
+Z_imp  (Сопротивление): {reg_heavy.coef_[0]:.3f}  <-- ПРОБКА
+E_pow  (Сила сброса)  : {reg_heavy.coef_[1]:.3f}
+P_lock (Штраф порта)  : {reg_heavy.coef_[2]:.3f}
+    """)
+
+with col2:
+    st.subheader("💻 Software Patch (Бета-распад)")
+    st.markdown("Легкие/Средние ($Z \le 82$). Локальная перепрошивка узла (n ↔ p). Импеданс сети не мешает.")
+    st.metric("Точность (R²)", f"{r2_light:.4f}")
+    
+    st.code(f"""
+T_base (Базовый такт) : {reg_light.intercept_:.3f}
+Z_imp  (Сопротивление): {reg_light.coef_[0]:.3f}  <-- ПОЧТИ НЕТ ПРОБКИ
+E_pow  (Сила сброса)  : {reg_light.coef_[1]:.3f}
+P_lock (Штраф порта)  : {reg_light.coef_[2]:.3f}
+    """)
+
+st.divider()
+
+# --- 4. ВИЗУАЛИЗАЦИЯ ДВУХ ПОТОКОВ ---
+st.header("2. Визуализация очищенных потоков маршрутизации")
+st.markdown("Теперь, когда мы не заставляем вакуум считать программные патчи по формулам аппаратного сброса, облако точек вытягивается в предсказуемые диагонали.")
+
+tab1, tab2 = st.tabs(["Аппаратный Сброс (Тяжелые)", "Программный Патч (Легкие/Средние)"])
+
+with tab1:
+    fig_h = px.scatter(
+        heavy, x="Predicted_Log10(T)", y="Log10(T_1/2)", color="Unpaired_Ports",
+        hover_name="Isotope", hover_data=["Z", "A", "ΔK Debt (MeV)"],
+        labels={"Predicted_Log10(T)": "Расчет (Hardware Dump)", "Log10(T_1/2)": "AME2020"},
+        title="Hardware Dump: Удаление Альфа-ошибок через забитую шину Z",
+        template="plotly_dark", color_continuous_scale="Reds"
     )
-    # Добавляем идеальную диагональ
-    fig.add_shape(type="line", line=dict(dash='dash', color='white'), x0=-25, y0=-25, x1=30, y1=30)
-    st.plotly_chart(fig, use_container_width=True)
+    fig_h.add_shape(type="line", line=dict(dash='dash', color='white'), x0=-15, y0=-15, x1=25, y1=25)
+    st.plotly_chart(fig_h, use_container_width=True)
 
-    st.divider()
-
-    # --- 4. РАЗРЕШЕНИЕ ПАРАДОКСА 5 MeV ---
-    st.header("3. Декомпиляция Парадокса: Одинаковый Долг, Разная Судьба")
-    st.markdown("Почему легкое и тяжелое ядро с одинаковым дефицитом в ~5 МэВ живут с разницей в миллиарды раз? **Ответ: Импеданс $Z$ (Забитая шина данных).**")
-    
-    col_light, col_heavy = st.columns(2)
-    
-    light = df_unstable[(df_unstable['Z'] < 20) & (df_unstable['ΔK Debt (MeV)'].between(5.0, 5.6))].head(1)
-    heavy = df_unstable[(df_unstable['Z'] > 80) & (df_unstable['ΔK Debt (MeV)'].between(5.0, 5.6))].head(1)
-    
-    with col_light:
-        if not light.empty:
-            row = light.iloc[0]
-            st.subheader("Свободный Канал (Легкое ядро)")
-            st.info(f"**Изотоп:** {row['Isotope']}\n\n**Протонов (Z):** {row['Z']}\n\n**Топологический Долг:** {row['ΔK Debt (MeV)']:.2f} MeV\n\n**Время распада:** $10^{{{row['Log10(T_1/2)']:.2f}}}$ секунд")
-            st.markdown("*Сборщику мусора ничто не мешает. Ошибка в 5 МэВ удаляется мгновенно через пустую сеть.*")
-            
-    with col_heavy:
-        if not heavy.empty:
-            row = heavy.iloc[0]
-            st.subheader("Забитый Канал (Тяжелое ядро)")
-            st.error(f"**Изотоп:** {row['Isotope']}\n\n**Протонов (Z):** {row['Z']}\n\n**Топологический Долг:** {row['ΔK Debt (MeV)']:.2f} MeV\n\n**Время распада:** $10^{{{row['Log10(T_1/2)']:.2f}}}$ секунд")
-            st.markdown("*Плотная решетка из 80+ протонов создает колоссальный кулоновский импеданс. Удаление ошибки в 5 МэВ требует миллионов тактов ожидания.*")
+with tab2:
+    fig_l = px.scatter(
+        light, x="Predicted_Log10(T)", y="Log10(T_1/2)", color="Unpaired_Ports",
+        hover_name="Isotope", hover_data=["Z", "A", "ΔK Debt (MeV)"],
+        labels={"Predicted_Log10(T)": "Расчет (Software Patch)", "Log10(T_1/2)": "AME2020"},
+        title="Software Patch: Перепрошивка изоспина без сильного влияния Z",
+        template="plotly_dark", color_continuous_scale="Blues"
+    )
+    fig_l.add_shape(type="line", line=dict(dash='dash', color='white'), x0=-25, y0=-25, x1=25, y1=25)
+    st.plotly_chart(fig_l, use_container_width=True)

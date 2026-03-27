@@ -6,7 +6,7 @@ import numpy as np
 MASS_P = 938.272
 MASS_N = 939.565
 E_ELECTRON = 0.511
-E_ALPHA = 28.32       
+E_ALPHA = 28.295       
 E_MACRO_LINK = 2.425   
 E_LINK = 2.36          
 E_PAIR = 1.18          

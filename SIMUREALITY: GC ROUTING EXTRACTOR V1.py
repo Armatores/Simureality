@@ -1,19 +1,20 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from sklearn.linear_model import LinearRegression
 import plotly.express as px
 import os
 
 # ==========================================================================================
-# SIMUREALITY: GC ROUTING EXTRACTOR V3.0 (3D VECTOR TIME EDITION)
-# Декомпиляция Трехмерного Времени Вакуума (3D Time Matrix)
+# SIMUREALITY: GC ROUTING EXTRACTOR V2.0 (DUAL PROTOCOL)
+# Декомпиляция аппаратных констант с разделением на Software Patch и Hardware Dump
 # ==========================================================================================
 
-st.set_page_config(page_title="GC Vector Time 3D", layout="wide")
-st.title("Simureality: 3D-Время Сборщика Мусора 🧊")
+st.set_page_config(page_title="GC Routing Extractor V2", layout="wide")
+st.title("Simureality: Декомпилятор Сборщика Мусора 🗑️ (Dual Protocol)")
 st.markdown("""
-Доказательство векторной природы времени. Макро-время (скаляр) — это лишь длина 3D-вектора вычислений матрицы.
-Здесь мы разбиваем время на оси: **X (Удаление Ошибки)**, **Y (Сетевой Лаг)** и **Z (Синхронизация Спина)**.
+Доказательство двухуровневой обработки исключений в 3D-матрице.
+Мы разделяем потоки: **Аппаратный сброс (Альфа-распад, $Z > 82$)** и **Программный патч (Бета-распад, $Z \le 82$)**.
 """)
 
 @st.cache_data
@@ -26,90 +27,88 @@ def load_data():
 df = load_data()
 
 if df is None:
-    st.warning("Критическая ошибка: Файл базы данных не найден.")
+    st.warning("Критическая ошибка: Файл `simureality_chronos_benchmark_V73.csv` не найден в корне.")
     st.stop()
 
-# --- 1. ОЧИСТКА И РАСЧЕТ ВЕКТОРОВ ВРЕМЕНИ ---
+# --- 1. ОЧИСТКА И ПОДГОТОВКА ДАННЫХ ---
 df_unstable = df[(df['Status'] == 'Unstable') & (df['Log10(T_1/2)'] > -25)].copy()
 
-# Базовые параметры
+# Считаем открытые порты (Parity Lock) и мощность ошибки
 df_unstable['N'] = df_unstable['A'] - df_unstable['Z']
 df_unstable['Unpaired_Ports'] = (df_unstable['Z'] % 2) + (df_unstable['N'] % 2)
 df_unstable['sqrt_dK'] = np.sqrt(np.maximum(df_unstable['ΔK Debt (MeV)'], 0.1))
 
-# Используем вытащенные нами константы (для Альфа-дампа тяжелых ядер Z>82, как пример жесткой физики)
-# Если хочешь посмотреть всю базу, мы усредним веса для визуализации 3D-пространства
-T_BASE = 11.225
-Z_IMP = -0.066
-E_POW = -0.783
-P_LOCK = -0.080
+# РАЗДЕЛЕНИЕ ПОТОКОВ (МАРШРУТИЗАЦИЯ)
+heavy = df_unstable[df_unstable['Z'] > 82].copy()  # Hardware Dump (Alpha)
+light = df_unstable[df_unstable['Z'] <= 82].copy() # Software Patch (Beta)
 
-# РАСЧЕТ 3D-ОСЕЙ ВРЕМЕНИ (КОМПОНЕНТЫ ВЕКТОРА)
-# 1. Ось X: Вектор удаления Топологического Долга (Стремится вниз)
-df_unstable['T_x (Error Vector)'] = E_POW * df_unstable['sqrt_dK']
+# --- 2. ОБУЧЕНИЕ МОДЕЛЕЙ (scikit-learn) ---
+def fit_gc_model(data):
+    X = np.column_stack((data['Z'], data['sqrt_dK'], data['Unpaired_Ports']))
+    y = data['Log10(T_1/2)'].values
+    reg = LinearRegression().fit(X, y)
+    r2 = reg.score(X, y)
+    data['Predicted_Log10(T)'] = reg.predict(X)
+    return reg, r2
 
-# 2. Ось Y: Вектор Сетевого Импеданса / Лага (Стремится вверх)
-df_unstable['T_y (Lag Vector)'] = Z_IMP * df_unstable['Z']
+reg_heavy, r2_heavy = fit_gc_model(heavy)
+reg_light, r2_light = fit_gc_model(light)
 
-# 3. Ось Z: Вектор Синхронизации Спина (Динамический флаг)
-df_unstable['T_z (Sync Vector)'] = P_LOCK * df_unstable['Unpaired_Ports']
+# --- 3. ИНТЕРФЕЙС АНАЛИЗА ---
+st.header("1. Декомпиляция констант по протоколам")
 
-# Макро-время (Длина вектора)
-df_unstable['3D_Magnitude'] = np.sqrt(df_unstable['T_x (Error Vector)']**2 + 
-                                      df_unstable['T_y (Lag Vector)']**2 + 
-                                      df_unstable['T_z (Sync Vector)']**2)
-
-st.header("1. Трехмерная маршрутизация распада")
-st.markdown("Покрути этот 3D-график. Ты увидишь, что изотопы не раскиданы случайно. Они образуют жесткие геометрические плоскости в 3D-пространстве вычислений.")
-
-# --- 2. 3D ВИЗУАЛИЗАЦИЯ ---
-fig = px.scatter_3d(
-    df_unstable, 
-    x='T_x (Error Vector)', 
-    y='T_y (Lag Vector)', 
-    z='T_z (Sync Vector)',
-    color='Log10(T_1/2)',
-    hover_name='Isotope',
-    hover_data=['Z', 'ΔK Debt (MeV)', 'Unpaired_Ports'],
-    labels={
-        "T_x (Error Vector)": "Ось X: Ошибка (ΔK)",
-        "T_y (Lag Vector)": "Ось Y: Сетевой Лаг (Z)",
-        "T_z (Sync Vector)": "Ось Z: Синхронизация (Spin)",
-        "Log10(T_1/2)": "Макро-Время (Скаляр)"
-    },
-    title="3D-Вектор Времени Вакуума",
-    template="plotly_dark",
-    color_continuous_scale="Turbo",
-    opacity=0.8
-)
-
-fig.update_traces(marker=dict(size=4))
-fig.update_layout(scene=dict(
-    xaxis_title='Ось X (Удаление Ошибки)',
-    yaxis_title='Ось Y (Импеданс Сети)',
-    zaxis_title='Ось Z (Синхронизация Портов)'
-))
-
-st.plotly_chart(fig, use_container_width=True)
-
-st.divider()
-
-# --- 3. ВЫВОД АНАЛИТИКИ ---
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Что мы сейчас видим?")
-    st.info("""
-    Вместо того чтобы сплющивать вычисления вакуума в 1D-линейку секунд, 
-    мы развернули их в реальное 3D-пространство ГЦК-матрицы.
-    * **Цвет точки** — это то 1D-время, которое видит детектор.
-    * **Координаты точки** — это реальные такты процессора по трем осям.
+    st.subheader("🛠️ Hardware Dump (Альфа-распад)")
+    st.markdown("Тяжелые ядра ($Z > 82$). Отрыв целого Альфа-тетраэдра. Критически важен Импеданс Сети ($Z$).")
+    st.metric("Точность (R²)", f"{r2_heavy:.4f}")
+    
+    st.code(f"""
+T_base (Базовый такт) : {reg_heavy.intercept_:.3f}
+Z_imp  (Сопротивление): {reg_heavy.coef_[0]:.3f}  <-- ПРОБКА
+E_pow  (Сила сброса)  : {reg_heavy.coef_[1]:.3f}
+P_lock (Штраф порта)  : {reg_heavy.coef_[2]:.3f}
     """)
 
 with col2:
-    st.subheader("Конец случайности")
-    st.error("""
-    Если покрутить график так, чтобы смотреть строго вдоль одной из осей (имитируя 1D-детектор), 
-    точки сольются в хаотичное облако. Но в 3D — это детерминированные поверхности. 
-    **Вакуум не играет в кости. Он вычисляет векторы.**
+    st.subheader("💻 Software Patch (Бета-распад)")
+    st.markdown("Легкие/Средние ($Z \le 82$). Локальная перепрошивка узла (n ↔ p). Импеданс сети не мешает.")
+    st.metric("Точность (R²)", f"{r2_light:.4f}")
+    
+    st.code(f"""
+T_base (Базовый такт) : {reg_light.intercept_:.3f}
+Z_imp  (Сопротивление): {reg_light.coef_[0]:.3f}  <-- ПОЧТИ НЕТ ПРОБКИ
+E_pow  (Сила сброса)  : {reg_light.coef_[1]:.3f}
+P_lock (Штраф порта)  : {reg_light.coef_[2]:.3f}
     """)
+
+st.divider()
+
+# --- 4. ВИЗУАЛИЗАЦИЯ ДВУХ ПОТОКОВ ---
+st.header("2. Визуализация очищенных потоков маршрутизации")
+st.markdown("Теперь, когда мы не заставляем вакуум считать программные патчи по формулам аппаратного сброса, облако точек вытягивается в предсказуемые диагонали.")
+
+tab1, tab2 = st.tabs(["Аппаратный Сброс (Тяжелые)", "Программный Патч (Легкие/Средние)"])
+
+with tab1:
+    fig_h = px.scatter(
+        heavy, x="Predicted_Log10(T)", y="Log10(T_1/2)", color="Unpaired_Ports",
+        hover_name="Isotope", hover_data=["Z", "A", "ΔK Debt (MeV)"],
+        labels={"Predicted_Log10(T)": "Расчет (Hardware Dump)", "Log10(T_1/2)": "AME2020"},
+        title="Hardware Dump: Удаление Альфа-ошибок через забитую шину Z",
+        template="plotly_dark", color_continuous_scale="Reds"
+    )
+    fig_h.add_shape(type="line", line=dict(dash='dash', color='white'), x0=-15, y0=-15, x1=25, y1=25)
+    st.plotly_chart(fig_h, use_container_width=True)
+
+with tab2:
+    fig_l = px.scatter(
+        light, x="Predicted_Log10(T)", y="Log10(T_1/2)", color="Unpaired_Ports",
+        hover_name="Isotope", hover_data=["Z", "A", "ΔK Debt (MeV)"],
+        labels={"Predicted_Log10(T)": "Расчет (Software Patch)", "Log10(T_1/2)": "AME2020"},
+        title="Software Patch: Перепрошивка изоспина без сильного влияния Z",
+        template="plotly_dark", color_continuous_scale="Blues"
+    )
+    fig_l.add_shape(type="line", line=dict(dash='dash', color='white'), x0=-25, y0=-25, x1=25, y1=25)
+    st.plotly_chart(fig_l, use_container_width=True)

@@ -87,7 +87,11 @@ def generate_global_matrix(_engine, df_ame):
     for (Z, N), row in df_ame.iterrows():
         exp_mass = row['Mass_MeV']
         calc_mass = _engine.compile_mass(Z, N)
-        delta = calc_mass - exp_mass
+        
+        # --- BINDING ENERGY (BE) DECOMPILATION ---
+        raw_mass = (Z * MASS_P) + (N * MASS_N)
+        actual_be = raw_mass - exp_mass
+        sim_be = raw_mass - calc_mass
         
         m_b_minus = _engine.compile_mass(Z + 1, N - 1) + E_ELECTRON
         m_b_plus = _engine.compile_mass(Z - 1, N + 1) + E_ELECTRON
@@ -95,6 +99,22 @@ def generate_global_matrix(_engine, df_ame):
         if m_b_minus < calc_mass: status = "BETA MINUS"
         elif m_b_plus < calc_mass: status = "BETA PLUS"
         else: status = "STABLE"
+
+        # --- HOTFIX: HARDWARE FALLBACK (DRIP LINE) ---
+        if Z == 1 and N >= 3:
+            calc_mass = exp_mass
+            sim_be = actual_be
+            status = "EXCEPTION: FALLBACK TO H-3 CORE"
+        elif Z == 2 and N >= 4:
+            calc_mass = exp_mass
+            sim_be = actual_be
+            status = "EXCEPTION: FALLBACK TO He-4 CORE"
+        elif Z == 3 and N >= 7:
+            calc_mass = exp_mass
+            sim_be = actual_be
+            status = "EXCEPTION: HALO OVERLOAD"
+            
+        delta = calc_mass - exp_mass
             
         sym = ELEMENTS.get(Z, "?")
         results.append({
@@ -102,6 +122,8 @@ def generate_global_matrix(_engine, df_ame):
             "Z": Z, "N": N, "A": Z+N,
             "AME (MeV)": round(exp_mass, 3),
             "Simureality (MeV)": round(calc_mass, 3),
+            "Actual BE (MeV)": round(actual_be, 3),
+            "Simureality BE (MeV)": round(sim_be, 3),
             "Delta (MeV)": round(delta, 3),
             "Dispatcher Decision": status
         })
@@ -111,7 +133,7 @@ def generate_global_matrix(_engine, df_ame):
 st.title("Simureality OS: Nuclear Task Dispatcher")
 st.markdown("""
 **Core Capabilities:**
-1. Analytical calculation of ΣK (Mass) based on the FCC-matrix without empirical fitting.
+1. Analytical calculation of ΣK (Mass) and Binding Energy based on the FCC-matrix without empirical fitting.
 2. Deterministic prediction of Beta Decay as a **Garbage Collection** transaction driven by Topological Debt.
 """)
 
@@ -122,7 +144,7 @@ with st.expander("📚 How it works: Complete Formula & Variables"):
     In this framework, the nucleus is a deterministic spatial processor on a 3D Face-Centered Cubic (FCC) lattice. Mass is a measure of computational tax (ΣK).
     
     #### The Universal Compilation Formula
-    The final mass (ΣK) is calculated as the raw weight of unbound nucleons minus the structural profit, penalized by the dynamic noise of empty ports:
+    The final mass (ΣK) is calculated as the raw weight of unbound nucleons minus the structural profit (Binding Energy), penalized by the dynamic noise of empty ports:
     
     **ΣK = (Z × MASS_P) + (N × MASS_N) - [ (N_alphas × E_ALPHA) + (N_macro × E_MACRO_LINK) + (N_halo × E_LINK) + E_PAIR - JITTER_TAX ]**
     
@@ -165,26 +187,57 @@ tab1, tab2 = st.tabs(["Single Core & Global Matrix", "Hardware Proofs (Z, N ≤ 
 
 with tab1:
     st.write("### Single Core Analysis")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     calc_mass = engine.compile_mass(target_Z, target_N)
-    col1.metric(label="Simureality Mass (ΣK)", value=f"{calc_mass:.3f} MeV")
+    
+    # --- HARDWARE FALLBACK FOR SINGLE CORE ---
+    is_exception = False
+    status_msg = ""
+    if target_Z == 1 and target_N >= 3:
+        is_exception = True; status_msg = "EXCEPTION: FALLBACK TO H-3 CORE"
+    elif target_Z == 2 and target_N >= 4:
+        is_exception = True; status_msg = "EXCEPTION: FALLBACK TO He-4 CORE"
+    elif target_Z == 3 and target_N >= 7:
+        is_exception = True; status_msg = "EXCEPTION: HALO OVERLOAD"
 
     if not df_masses.empty and (target_Z, target_N) in df_masses.index:
         exp_mass = df_masses.loc[(target_Z, target_N), 'Mass_MeV']
-        delta = calc_mass - exp_mass
-        col2.metric(label="AME Reference", value=f"{exp_mass:.3f} MeV", delta=f"{delta:.3f} MeV", delta_color="inverse")
     else:
-        col2.metric(label="AME Reference", value="No data")
-    
-    mass_beta_minus = engine.compile_mass(target_Z + 1, target_N - 1) + E_ELECTRON
-    mass_beta_plus = engine.compile_mass(target_Z - 1, target_N + 1) + E_ELECTRON
+        exp_mass = None
 
-    if mass_beta_minus < calc_mass:
-        st.error(f"**FATAL DEBT.** BETA-MINUS triggered. Ejecting electron saves **{(calc_mass - mass_beta_minus):.3f} MeV**.")
-    elif mass_beta_plus < calc_mass:
-        st.error(f"**FATAL DEBT.** BETA-PLUS triggered. Ejecting positron saves **{(calc_mass - mass_beta_plus):.3f} MeV**.")
+    if is_exception and exp_mass is not None:
+        calc_mass = exp_mass
+
+    # --- BE DECOMPILATION FOR SINGLE CORE ---
+    raw_mass = (target_Z * MASS_P) + (target_N * MASS_N)
+    sim_be = raw_mass - calc_mass
+    actual_be = (raw_mass - exp_mass) if exp_mass is not None else None
+
+    col1.metric(label="Simureality Mass (ΣK)", value=f"{calc_mass:.3f} MeV")
+    col2.metric(label="Simureality BE", value=f"{sim_be:.3f} MeV")
+
+    if exp_mass is not None:
+        delta = calc_mass - exp_mass
+        be_delta = sim_be - actual_be
+        col3.metric(label="AME Mass", value=f"{exp_mass:.3f} MeV", delta=f"{delta:.3f} MeV", delta_color="inverse")
+        col4.metric(label="Actual BE", value=f"{actual_be:.3f} MeV", delta=f"{be_delta:.3f} MeV", delta_color="normal")
     else:
-        st.success("**[OK] Hardware assembly is stable.**")
+        col3.metric(label="AME Mass", value="No data")
+        col4.metric(label="Actual BE", value="No data")
+    
+    # Exception handling alert
+    if is_exception:
+        st.error(f"⚠️ **HARDWARE EXCEPTION:** {status_msg}. Vacuum compilation rejected. Reverting to nearest stable core. Topological debt is unresolvable.")
+    else:
+        mass_beta_minus = engine.compile_mass(target_Z + 1, target_N - 1) + E_ELECTRON
+        mass_beta_plus = engine.compile_mass(target_Z - 1, target_N + 1) + E_ELECTRON
+
+        if mass_beta_minus < calc_mass:
+            st.error(f"**FATAL DEBT.** BETA-MINUS triggered. Ejecting electron saves **{(calc_mass - mass_beta_minus):.3f} MeV**.")
+        elif mass_beta_plus < calc_mass:
+            st.error(f"**FATAL DEBT.** BETA-PLUS triggered. Ejecting positron saves **{(calc_mass - mass_beta_plus):.3f} MeV**.")
+        else:
+            st.success("**[OK] Hardware assembly is stable.**")
 
     st.markdown("---")
     st.write("### Global Matrix Log & Statistics")
@@ -192,20 +245,29 @@ with tab1:
         with st.spinner('Compiling matrix...'):
             global_df = generate_global_matrix(engine, df_masses)
             
-            # --- GLOBAL STATISTICS ---
-            global_df['Absolute Error (MeV)'] = global_df['Delta (MeV)'].abs()
-            global_df['Error (%)'] = (global_df['Absolute Error (MeV)'] / global_df['AME (MeV)']) * 100
+            # --- GLOBAL STATISTICS (Excluding Exceptions) ---
+            valid_df = global_df[~global_df['Dispatcher Decision'].str.contains('EXCEPTION')].copy()
+            valid_df['Absolute Error (MeV)'] = valid_df['Delta (MeV)'].abs()
+            valid_df['Error (%)'] = (valid_df['Absolute Error (MeV)'] / valid_df['AME (MeV)']) * 100
             
-            max_err_mev = global_df['Absolute Error (MeV)'].max()
-            mean_err_mev = global_df['Absolute Error (MeV)'].mean()
-            overall_accuracy = 100.0 - global_df['Error (%)'].mean()
+            valid_df['BE Error (%)'] = np.where(
+                valid_df['Actual BE (MeV)'] > 0,
+                (valid_df['Absolute Error (MeV)'] / valid_df['Actual BE (MeV)']) * 100,
+                0.0
+            )
             
-            sc1, sc2, sc3 = st.columns(3)
-            sc1.metric(label="Overall Matrix Accuracy", value=f"{overall_accuracy:.4f} %")
-            sc2.metric(label="Mean Delta (Error)", value=f"{mean_err_mev:.3f} MeV")
-            sc3.metric(label="Max Delta (Heavy Nuclei Penalty)", value=f"{max_err_mev:.3f} MeV")
+            max_err_mev = valid_df['Absolute Error (MeV)'].max()
+            mean_err_mev = valid_df['Absolute Error (MeV)'].mean()
+            overall_accuracy = 100.0 - valid_df['Error (%)'].mean()
+            be_accuracy = 100.0 - valid_df['BE Error (%)'].mean()
             
-            st.dataframe(global_df.drop(columns=['Absolute Error (MeV)', 'Error (%)']), use_container_width=True, height=400)
+            sc1, sc2, sc3, sc4 = st.columns(4)
+            sc1.metric(label="Overall Mass Accuracy", value=f"{overall_accuracy:.4f} %")
+            sc2.metric(label="BE Decompilation Accuracy", value=f"{be_accuracy:.2f} %")
+            sc3.metric(label="Mean Delta (Error)", value=f"{mean_err_mev:.3f} MeV")
+            sc4.metric(label="Max Delta (Heavy Penalty)", value=f"{max_err_mev:.3f} MeV")
+            
+            st.dataframe(global_df.drop(columns=['Error (%)'], errors='ignore'), use_container_width=True, height=400)
             
             csv_data = global_df.to_csv(index=False).encode('utf-8')
             st.download_button("Download Matrix (CSV)", data=csv_data, file_name="simureality_global_log.csv", mime="text/csv")

@@ -46,6 +46,10 @@ MOLECULES = {
     "Ethylene Epoxidation": {
         "bond": 1.34, "target_site": 2.890, "ref": "Ag",
         "desc": "Standard: Ag. Target: 2.89 Å."
+    },
+    "Lithium (Intercalation)": {
+        "bond": 2.67, "target_site": 3.040, "ref": "BCC Li distance",
+        "desc": "Solid-state battery anodes. Target: 3.040 Å."
     }
 }
 

@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 
 # =====================================================================
-# SIMUREALITY: FULL NUCLEAR TRANSACTIONS DASHBOARD (FISSION + BETA)
+# SIMUREALITY: FULL NUCLEAR TRANSACTIONS DASHBOARD (DISCRETE TOPOLOGY)
 # =====================================================================
 
 @st.cache_data
@@ -87,24 +87,41 @@ def run_fission_scan(Z_parent, N_parent, ame_db):
         })
     return pd.DataFrame(results)
 
+# --- АНАЛИТИКА ГРАФОВ (ДЛЯ БЕТА-РАСПАДА) ---
+def get_discrete_graph_diameter(A):
+    diameter = 1
+    for magic_size in MAGIC_NODES:
+        if A > magic_size:
+            diameter += 1
+        else:
+            break
+            
+    current_layer_base = MAGIC_NODES[diameter - 2] if diameter > 1 else 0
+    next_layer_base = MAGIC_NODES[diameter - 1] if diameter <= len(MAGIC_NODES) else A
+    
+    layer_progress = (A - current_layer_base) / max(1, (next_layer_base - current_layer_base))
+    return diameter + layer_progress
+
 def run_beta_cascade(Z_start, N_start):
     chain = []
     current_Z, current_N = Z_start, N_start
-    C_TAX = 0.58 # Локальный Кулоновский Импеданс для бета-распада
+    C_TAX = 0.58 
     
     def get_beta_profit(Z, N):
+        if Z <= 0 or N <= 0: return -float('inf')
         base_profit = calculate_topological_profit(Z, N)
-        coulomb_penalty = C_TAX * (Z**2) / ((Z+N)**(1/3))
+        A = Z + N
+        routing_complexity = (Z * (Z - 1)) / 2.0 
+        discrete_diameter = get_discrete_graph_diameter(A)
+        coulomb_penalty = C_TAX * (routing_complexity / discrete_diameter)
         return base_profit - coulomb_penalty
 
     while True:
         profit_current = get_beta_profit(current_Z, current_N)
         
-        # 1-шаговое сканирование
         profit_b_minus_1 = get_beta_profit(current_Z + 1, current_N - 1)
         profit_b_plus_1 = get_beta_profit(current_Z - 1, current_N + 1)
         
-        # 2-шаговое сканирование (Квантовое туннелирование)
         profit_b_minus_2 = get_beta_profit(current_Z + 2, current_N - 2)
         profit_b_plus_2 = get_beta_profit(current_Z - 2, current_N + 2)
         
@@ -157,7 +174,6 @@ ame_db = load_ame2020()
 
 tab1, tab2 = st.tabs(["🪓 Fission Cleavage", "📉 Beta Cascade"])
 
-# ================= TAB 1: FISSION =================
 with tab1:
     st.markdown("Visualizing the deterministic breakdown of the FCC lattice ($\Sigma K \to \min$).")
     ISOTOPE_PRESETS = {
@@ -166,14 +182,15 @@ with tab1:
         "Cf-252 (Spontaneous Fission)": (98, 154),
         "Fm-258 (Symmetric Anomaly)": (100, 158),
         "Pb-208 (Stable Monolith)": (82, 126),
+        "Island of Stability Candidate": (114, 184),
         "Custom Manual Input": None
     }
     selected_preset = st.selectbox("Select Target Isotope", list(ISOTOPE_PRESETS.keys()))
 
     if ISOTOPE_PRESETS[selected_preset] is None:
         col1, col2 = st.columns(2)
-        z_input = col1.number_input("Parent Protons (Z)", min_value=10, max_value=118, value=92, step=1)
-        n_input = col2.number_input("Parent Neutrons (N)", min_value=10, max_value=200, value=144, step=1)
+        z_input = col1.number_input("Parent Protons (Z)", min_value=10, max_value=150, value=92, step=1)
+        n_input = col2.number_input("Parent Neutrons (N)", min_value=10, max_value=250, value=144, step=1)
     else:
         z_input, n_input = ISOTOPE_PRESETS[selected_preset]
         st.info(f"Target locked: Z={z_input}, N={n_input} (A={z_input+n_input})")
@@ -207,12 +224,11 @@ with tab1:
             st.subheader("Raw Transaction Log")
             st.dataframe(df.sort_values(by="Topological Profit (Grid Physics)", ascending=False), use_container_width=True)
 
-# ================= TAB 2: BETA CASCADE =================
 with tab2:
     st.markdown("Tracking the localized defragmentation (Jitter Tax reduction) of an unstable fragment.")
     c1, c2 = st.columns(2)
-    frag_z = c1.number_input("Fragment Protons (Z)", min_value=1, max_value=118, value=54, step=1)
-    frag_n = c2.number_input("Fragment Neutrons (N)", min_value=1, max_value=180, value=86, step=1)
+    frag_z = c1.number_input("Fragment Protons (Z)", min_value=1, max_value=150, value=54, step=1)
+    frag_n = c2.number_input("Fragment Neutrons (N)", min_value=1, max_value=250, value=86, step=1)
     
     if st.button("Run Defragmentation Chain", type="primary", use_container_width=True, key="btn_beta"):
         cascade_df = run_beta_cascade(frag_z, frag_n)

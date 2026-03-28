@@ -149,3 +149,21 @@ The lifespan of the nucleus ($T_{1/2}$) is directly dependent on the magnitude o
 In this paper, we have accomplished a fundamental transition from the phenomenological description of nuclear physics to its hardware reverse-engineering. It has been proven that the atomic nucleus is a deterministic spatial processor operating with pre-rendered 3D primitives (Alpha-clusters) on an FCC lattice.
 
 The mass of an isotope is a direct reflection of the processor time spent by the vacuum to maintain its architecture. Radioactive decay is stripped of its probabilistic nature and represents a forced code optimization transaction, where the nucleus pays off its Topological Debt by ejecting interface patches. The integration of the Simureality ontology into computational physics opens the path to 100% accurate, non-empirical prediction of the properties of matter, limited exclusively by the hardware Impedance of the Vacuum.
+
+## 8. Dynamic Matrix Transactions: Fission and Defragmentation
+
+Within the Simureality (Grid Physics) ontology, nuclear reactions (fission and beta decay) are not stochastic quantum processes or the splitting of a "liquid drop". They are strictly deterministic transactions of the vacuum algorithm aimed at shedding topological debt and minimizing the computational complexity of the system ($\Sigma K \to \min$).
+
+### 8.1. Deterministic Cleavage (Nuclear Fission)
+Induced and spontaneous fission of heavy nuclei is an algorithmic fracture of the FCC matrix along the plane of least topological resistance.
+
+* **Topological Anchors (Asymmetry):** It is algorithmically unprofitable for the vacuum to split a nucleus into two symmetrical parts (e.g., $Z=46 / Z=46$), as this generates a maximal area of torn surfaces and a critical spike in the Jitter Tax. The optimal profit is achieved when one of the parts (Heavy Fragment) "anchors" to a perfect, closed macro-crystal (e.g., $Z=50$ Tin or $Z=54$ Xenon), nullifying its local tension.
+* **Geometry Overflow (Prompt Neutrons):** The phenomenon of free neutron emission during fission is explained by the valence limit of surface ports. When two new macro-crystals are formed, their combined surface area is physically incapable of holding the entire neutron Halo of the parent nucleus. The "extra" nodes generate a loss and are deterministically dropped by the matrix as algorithmic garbage (typically 0-5 neutrons depending on the cleavage geometry).
+* **Stability Barrier:** Doubly magic monoliths (e.g., Pb-208) exhibit a negative profit gradient across all cleavage scenarios. For them, the fission transaction is blocked at the base lattice level.
+
+### 8.2. Local Defragmentation (Beta Cascade)
+Beta decay is modeled as a frame-by-frame local defragmentation of an unstable fragment. The algorithm step-by-step switches the phases of the nodes (neutron $\leftrightarrow$ proton), descending along the isobaric Jitter Tax gradient.
+
+* **Facet Closure (Replacing the Pairing Effect):** The classical "nucleon pairing" effect is explained purely geometrically: it is the closure of the facets of local tetrahedra/octahedra within the FCC lattice. A closed cell (even-even configuration) has no dangling bonds, which locally minimizes the Jitter Tax.
+* **Parity Tunneling:** To overcome local topological minima (the transition of a closed even-even cell into an open odd-odd one), the algorithm is capable of "looking ahead" by 2 steps. The transaction is forced if the temporary structural loss is outweighed by the assembly of a new, larger macro-crystal on the subsequent step.
+* **Coulomb Impedance:** The defragmentation cascade does not run to infinity. The process halts at the line of beta stability, where the topological profit from assembling new macro-links is counterbalanced by the Coulomb impedance—a local limit on the density of ports of the same type (protons) within a given lattice volume.

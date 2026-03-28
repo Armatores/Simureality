@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 
 # =====================================================================
-# SIMUREALITY: FISSION CLEAVAGE SIMULATOR (RELEASE CANDIDATE)
+# SIMUREALITY: FISSION CLEAVAGE SIMULATOR (RELEASE CANDIDATE + RAW LOG)
 # =====================================================================
 
 @st.cache_data
@@ -34,7 +34,7 @@ def generate_fcc_magic():
 MAGIC_NODES = generate_fcc_magic()
 E_ALPHA = 28.320       
 E_MACRO = 2.425        
-E_LINK = 2.360         # Патч: Профит поверхностных связей (Halo)
+E_LINK = 2.360         
 E_PAIR = 1.180         
 J_TAX = 0.0131         
 
@@ -50,11 +50,9 @@ def calculate_topological_profit(Z, N):
     l_ideal = max(0, 3 * N_alpha - 6)
     l_lost = (min([abs(Z - m) for m in MAGIC_NODES]) + min([abs(N - m) for m in MAGIC_NODES])) * 0.4
     
-    # Считаем базовый профит кристалла
     BE = (N_alpha * E_ALPHA) + (max(0, l_ideal - l_lost) * E_MACRO) - get_jitter_tax(Z, N)
     if Z % 2 == 0 and N % 2 == 0: BE += E_PAIR
     
-    # Патч: Возвращаем профит Halo-нейтронов, чтобы вакуум не выкидывал их просто так
     halo_n = N - Z
     if halo_n > 0: BE += halo_n * E_LINK
     return BE
@@ -97,7 +95,6 @@ st.markdown("Visualizing the deterministic breakdown of the FCC lattice. The vac
 
 ame_db = load_ame2020()
 
-# ДРОПДАУН МЕНЮ (ПРЕСЕТЫ)
 ISOTOPE_PRESETS = {
     "U-236 (Thermal Fission of U-235)": (92, 144),
     "Pu-240 (Thermal Fission of Pu-239)": (94, 146),
@@ -127,7 +124,6 @@ if st.button("Execute Vacuum Transaction", type="primary", use_container_width=T
         
         st.divider()
         
-        # ЛОГИКА СТАБИЛЬНОСТИ (Не распадается)
         if max_profit <= 0:
             st.error("🚨 TRANSACTION DENIED: Topological Profit is negative. The FCC lattice configuration is highly stable and optimally packed. This isotope DOES NOT undergo spontaneous fission.")
             st.metric("Minimum Required Profit", f"{max_profit:.2f} MeV", delta="Deficit", delta_color="inverse")
@@ -147,3 +143,8 @@ if st.button("Execute Vacuum Transaction", type="primary", use_container_width=T
                       color_discrete_map={"Topological Profit (Grid Physics)": "#00BFFF", "Experimental Profit (AME2020)": "#FF4B4B"})
         fig.update_layout(xaxis_title="Light Fragment Protons (Z)", yaxis_title="Energy Profit (MeV)", hovermode="x unified")
         st.plotly_chart(fig, use_container_width=True)
+
+        # ВОЗВРАЩЕННАЯ ТАБЛИЦА (Сырой дамп транзакций)
+        st.divider()
+        st.subheader("Raw Transaction Log (Sorted by Profit)")
+        st.dataframe(df.sort_values(by="Topological Profit (Grid Physics)", ascending=False), use_container_width=True)

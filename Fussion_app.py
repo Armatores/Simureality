@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 
 # =====================================================================
-# FULL NUCLEAR TRANSACTIONS DASHBOARD (GEOMETRY OVERFLOW FIX)
+# FULL NUCLEAR TRANSACTIONS DASHBOARD (PURE 3D TENSOR, NO HACKS)
 # =====================================================================
 
 @st.cache_data
@@ -41,7 +41,8 @@ def get_jitter_tax(Z, N):
     if Z <= 0 or N <= 0: return 0
     dist_Z, dist_N = min([abs(Z - m) for m in MAGIC_NODES]), min([abs(N - m) for m in MAGIC_NODES])
     base_ports = 10.0 * ((Z + N)**(2/3))
-    return (base_ports + (15.0 * ((dist_Z + dist_N)**1.2))) * J_TAX
+    # ИСПРАВЛЕНИЕ: Объемный тензор напряжения матрицы (степень 1.6 вместо 1.2)
+    return (base_ports + (15.0 * ((dist_Z + dist_N)**1.6))) * J_TAX
 
 def get_dangling_port_tax(Z, N):
     unpaired_p = Z % 2
@@ -60,14 +61,9 @@ def calculate_topological_profit(Z, N):
     
     BE = (N_alpha * E_ALPHA) + (max(0, l_ideal - l_lost) * E_MACRO)
     
+    # ИСПРАВЛЕНИЕ: Убрали костыль вместимости. Чистый профит от гало-нейтронов.
     halo_n = N - Z
-    if halo_n > 0:
-        # GEOMETRY OVERFLOW: Топологический предел валентности поверхности
-        halo_capacity = int(Z * 0.55)
-        allowed_halo = min(halo_n, halo_capacity)
-        # Нейтроны сверх лимита не дают макро-связей (0 профита), 
-        # но ниже они получат штраф Jitter Tax, заставляя матрицу их сбросить!
-        BE += allowed_halo * E_LINK
+    if halo_n > 0: BE += halo_n * E_LINK
     
     BE -= get_jitter_tax(Z, N)
     BE -= get_dangling_port_tax(Z, N)
@@ -86,9 +82,10 @@ def run_fission_scan(Z_parent, N_parent, ame_db):
         
         for free_n in range(0, 8): 
             remaining_N = N_parent - free_n
-            for N1 in range(int(Z1*1.2), int(Z1*1.6)):
+            # ИСПРАВЛЕНИЕ: Расширили окно поиска, чтобы захватывать глубокие магические ядра (до 1.8)
+            for N1 in range(int(Z1*1.0), int(Z1*1.8)):
                 N2 = remaining_N - N1
-                if N2 < int(Z2*1.2) or N2 > int(Z2*1.6): continue
+                if N2 < int(Z2*1.0) or N2 > int(Z2*1.8): continue
                 
                 theo_Q = calculate_topological_profit(Z1, N1) + calculate_topological_profit(Z2, N2) - BE_parent_theo
                 if theo_Q > best_theo_Q:
@@ -134,10 +131,8 @@ def run_beta_cascade(Z_start, N_start):
 
     while True:
         profit_current = get_beta_profit(current_Z, current_N)
-        
         profit_b_minus_1 = get_beta_profit(current_Z + 1, current_N - 1)
         profit_b_plus_1 = get_beta_profit(current_Z - 1, current_N + 1)
-        
         profit_b_minus_2 = get_beta_profit(current_Z + 2, current_N - 2)
         profit_b_plus_2 = get_beta_profit(current_Z - 2, current_N + 2)
         
@@ -160,12 +155,9 @@ def run_beta_cascade(Z_start, N_start):
         if next_step is None:
             if profit_b_minus_2 > profit_current:
                 chain.append({
-                    "Protons (Z)": current_Z + 1,
-                    "Neutrons (N)": current_N - 1,
-                    "Mass (A)": current_Z + current_N,
-                    "Decay Triggered": "Virtual State (Transit)",
-                    "Topological Profit (MeV)": profit_b_minus_1,
-                    "Step Gain (ΔQ)": profit_b_minus_1 - profit_current
+                    "Protons (Z)": current_Z + 1, "Neutrons (N)": current_N - 1,
+                    "Mass (A)": current_Z + current_N, "Decay Triggered": "Virtual State (Transit)",
+                    "Topological Profit (MeV)": profit_b_minus_1, "Step Gain (ΔQ)": profit_b_minus_1 - profit_current
                 })
                 next_step = (current_Z + 2, current_N - 2)
                 decay_type = "Double β- Decay"
@@ -175,12 +167,9 @@ def run_beta_cascade(Z_start, N_start):
                 
             elif profit_b_plus_2 > profit_current:
                 chain.append({
-                    "Protons (Z)": current_Z - 1,
-                    "Neutrons (N)": current_N + 1,
-                    "Mass (A)": current_Z + current_N,
-                    "Decay Triggered": "Virtual State (Transit)",
-                    "Topological Profit (MeV)": profit_b_plus_1,
-                    "Step Gain (ΔQ)": profit_b_plus_1 - profit_current
+                    "Protons (Z)": current_Z - 1, "Neutrons (N)": current_N + 1,
+                    "Mass (A)": current_Z + current_N, "Decay Triggered": "Virtual State (Transit)",
+                    "Topological Profit (MeV)": profit_b_plus_1, "Step Gain (ΔQ)": profit_b_plus_1 - profit_current
                 })
                 next_step = (current_Z - 2, current_N + 2)
                 decay_type = "Double β+ / EC"
@@ -197,9 +186,7 @@ def run_beta_cascade(Z_start, N_start):
             "Step Gain (ΔQ)": step_gain
         })
         
-        if not next_step or len(chain) > 20:
-            break
-            
+        if not next_step or len(chain) > 20: break
         current_Z, current_N = next_step
         
     return pd.DataFrame(chain)
@@ -242,7 +229,7 @@ with tab1:
             st.divider()
             
             if max_profit <= 0:
-                st.error("🚨 TRANSACTION DENIED: Topological Profit is negative. The lattice configuration is highly stable.")
+                st.error("🚨 TRANSACTION DENIED: Topological Profit is negative.")
             else:
                 st.success("✅ TRANSACTION APPROVED: Lattice cleavage is computationally profitable.")
                 m1, m2, m3, m4 = st.columns(4)
@@ -261,9 +248,7 @@ with tab1:
             st.subheader("Raw Transaction Log")
             st.dataframe(df.sort_values(by="Topological Profit (MeV)", ascending=False), use_container_width=True)
         else:
-            st.divider()
-            st.error("🚨 TRANSACTION DENIED: Ядро слишком легкое для классического деления.")
-            st.info(f"Алгоритм требует осколков не меньше Z=30. Для родительского ядра Z={z_input} максимальный симметричный осколок равен Z={z_input // 2}. Топологический разлом невозможен.")
+            st.error("🚨 TRANSACTION DENIED: Ядро слишком легкое для деления.")
 
 with tab2:
     st.markdown("Tracking localized defragmentation of an unstable fragment.")
@@ -281,6 +266,4 @@ with tab2:
                       color_discrete_map={"β- Decay": "#FF4B4B", "Double β- Decay": "#FF8C00", "β+ / EC": "#00BFFF", "Double β+ / EC": "#1E90FF", "Virtual State (Transit)": "#A9A9A9", "Stable (Optimal)": "#2E8B57"})
         fig2.update_layout(xaxis_title="Protons (Z) [Moving towards stability]", yaxis_title="Structural Profit (MeV)")
         st.plotly_chart(fig2, use_container_width=True)
-        
-        st.subheader("Step-by-step Log")
         st.dataframe(cascade_df, use_container_width=True)

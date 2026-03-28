@@ -173,7 +173,7 @@ with tab1:
     if ISOTOPE_PRESETS[selected_preset] is None:
         col1, col2 = st.columns(2)
         z_input = col1.number_input("Parent Protons (Z)", min_value=10, max_value=118, value=92, step=1)
-        n_input = col2.number_input("Parent Neutrons (N)", min_value=10, max_value=180, value=144, step=1)
+        n_input = col2.number_input("Parent Neutrons (N)", min_value=10, max_value=200, value=144, step=1)
     else:
         z_input, n_input = ISOTOPE_PRESETS[selected_preset]
         st.info(f"Target locked: Z={z_input}, N={n_input} (A={z_input+n_input})")

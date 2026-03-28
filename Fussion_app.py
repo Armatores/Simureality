@@ -1,115 +1,95 @@
-import streamlit as st
-import time
+import math
 
 # =====================================================================
-# GRID PHYSICS: DETERMINISTIC FISSION CALCULATOR (STREAMLIT MVP)
+# SIMUREALITY: FISSION CLEAVAGE SIMULATOR (MERGED ARCHITECTURE)
+# Deterministic Asymmetric Fission via Topology Optimization + Dynamic Garbage Collection
 # =====================================================================
 
-def calculate_discrete_profit(Z, N):
-    if Z < 1 or N < 1: return 0
+# Константы из Таблицы 2 препринта
+E_ALPHA = 28.320       
+E_MACRO = 2.425        
+E_PAIR = 1.180         
+J_TAX = 0.0131         
 
-    E_alpha = 28.320
-    E_macro_link = 2.425
-    E_link = 2.360
+# Идеальные геометрические каркасы (Платоновы сборки / Оболочки)
+MAGIC_Z = [28, 40, 50, 82] 
+MAGIC_N = [50, 82, 126]
 
-    N_alpha = Z // 2
-    halo_n = N - Z
-
-    # Топологические оптимумы (Закрытые ГЦК-полиэдры)
-    magic_numbers = [2, 8, 20, 28, 50, 82]
+def get_jitter_tax(Z, N):
+    """Штраф за 'шероховатость'."""
+    if Z <= 0 or N <= 0: return 0
+    dist_Z = min([abs(Z - m) for m in MAGIC_Z])
+    dist_N = min([abs(N - m) for m in MAGIC_N])
+    geom_mismatch = dist_Z + dist_N
     
-    dist_Z = min([abs(Z - m) for m in magic_numbers])
-    dist_N = min([abs(N - m) for m in magic_numbers])
+    # Базовые порты (поверхность) + Штраф за кривизну
+    base_ports = 10.0 * ((Z + N)**(2/3))
+    total_ports = base_ports + (15.0 * (geom_mismatch**1.2))
+    return total_ports * J_TAX
 
-    integrity = max(0.1, 1.0 - (dist_Z + dist_N) * 0.04)
-    L_base = max(0, 3 * N_alpha - 6)
-    profit_macro = L_base * integrity * E_macro_link
-
-    profit_alpha = N_alpha * E_alpha
-
-    # Лимит валентности (Surface Port Limit)
-    max_halo = int(1.35 * Z) 
-
-    if halo_n > max_halo:
-        overflow = halo_n - max_halo
-        profit_halo = max_halo * E_link - (overflow * 4.0) 
-    else:
-        profit_halo = halo_n * E_link
-
-    penalty = (halo_n % 2) * 1.5 
-
-    return profit_alpha + profit_macro + profit_halo - penalty
-
-def optimize_fission(Z_parent, N_parent):
-    best_split = None
-    max_total_profit = 0 
+def calculate_topological_profit(Z, N):
+    """Универсальная Формула Компиляции"""
+    if Z <= 0 or N <= 0: return 0
+    N_alpha = min(Z // 2, N // 2)
     
-    for Z1 in range(30, Z_parent // 2 + 1):
-        Z2 = Z_parent - Z1
+    # Идеальные Макро-линки минус разрывы из-за деформации
+    l_ideal = max(0, 3 * N_alpha - 6)
+    l_lost = (min([abs(Z - m) for m in MAGIC_Z]) + min([abs(N - m) for m in MAGIC_N])) * 0.4
+    N_macro_links = max(0, l_ideal - l_lost)
+    
+    # Суммарная структурная выгода (Binding Energy)
+    BE = (N_alpha * E_ALPHA) + (N_macro_links * E_MACRO) - get_jitter_tax(Z, N)
+    if Z % 2 == 0 and N % 2 == 0: BE += E_PAIR
+    return BE
+
+# 1. Эмулируем энергию напряженного материнского Урана-236 (до раскола)
+BE_U236 = calculate_topological_profit(92, 144) - 22.0 # Штраф за перегрузку ядра
+
+print("="*80)
+print("Executing Garbage Collection Protocol (Topology Optimization + Dynamic Neutrons)...")
+print("="*80)
+
+# 2. Диспетчер перебирает варианты раскола и ИЩЕТ оптимальный сброс мусора
+results = []
+for Z1 in range(35, 60): 
+    Z2 = 92 - Z1
+    best_profit = -float('inf')
+    best_A1 = 0
+    best_N2 = 0
+    best_free_n = 0
+    
+    # ДИНАМИЧЕСКИЙ СБРОС МУСОРА: Вакуум сам решает, сколько нейтронов выкинуть (от 0 до 5)
+    for free_n in range(0, 6): 
+        remaining_N = 144 - free_n
         
-        for free_n in range(0, 6):
-            remaining_N = N_parent - free_n
+        for N1 in range(40, 95):
+            N2 = remaining_N - N1
+            if N2 < 40 or N2 > 105: continue
             
-            for N1 in range(int(Z1 * 1.2), int(Z1 * 1.6)):
-                N2 = remaining_N - N1
+            # Вычислительный Профит = Энергия Осколков - Старая Энергия
+            profit = calculate_topological_profit(Z1, N1) + calculate_topological_profit(Z2, N2) - BE_U236
+            if profit > best_profit:
+                best_profit = profit
+                best_A1 = Z1 + N1
+                best_N2 = N2
+                best_free_n = free_n
                 
-                if N2 < int(Z2 * 1.2) or N2 > int(Z2 * 1.6):
-                    continue
-                
-                profit1 = calculate_discrete_profit(Z1, N1)
-                profit2 = calculate_discrete_profit(Z2, N2)
-                total_profit = profit1 + profit2
-                
-                if total_profit > max_total_profit:
-                    max_total_profit = total_profit
-                    best_split = {
-                        'Fragment_1': {"Z": Z1, "N": N1, "A": Z1+N1},
-                        'Fragment_2': {"Z": Z2, "N": N2, "A": Z2+N2},
-                        'Free_Neutrons': free_n,
-                        'Total_Profit_MeV': round(total_profit, 3)
-                    }
+    results.append((Z1, best_A1, Z2, Z2 + best_N2, best_profit, best_free_n))
 
-    return best_split
+# --- РЕНДЕР ГРАФИКА ДЕЛЕНИЯ ---
+print(f"{'FRAG 1 (Light)':<16} | {'FRAG 2 (Heavy)':<16} | {'DROP':<4} | {'Q-PROFIT (MeV)':<20}")
+print("-" * 80)
+max_Q = max(r[4] for r in results)
 
-# --- STREAMLIT UI ---
-st.set_page_config(page_title="Grid Physics: Fission", layout="centered")
-
-st.title("⚛️ Grid Physics: Fission Calculator")
-st.markdown("""
-**Ontological Basis:** Nuclear fission is not the splitting of a liquid drop, but a deterministic topological garbage collection event. 
-The FCC lattice fractures along a cleavage plane that strictly minimizes the total computational cost ($\Sigma K \to \min$).
-""")
-
-st.divider()
-
-col1, col2 = st.columns(2)
-with col1:
-    z_input = st.number_input("Parent Protons (Z)", min_value=80, max_value=118, value=92, step=1)
-with col2:
-    n_input = st.number_input("Parent Neutrons (N)", min_value=120, max_value=180, value=144, step=1)
-
-if st.button("Calculate Topological Cleavage Plane", type="primary", use_container_width=True):
-    with st.spinner("Executing Vacuum Transaction (Scanning lattice configurations)..."):
-        time.sleep(0.5) # Небольшая пауза для UI-эффекта тяжелых вычислений
-        result = optimize_fission(z_input, n_input)
+for r in results:
+    Z1, A1, Z2, A2, profit, free_n = r
+    # Экспоненциальная вероятность выбора пути (Сборщик Мусора ищет Максимум)
+    probability = math.exp((profit - max_Q) / 1.5) * 100 
     
-    if result:
-        st.success("Optimal topological fracture found!")
-        
-        # Вывод результатов в виде метрик
-        st.subheader("Fission Products")
-        m1, m2, m3 = st.columns(3)
-        
-        frag1 = result['Fragment_1']
-        frag2 = result['Fragment_2']
-        
-        m1.metric(label="Light Fragment", value=f"Z={frag1['Z']}, N={frag1['N']}", delta=f"A={frag1['A']}", delta_color="off")
-        m2.metric(label="Heavy Fragment", value=f"Z={frag2['Z']}, N={frag2['N']}", delta=f"A={frag2['A']}", delta_color="off")
-        m3.metric(label="Garbage Collection", value=f"{result['Free_Neutrons']} n", delta="Free Neutrons", delta_color="inverse")
-        
-        st.divider()
-        st.metric(label="Total Recovered Profit (Binding Energy)", value=f"{result['Total_Profit_MeV']} MeV")
-        
-        st.info("Notice the asymmetry: The vacuum optimizes for at least one geometrically perfect macro-crystal (close to magic numbers) rather than symmetrical liquid-drop splitting.")
-    else:
-        st.error("No valid topological split found for this geometry.")
+    bar = "█" * int(probability / 3)
+    marker = " <== PEAK (ASYMMETRIC CACHE)" if probability > 90 else ""
+    marker = " <== SYMMETRIC (VALLEY)" if Z1 == 46 else marker
+    
+    # Выводим только вероятные исходы (и симметричную долину для контраста)
+    if probability > 0.5 or Z1 == 46:
+        print(f"Z={Z1:02d} A={A1:03d}     | Z={Z2:02d} A={A2:03d}     | {free_n}n   | {profit:.1f} MeV {bar}{marker}")

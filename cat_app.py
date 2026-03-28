@@ -34,7 +34,7 @@ MOLECULES = {
     "NOx (Reduction)": {
         "bond": 1.15, "target_site": 2.580, "ref": "Rh",
         "desc": "Standard: Rh. Target: 2.58 Å."
-    }
+    },
     "Oxygen Reduction (ORR)": {
         "bond": 1.21, "target_site": 2.700, "ref": "Pt3Ni",
         "desc": "Fuel cells. Standard: Pt-Ni. Target: 2.70 Å."

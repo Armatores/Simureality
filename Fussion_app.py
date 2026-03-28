@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 
 # =====================================================================
-# SIMUREALITY: FULL NUCLEAR TRANSACTIONS DASHBOARD (DISCRETE TOPOLOGY)
+# FULL NUCLEAR TRANSACTIONS DASHBOARD (DISCRETE TOPOLOGY + UI FIXES)
 # =====================================================================
 
 @st.cache_data
@@ -82,7 +82,7 @@ def run_fission_scan(Z_parent, N_parent, ame_db):
             "Light Fragment Z": Z1, "Light Fragment N": best_N1,
             "Heavy Fragment Z": Z2, "Heavy Fragment N": best_N2,
             "Dropped Neutrons": best_free_n,
-            "Topological Profit (Grid Physics)": best_theo_Q,
+            "Topological Profit (MeV)": best_theo_Q,
             "Experimental Profit (AME2020)": exp_Q_for_best
         })
     return pd.DataFrame(results)
@@ -168,14 +168,14 @@ def run_beta_cascade(Z_start, N_start):
     return pd.DataFrame(chain)
 
 # --- STREAMLIT UI ---
-st.set_page_config(page_title="Grid Physics: Nuclear Dashboard", layout="wide")
+st.set_page_config(page_title="Matrix Operations Dashboard", layout="wide")
 st.title("⚛️ Matrix Operations: Fission & Defragmentation")
 ame_db = load_ame2020()
 
 tab1, tab2 = st.tabs(["🪓 Fission Cleavage", "📉 Beta Cascade"])
 
 with tab1:
-    st.markdown("Visualizing the deterministic breakdown of the FCC lattice ($\Sigma K \to \min$).")
+    st.markdown("Visualizing deterministic matrix breakdown.")
     ISOTOPE_PRESETS = {
         "U-236 (Thermal Fission of U-235)": (92, 144),
         "Pu-240 (Thermal Fission of Pu-239)": (94, 146),
@@ -200,12 +200,12 @@ with tab1:
             df = run_fission_scan(z_input, n_input, ame_db)
         
         if not df.empty:
-            winner = df.loc[df["Topological Profit (Grid Physics)"].idxmax()]
-            max_profit = winner['Topological Profit (Grid Physics)']
+            winner = df.loc[df["Topological Profit (MeV)"].idxmax()]
+            max_profit = winner['Topological Profit (MeV)']
             st.divider()
             
             if max_profit <= 0:
-                st.error("🚨 TRANSACTION DENIED: Topological Profit is negative. The FCC lattice configuration is highly stable.")
+                st.error("🚨 TRANSACTION DENIED: Topological Profit is negative. The lattice configuration is highly stable.")
             else:
                 st.success("✅ TRANSACTION APPROVED: Lattice cleavage is computationally profitable.")
                 m1, m2, m3, m4 = st.columns(4)
@@ -215,20 +215,25 @@ with tab1:
                 m4.metric("Q-Profit", f"{max_profit:.2f} MeV")
 
             st.divider()
-            fig = px.line(df, x="Light Fragment Z", y=["Topological Profit (Grid Physics)", "Experimental Profit (AME2020)"],
+            fig = px.line(df, x="Light Fragment Z", y=["Topological Profit (MeV)", "Experimental Profit (AME2020)"],
                           markers=True, hover_data=["Heavy Fragment Z", "Dropped Neutrons"],
-                          color_discrete_map={"Topological Profit (Grid Physics)": "#00BFFF", "Experimental Profit (AME2020)": "#FF4B4B"})
+                          color_discrete_map={"Topological Profit (MeV)": "#00BFFF", "Experimental Profit (AME2020)": "#FF4B4B"})
             fig.update_layout(xaxis_title="Light Fragment Protons (Z)", yaxis_title="Energy Profit (MeV)", hovermode="x unified")
             st.plotly_chart(fig, use_container_width=True)
             
             st.subheader("Raw Transaction Log")
-            st.dataframe(df.sort_values(by="Topological Profit (Grid Physics)", ascending=False), use_container_width=True)
+            st.dataframe(df.sort_values(by="Topological Profit (MeV)", ascending=False), use_container_width=True)
+        else:
+            # ИСПРАВЛЕНИЕ: Блок-предохранитель для легких ядер
+            st.divider()
+            st.error("🚨 TRANSACTION DENIED: Ядро слишком легкое для классического деления.")
+            st.info(f"Алгоритм требует осколков не меньше Z=30. Для родительского ядра Z={z_input} максимальный симметричный осколок равен Z={z_input // 2}. Топологический разлом невозможен.")
 
 with tab2:
-    st.markdown("Tracking the localized defragmentation (Jitter Tax reduction) of an unstable fragment.")
+    st.markdown("Tracking localized defragmentation of an unstable fragment.")
     c1, c2 = st.columns(2)
     frag_z = c1.number_input("Fragment Protons (Z)", min_value=1, max_value=150, value=54, step=1)
-    frag_n = c2.number_input("Fragment Neutrons (N)", min_value=1, max_value=250, value=86, step=1)
+    frag_n = c2.number_input("Fragment Neutrons (N)", min_value=1, max_value=250, value=78, step=1)
     
     if st.button("Run Defragmentation Chain", type="primary", use_container_width=True, key="btn_beta"):
         cascade_df = run_beta_cascade(frag_z, frag_n)

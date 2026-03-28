@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 
 # =====================================================================
-# FULL NUCLEAR TRANSACTIONS DASHBOARD (PURE 3D TENSOR, NO HACKS)
+# FULL NUCLEAR TRANSACTIONS DASHBOARD (RESTORED GEOMETRIC LIMITS)
 # =====================================================================
 
 @st.cache_data
@@ -41,8 +41,8 @@ def get_jitter_tax(Z, N):
     if Z <= 0 or N <= 0: return 0
     dist_Z, dist_N = min([abs(Z - m) for m in MAGIC_NODES]), min([abs(N - m) for m in MAGIC_NODES])
     base_ports = 10.0 * ((Z + N)**(2/3))
-    # ИСПРАВЛЕНИЕ: Объемный тензор напряжения матрицы (степень 1.6 вместо 1.2)
-    return (base_ports + (15.0 * ((dist_Z + dist_N)**1.6))) * J_TAX
+    # ВОЗВРАЩЕНО К ОРИГИНАЛУ: Степень 1.2 (честный поверхностный тензор)
+    return (base_ports + (15.0 * ((dist_Z + dist_N)**1.2))) * J_TAX
 
 def get_dangling_port_tax(Z, N):
     unpaired_p = Z % 2
@@ -61,7 +61,6 @@ def calculate_topological_profit(Z, N):
     
     BE = (N_alpha * E_ALPHA) + (max(0, l_ideal - l_lost) * E_MACRO)
     
-    # ИСПРАВЛЕНИЕ: Убрали костыль вместимости. Чистый профит от гало-нейтронов.
     halo_n = N - Z
     if halo_n > 0: BE += halo_n * E_LINK
     
@@ -82,10 +81,11 @@ def run_fission_scan(Z_parent, N_parent, ame_db):
         
         for free_n in range(0, 8): 
             remaining_N = N_parent - free_n
-            # ИСПРАВЛЕНИЕ: Расширили окно поиска, чтобы захватывать глубокие магические ядра (до 1.8)
-            for N1 in range(int(Z1*1.0), int(Z1*1.8)):
+            # ВОЗВРАЩЕНО К ОРИГИНАЛУ: Строгие границы ГЦК-валентности (1.2 - 1.6)
+            # Именно они детерминированно срезают "лишние" нейтроны в мусор.
+            for N1 in range(int(Z1*1.2), int(Z1*1.6)):
                 N2 = remaining_N - N1
-                if N2 < int(Z2*1.0) or N2 > int(Z2*1.8): continue
+                if N2 < int(Z2*1.2) or N2 > int(Z2*1.6): continue
                 
                 theo_Q = calculate_topological_profit(Z1, N1) + calculate_topological_profit(Z2, N2) - BE_parent_theo
                 if theo_Q > best_theo_Q:
@@ -199,7 +199,6 @@ ame_db = load_ame2020()
 tab1, tab2 = st.tabs(["🪓 Fission Cleavage", "📉 Beta Cascade"])
 
 with tab1:
-    st.markdown("Visualizing deterministic matrix breakdown.")
     ISOTOPE_PRESETS = {
         "U-236 (Thermal Fission of U-235)": (92, 144),
         "Pu-240 (Thermal Fission of Pu-239)": (94, 146),
@@ -217,7 +216,6 @@ with tab1:
         n_input = col2.number_input("Parent Neutrons (N)", min_value=10, max_value=250, value=144, step=1)
     else:
         z_input, n_input = ISOTOPE_PRESETS[selected_preset]
-        st.info(f"Target locked: Z={z_input}, N={n_input} (A={z_input+n_input})")
 
     if st.button("Execute Vacuum Transaction", type="primary", use_container_width=True, key="btn_fission"):
         with st.spinner("Scanning lattice topology..."):
@@ -244,14 +242,11 @@ with tab1:
                           color_discrete_map={"Topological Profit (MeV)": "#00BFFF", "Experimental Profit (AME2020)": "#FF4B4B"})
             fig.update_layout(xaxis_title="Light Fragment Protons (Z)", yaxis_title="Energy Profit (MeV)", hovermode="x unified")
             st.plotly_chart(fig, use_container_width=True)
-            
-            st.subheader("Raw Transaction Log")
             st.dataframe(df.sort_values(by="Topological Profit (MeV)", ascending=False), use_container_width=True)
         else:
             st.error("🚨 TRANSACTION DENIED: Ядро слишком легкое для деления.")
 
 with tab2:
-    st.markdown("Tracking localized defragmentation of an unstable fragment.")
     c1, c2 = st.columns(2)
     frag_z = c1.number_input("Fragment Protons (Z)", min_value=1, max_value=150, value=54, step=1)
     frag_n = c2.number_input("Fragment Neutrons (N)", min_value=1, max_value=250, value=78, step=1)
@@ -259,8 +254,6 @@ with tab2:
     if st.button("Run Defragmentation Chain", type="primary", use_container_width=True, key="btn_beta"):
         cascade_df = run_beta_cascade(frag_z, frag_n)
         st.divider()
-        st.subheader("Isobaric Optimization Path")
-        
         fig2 = px.bar(cascade_df, x="Protons (Z)", y="Topological Profit (MeV)", 
                       color="Decay Triggered", text="Decay Triggered",
                       color_discrete_map={"β- Decay": "#FF4B4B", "Double β- Decay": "#FF8C00", "β+ / EC": "#00BFFF", "Double β+ / EC": "#1E90FF", "Virtual State (Transit)": "#A9A9A9", "Stable (Optimal)": "#2E8B57"})

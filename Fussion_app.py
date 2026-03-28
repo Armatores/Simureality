@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 
 # =====================================================================
-# FULL NUCLEAR TRANSACTIONS DASHBOARD (PURE TOPOLOGY, NO PAIRING HACK)
+# FULL NUCLEAR TRANSACTIONS DASHBOARD (GEOMETRY OVERFLOW FIX)
 # =====================================================================
 
 @st.cache_data
@@ -61,7 +61,13 @@ def calculate_topological_profit(Z, N):
     BE = (N_alpha * E_ALPHA) + (max(0, l_ideal - l_lost) * E_MACRO)
     
     halo_n = N - Z
-    if halo_n > 0: BE += halo_n * E_LINK
+    if halo_n > 0:
+        # GEOMETRY OVERFLOW: Топологический предел валентности поверхности
+        halo_capacity = int(Z * 0.55)
+        allowed_halo = min(halo_n, halo_capacity)
+        # Нейтроны сверх лимита не дают макро-связей (0 профита), 
+        # но ниже они получат штраф Jitter Tax, заставляя матрицу их сбросить!
+        BE += allowed_halo * E_LINK
     
     BE -= get_jitter_tax(Z, N)
     BE -= get_dangling_port_tax(Z, N)

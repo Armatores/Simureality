@@ -12,33 +12,45 @@ import itertools
 
 # --- CORE PHYSICS: TARGET MOLECULES & BOND SITES ---
 MOLECULES = {
-    "Oxygen Reduction (ORR)": {
-        "bond": 1.21, "target_site": 2.700, "ref": "Pt3Ni Standard",
-        "desc": "Fuel Cells. High-priority target for hydrogen economy."
-    },
-    "CO2 (Reduction)": {
-        "bond": 1.16, "target_site": 2.610, "ref": "Cu/Au Boundary",
-        "desc": "Carbon capture and utilization. Target: 2.61 Å."
-    },
-    "Nitrogen (N2) Fixation": {
-        "bond": 1.09, "target_site": 2.480, "ref": "Ru/Os Benchmark",
-        "desc": "Green Ammonia synthesis. Breaking the N≡N triple bond."
-    },
-    "Hydrogen (H2) Evolution": {
+    "Hydrogen (H2)": {
         "bond": 0.74, "target_site": 2.775, "ref": "Pt (Harmonic 3.75)",
-        "desc": "Standard water splitting. Target: 2.775 Å."
-    },
-    "Lithium (Intercalation)": {
-        "bond": 2.67, "target_site": 3.040, "ref": "BCC Li Lattice",
-        "desc": "Solid-state battery anodes. Matching Li-Li distance."
-    },
-    "Methane (CH4) Activation": {
-        "bond": 1.09, "target_site": 2.720, "ref": "Rh Standard",
-        "desc": "Direct methane-to-methanol conversion."
+        "desc": "Standard: Pt. Target: 2.775 Å."
     },
     "Carbon Monoxide (CO)": {
-        "bond": 1.12, "target_site": 2.772, "ref": "Cu-Ce Standard",
-        "desc": "Industrial syngas processing."
+        "bond": 1.12, "target_site": 2.772, "ref": "Cu-Ce (Harmonic 2.5)",
+        "desc": "Standard: CuO-CeO2. Target: 2.772 Å."
+    },
+    "Nitrogen (N2)": {
+        "bond": 1.09, "target_site": 2.480, "ref": "Fe (Harmonic 2.25)",
+        "desc": "Standard: Fe-K. Target: 2.48 Å."
+    },
+    "Methane (CH4)": {
+        "bond": 1.09, "target_site": 2.720, "ref": "Rh (Harmonic 2.5)",
+        "desc": "Standard: Rh. Target: 2.72 Å."
+    },
+    "CO2 (Reduction)": {
+        "bond": 1.16, "target_site": 2.610, "ref": "Cu/Au boundary",
+        "desc": "Target: 2.61 Å."
+    },
+    "NOx (Reduction)": {
+        "bond": 1.15, "target_site": 2.580, "ref": "Rh",
+        "desc": "Standard: Rh. Target: 2.58 Å."
+    },
+    "Oxygen Reduction (ORR)": {
+        "bond": 1.21, "target_site": 2.700, "ref": "Pt3Ni",
+        "desc": "Fuel cells. Standard: Pt-Ni. Target: 2.70 Å."
+    },
+    "Hydrogen Evolution (HER)": {
+        "bond": 0.74, "target_site": 2.740, "ref": "Pt / MoS2",
+        "desc": "Water splitting. Target: 2.74 Å."
+    },
+    "Ethylene Epoxidation": {
+        "bond": 1.34, "target_site": 2.890, "ref": "Ag",
+        "desc": "Standard: Ag. Target: 2.89 Å."
+    },
+    "Lithium (Intercalation)": {
+        "bond": 2.67, "target_site": 3.040, "ref": "BCC Li distance",
+        "desc": "Solid-state battery anodes. Target: 3.040 Å."
     }
 }
 

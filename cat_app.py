@@ -35,6 +35,18 @@ MOLECULES = {
         "bond": 1.15, "target_site": 2.580, "ref": "Rh",
         "desc": "Standard: Rh. Target: 2.58 Å."
     }
+    "Oxygen Reduction (ORR)": {
+        "bond": 1.21, "target_site": 2.700, "ref": "Pt3Ni",
+        "desc": "Fuel cells. Standard: Pt-Ni. Target: 2.70 Å."
+    },
+    "Hydrogen Evolution (HER)": {
+        "bond": 0.74, "target_site": 2.740, "ref": "Pt / MoS2",
+        "desc": "Water splitting. Target: 2.74 Å."
+    },
+    "Ethylene Epoxidation": {
+        "bond": 1.34, "target_site": 2.890, "ref": "Ag",
+        "desc": "Standard: Ag. Target: 2.89 Å."
+    }
 }
 
 # --- HELPER FUNCTIONS ---

@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 
 # =====================================================================
-# SIMUREALITY: FISSION CLEAVAGE SIMULATOR (RELEASE CANDIDATE + RAW LOG)
+# SIMUREALITY: FULL NUCLEAR TRANSACTIONS DASHBOARD (FISSION + BETA)
 # =====================================================================
 
 @st.cache_data
@@ -87,64 +87,114 @@ def run_fission_scan(Z_parent, N_parent, ame_db):
         })
     return pd.DataFrame(results)
 
+def run_beta_cascade(Z_start, N_start):
+    chain = []
+    current_Z, current_N = Z_start, N_start
+    
+    while True:
+        profit_current = calculate_topological_profit(current_Z, current_N)
+        profit_beta_minus = calculate_topological_profit(current_Z + 1, current_N - 1)
+        profit_beta_plus = calculate_topological_profit(current_Z - 1, current_N + 1)
+        
+        best_profit = profit_current
+        next_step = None
+        decay_type = "Stable (Optimal)"
+        
+        if profit_beta_minus > best_profit:
+            best_profit = profit_beta_minus
+            next_step = (current_Z + 1, current_N - 1)
+            decay_type = "β- Decay"
+        elif profit_beta_plus > best_profit:
+            best_profit = profit_beta_plus
+            next_step = (current_Z - 1, current_N + 1)
+            decay_type = "β+ / EC"
+            
+        chain.append({
+            "Protons (Z)": current_Z,
+            "Neutrons (N)": current_N,
+            "Mass (A)": current_Z + current_N,
+            "Decay Triggered": decay_type,
+            "Topological Profit (MeV)": profit_current,
+            "Step Gain (ΔQ)": (best_profit - profit_current) if next_step else 0.0
+        })
+        
+        if not next_step or len(chain) > 15:
+            break
+            
+        current_Z, current_N = next_step
+        
+    return pd.DataFrame(chain)
+
 # --- STREAMLIT UI ---
-st.set_page_config(page_title="Grid Physics: Fission Simulator", layout="wide")
-
-st.title("⚛️ Fission Landscape: Topology vs Reality")
-st.markdown("Visualizing the deterministic breakdown of the FCC lattice. The vacuum algorithm strictly minimizes computational cost ($\Sigma K \to \min$).")
-
+st.set_page_config(page_title="Grid Physics: Nuclear Dashboard", layout="wide")
+st.title("⚛️ Matrix Operations: Fission & Defragmentation")
 ame_db = load_ame2020()
 
-ISOTOPE_PRESETS = {
-    "U-236 (Thermal Fission of U-235)": (92, 144),
-    "Pu-240 (Thermal Fission of Pu-239)": (94, 146),
-    "Cf-252 (Spontaneous Fission)": (98, 154),
-    "Fm-258 (Symmetric Anomaly)": (100, 158),
-    "Pb-208 (Stable Monolith)": (82, 126),
-    "Custom Manual Input": None
-}
+tab1, tab2 = st.tabs(["🪓 Fission Cleavage", "📉 Beta Cascade"])
 
-selected_preset = st.selectbox("Select Target Isotope for Cleavage Analysis", list(ISOTOPE_PRESETS.keys()))
+# ================= TAB 1: FISSION =================
+with tab1:
+    st.markdown("Visualizing the deterministic breakdown of the FCC lattice ($\Sigma K \to \min$).")
+    ISOTOPE_PRESETS = {
+        "U-236 (Thermal Fission of U-235)": (92, 144),
+        "Pu-240 (Thermal Fission of Pu-239)": (94, 146),
+        "Cf-252 (Spontaneous Fission)": (98, 154),
+        "Fm-258 (Symmetric Anomaly)": (100, 158),
+        "Pb-208 (Stable Monolith)": (82, 126),
+        "Custom Manual Input": None
+    }
+    selected_preset = st.selectbox("Select Target Isotope", list(ISOTOPE_PRESETS.keys()))
 
-if ISOTOPE_PRESETS[selected_preset] is None:
-    col1, col2 = st.columns(2)
-    z_input = col1.number_input("Parent Protons (Z)", min_value=10, max_value=118, value=92, step=1)
-    n_input = col2.number_input("Parent Neutrons (N)", min_value=10, max_value=180, value=144, step=1)
-else:
-    z_input, n_input = ISOTOPE_PRESETS[selected_preset]
-    st.info(f"Target locked: Z={z_input}, N={n_input} (A={z_input+n_input})")
+    if ISOTOPE_PRESETS[selected_preset] is None:
+        col1, col2 = st.columns(2)
+        z_input = col1.number_input("Parent Protons (Z)", min_value=10, max_value=118, value=92, step=1)
+        n_input = col2.number_input("Parent Neutrons (N)", min_value=10, max_value=180, value=144, step=1)
+    else:
+        z_input, n_input = ISOTOPE_PRESETS[selected_preset]
+        st.info(f"Target locked: Z={z_input}, N={n_input} (A={z_input+n_input})")
 
-if st.button("Execute Vacuum Transaction", type="primary", use_container_width=True):
-    with st.spinner("Scanning lattice topology..."):
-        df = run_fission_scan(z_input, n_input, ame_db)
+    if st.button("Execute Vacuum Transaction", type="primary", use_container_width=True):
+        with st.spinner("Scanning lattice topology..."):
+            df = run_fission_scan(z_input, n_input, ame_db)
+        
+        if not df.empty:
+            winner = df.loc[df["Topological Profit (Grid Physics)"].idxmax()]
+            max_profit = winner['Topological Profit (Grid Physics)']
+            st.divider()
+            
+            if max_profit <= 0:
+                st.error("🚨 TRANSACTION DENIED: Topological Profit is negative. The FCC lattice configuration is highly stable.")
+            else:
+                st.success("✅ TRANSACTION APPROVED: Lattice cleavage is computationally profitable.")
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Light Fragment", f"Z={int(winner['Light Fragment Z'])} | N={int(winner['Light Fragment N'])}")
+                m2.metric("Heavy Fragment", f"Z={int(winner['Heavy Fragment Z'])} | N={int(winner['Heavy Fragment N'])}")
+                m3.metric("Garbage Collection", f"{int(winner['Dropped Neutrons'])} n")
+                m4.metric("Q-Profit", f"{max_profit:.2f} MeV")
+
+            st.divider()
+            fig = px.line(df, x="Light Fragment Z", y=["Topological Profit (Grid Physics)", "Experimental Profit (AME2020)"],
+                          markers=True, hover_data=["Heavy Fragment Z", "Dropped Neutrons"])
+            st.plotly_chart(fig, use_container_width=True)
+            st.dataframe(df.sort_values(by="Topological Profit (Grid Physics)", ascending=False), use_container_width=True)
+
+# ================= TAB 2: BETA CASCADE =================
+with tab2:
+    st.markdown("Tracking the localized defragmentation (Jitter Tax reduction) of an unstable fragment.")
+    c1, c2 = st.columns(2)
+    frag_z = c1.number_input("Fragment Protons (Z)", min_value=1, max_value=118, value=54, step=1)
+    frag_n = c2.number_input("Fragment Neutrons (N)", min_value=1, max_value=180, value=86, step=1)
     
-    if not df.empty:
-        winner = df.loc[df["Topological Profit (Grid Physics)"].idxmax()]
-        max_profit = winner['Topological Profit (Grid Physics)']
+    if st.button("Run Defragmentation Chain", type="primary", use_container_width=True):
+        cascade_df = run_beta_cascade(frag_z, frag_n)
+        st.divider()
+        st.subheader("Isobaric Optimization Path")
         
-        st.divider()
+        # Визуализация каскада (ступеньки профита)
+        fig2 = px.bar(cascade_df, x="Protons (Z)", y="Topological Profit (MeV)", 
+                      color="Decay Triggered", text="Decay Triggered",
+                      color_discrete_map={"β- Decay": "#FF4B4B", "β+ / EC": "#00BFFF", "Stable (Optimal)": "#2E8B57"})
+        fig2.update_layout(xaxis_title="Protons (Z) [Moving towards stability]", yaxis_title="Structural Profit (MeV)")
+        st.plotly_chart(fig2, use_container_width=True)
         
-        if max_profit <= 0:
-            st.error("🚨 TRANSACTION DENIED: Topological Profit is negative. The FCC lattice configuration is highly stable and optimally packed. This isotope DOES NOT undergo spontaneous fission.")
-            st.metric("Minimum Required Profit", f"{max_profit:.2f} MeV", delta="Deficit", delta_color="inverse")
-        else:
-            st.success("✅ TRANSACTION APPROVED: Geometry overflow detected. Lattice cleavage is computationally profitable.")
-            st.subheader("🏆 Global Topological Maximum (Optimal Cleavage)")
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Light Fragment", f"Z={int(winner['Light Fragment Z'])} | N={int(winner['Light Fragment N'])}")
-            m2.metric("Heavy Fragment", f"Z={int(winner['Heavy Fragment Z'])} | N={int(winner['Heavy Fragment N'])}")
-            m3.metric("Garbage Collection", f"{int(winner['Dropped Neutrons'])} n", delta="Free Neutrons", delta_color="inverse")
-            m4.metric("Q-Profit", f"{max_profit:.2f} MeV")
-
-        st.divider()
-        st.subheader("Bimodal Fission Yield (Interactive Landscape)")
-        fig = px.line(df, x="Light Fragment Z", y=["Topological Profit (Grid Physics)", "Experimental Profit (AME2020)"],
-                      markers=True, hover_data=["Heavy Fragment Z", "Dropped Neutrons"],
-                      color_discrete_map={"Topological Profit (Grid Physics)": "#00BFFF", "Experimental Profit (AME2020)": "#FF4B4B"})
-        fig.update_layout(xaxis_title="Light Fragment Protons (Z)", yaxis_title="Energy Profit (MeV)", hovermode="x unified")
-        st.plotly_chart(fig, use_container_width=True)
-
-        # ВОЗВРАЩЕННАЯ ТАБЛИЦА (Сырой дамп транзакций)
-        st.divider()
-        st.subheader("Raw Transaction Log (Sorted by Profit)")
-        st.dataframe(df.sort_values(by="Topological Profit (Grid Physics)", ascending=False), use_container_width=True)
+        st.dataframe(cascade_df, use_container_width=True)

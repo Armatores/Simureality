@@ -105,8 +105,7 @@ def get_discrete_graph_diameter(A):
 def run_beta_cascade(Z_start, N_start):
     chain = []
     current_Z, current_N = Z_start, N_start
-    # Вывод Кулоновского импеданса через трансверсальную диагональ ГЦК-решетки
-        C_TAX = E_LINK * np.sqrt(2)
+    C_TAX=E_LINK*np.sqrt(2)
     
     def get_beta_profit(Z, N):
         if Z <= 0 or N <= 0: return -float('inf')

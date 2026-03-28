@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 
 # =====================================================================
-# FULL NUCLEAR TRANSACTIONS DASHBOARD (DISCRETE TOPOLOGY + DOUBLE BETA FIX)
+# FULL NUCLEAR TRANSACTIONS DASHBOARD (PURE TOPOLOGY, NO PAIRING HACK)
 # =====================================================================
 
 @st.cache_data
@@ -35,7 +35,6 @@ MAGIC_NODES = generate_fcc_magic()
 E_ALPHA = 28.320       
 E_MACRO = 2.425        
 E_LINK = 2.360         
-E_PAIR = 1.180         
 J_TAX = 0.0131         
 
 def get_jitter_tax(Z, N):
@@ -44,17 +43,29 @@ def get_jitter_tax(Z, N):
     base_ports = 10.0 * ((Z + N)**(2/3))
     return (base_ports + (15.0 * ((dist_Z + dist_N)**1.2))) * J_TAX
 
+def get_dangling_port_tax(Z, N):
+    unpaired_p = Z % 2
+    unpaired_n = N % 2
+    PORT_PENALTY = E_LINK / 2.0 
+    tax = 0.0
+    if unpaired_p == 1: tax += PORT_PENALTY
+    if unpaired_n == 1: tax += PORT_PENALTY
+    return tax
+
 def calculate_topological_profit(Z, N):
     if Z <= 0 or N <= 0: return 0
     N_alpha = min(Z // 2, N // 2)
     l_ideal = max(0, 3 * N_alpha - 6)
     l_lost = (min([abs(Z - m) for m in MAGIC_NODES]) + min([abs(N - m) for m in MAGIC_NODES])) * 0.4
     
-    BE = (N_alpha * E_ALPHA) + (max(0, l_ideal - l_lost) * E_MACRO) - get_jitter_tax(Z, N)
-    if Z % 2 == 0 and N % 2 == 0: BE += E_PAIR
+    BE = (N_alpha * E_ALPHA) + (max(0, l_ideal - l_lost) * E_MACRO)
     
     halo_n = N - Z
     if halo_n > 0: BE += halo_n * E_LINK
+    
+    BE -= get_jitter_tax(Z, N)
+    BE -= get_dangling_port_tax(Z, N)
+    
     return BE
 
 def run_fission_scan(Z_parent, N_parent, ame_db):
@@ -87,7 +98,6 @@ def run_fission_scan(Z_parent, N_parent, ame_db):
         })
     return pd.DataFrame(results)
 
-# --- АНАЛИТИКА ГРАФОВ (ДЛЯ БЕТА-РАСПАДА) ---
 def get_discrete_graph_diameter(A):
     diameter = 1
     for magic_size in MAGIC_NODES:
@@ -105,7 +115,6 @@ def get_discrete_graph_diameter(A):
 def run_beta_cascade(Z_start, N_start):
     chain = []
     current_Z, current_N = Z_start, N_start
-    # Вывод Кулоновского импеданса через трансверсальную диагональ
     C_TAX = E_LINK * np.sqrt(2) 
     
     def get_beta_profit(Z, N):
@@ -120,11 +129,9 @@ def run_beta_cascade(Z_start, N_start):
     while True:
         profit_current = get_beta_profit(current_Z, current_N)
         
-        # 1-шаговое сканирование
         profit_b_minus_1 = get_beta_profit(current_Z + 1, current_N - 1)
         profit_b_plus_1 = get_beta_profit(current_Z - 1, current_N + 1)
         
-        # 2-шаговое сканирование (Двойной бета-распад)
         profit_b_minus_2 = get_beta_profit(current_Z + 2, current_N - 2)
         profit_b_plus_2 = get_beta_profit(current_Z - 2, current_N + 2)
         
@@ -133,7 +140,6 @@ def run_beta_cascade(Z_start, N_start):
         decay_type = "Stable (Optimal)"
         step_gain = 0.0
         
-        # Проверка классического 1-шагового спуска
         if profit_b_minus_1 > best_profit:
             best_profit = profit_b_minus_1
             next_step = (current_Z + 1, current_N - 1)
@@ -145,10 +151,8 @@ def run_beta_cascade(Z_start, N_start):
             decay_type = "β+ / EC"
             step_gain = profit_b_plus_1 - profit_current
             
-        # ТУННЕЛИРОВАНИЕ (если 1-й шаг убыточный, но 2-й пробивает потолок)
         if next_step is None:
             if profit_b_minus_2 > profit_current:
-                # Транзитный виртуальный шаг
                 chain.append({
                     "Protons (Z)": current_Z + 1,
                     "Neutrons (N)": current_N - 1,
@@ -157,7 +161,6 @@ def run_beta_cascade(Z_start, N_start):
                     "Topological Profit (MeV)": profit_b_minus_1,
                     "Step Gain (ΔQ)": profit_b_minus_1 - profit_current
                 })
-                # Жесткий коммит на 2-й шаг
                 next_step = (current_Z + 2, current_N - 2)
                 decay_type = "Double β- Decay"
                 step_gain = profit_b_minus_2 - profit_b_minus_1
@@ -165,7 +168,6 @@ def run_beta_cascade(Z_start, N_start):
                 best_profit = profit_b_minus_2
                 
             elif profit_b_plus_2 > profit_current:
-                # Транзитный виртуальный шаг
                 chain.append({
                     "Protons (Z)": current_Z - 1,
                     "Neutrons (N)": current_N + 1,
@@ -174,14 +176,12 @@ def run_beta_cascade(Z_start, N_start):
                     "Topological Profit (MeV)": profit_b_plus_1,
                     "Step Gain (ΔQ)": profit_b_plus_1 - profit_current
                 })
-                # Жесткий коммит на 2-й шаг
                 next_step = (current_Z - 2, current_N + 2)
                 decay_type = "Double β+ / EC"
                 step_gain = profit_b_plus_2 - profit_b_plus_1
                 profit_current = profit_b_plus_1
                 best_profit = profit_b_plus_2
 
-        # Запись текущего шага в лог
         chain.append({
             "Protons (Z)": next_step[0] if next_step else current_Z,
             "Neutrons (N)": next_step[1] if next_step else current_N,

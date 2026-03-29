@@ -5,7 +5,7 @@ import plotly.express as px
 import os
 
 # =====================================================================
-# FULL NUCLEAR TRANSACTIONS DASHBOARD (RESTORED GEOMETRIC LIMITS)
+# FULL NUCLEAR TRANSACTIONS DASHBOARD (HALO SATURATION PATCH)
 # =====================================================================
 
 @st.cache_data
@@ -34,14 +34,14 @@ def generate_fcc_magic():
 MAGIC_NODES = generate_fcc_magic()
 E_ALPHA = 28.320       
 E_MACRO = 2.425        
-E_LINK = 2.360         
+E_LINK = 2.360 
+E_PAIR = 1.180  # Восстановлено для расчета Neutron Skin     
 J_TAX = 0.0131         
 
 def get_jitter_tax(Z, N):
     if Z <= 0 or N <= 0: return 0
     dist_Z, dist_N = min([abs(Z - m) for m in MAGIC_NODES]), min([abs(N - m) for m in MAGIC_NODES])
     base_ports = 10.0 * ((Z + N)**(2/3))
-    # ВОЗВРАЩЕНО К ОРИГИНАЛУ: Степень 1.2 (честный поверхностный тензор)
     return (base_ports + (15.0 * ((dist_Z + dist_N)**1.2))) * J_TAX
 
 def get_dangling_port_tax(Z, N):
@@ -52,7 +52,7 @@ def get_dangling_port_tax(Z, N):
     if unpaired_p == 1: tax += PORT_PENALTY
     if unpaired_n == 1: tax += PORT_PENALTY
     return tax
-    
+
 def calculate_topological_profit(Z, N):
     if Z <= 0 or N <= 0: return 0
     N_alpha = min(Z // 2, N // 2)
@@ -94,8 +94,6 @@ def run_fission_scan(Z_parent, N_parent, ame_db):
         
         for free_n in range(0, 8): 
             remaining_N = N_parent - free_n
-            # ВОЗВРАЩЕНО К ОРИГИНАЛУ: Строгие границы ГЦК-валентности (1.2 - 1.6)
-            # Именно они детерминированно срезают "лишние" нейтроны в мусор.
             for N1 in range(int(Z1*1.2), int(Z1*1.6)):
                 N2 = remaining_N - N1
                 if N2 < int(Z2*1.2) or N2 > int(Z2*1.6): continue

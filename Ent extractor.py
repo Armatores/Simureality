@@ -2,10 +2,11 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 import os
 
 # =====================================================================
-# SIMUREALITY: ENTANGLEMENT EXTRACTOR (MEMORY DEDUPLICATION)
+# SIMUREALITY: NESTED ENTANGLEMENT EXTRACTOR (L1 / L2 CACHE)
 # =====================================================================
 
 @st.cache_data
@@ -36,6 +37,9 @@ E_MACRO = 2.425
 E_LINK = 2.360 
 E_PAIR = 1.180      
 J_TAX = 0.0131         
+
+# L1 Cache Constant (Derived from He-4 baseline)
+L1_ALPHA_CACHE_MEV = 1.736 
 
 def get_jitter_tax(Z, N):
     if Z <= 0 or N <= 0: return 0
@@ -82,60 +86,59 @@ def get_total_matrix_energy(Z, N):
     coulomb_penalty = C_TAX * ((Z * (Z - 1)) / 2.0) / get_discrete_graph_diameter(A)
     return base_profit - coulomb_penalty
 
-def scan_entanglement_energy(ame_db):
+def scan_nested_entanglement(ame_db):
     results = []
     for (Z, N), be_exp in ame_db.items():
-        if Z < 2 or Z > 100: continue
-        # Сканируем только стабильные и около-стабильные сборки (чтобы исключить экстремальные баги)
+        if Z < 4 or Z > 100: continue # Пропускаем совсем мелкие (H, He, Li) чтобы смотреть на макро-сеть
         if N < Z or N > Z * 1.6: continue
         
         be_grid = get_total_matrix_energy(Z, N)
-        # ИЗВЛЕЧЕНИЕ: Разница между реальным профитом и пространственной геометрией
-        entanglement_energy = be_exp - be_grid 
+        total_entanglement = be_exp - be_grid 
         
-        # Считаем количество дедуплицированных пар памяти (Shared Pointers)
-        shared_pointers = (Z // 2) + (N // 2)
-        quantum_per_pointer = entanglement_energy / shared_pointers if shared_pointers > 0 else 0
+        # Разделение кэша (Hierarchical LOD)
+        n_alpha_clusters = min(Z // 2, N // 2)
+        n_halo_neutrons = max(0, N - Z) # L3 Cache (слабые ссылки, пока считаем их влияние нулевым)
+        
+        L1_energy = n_alpha_clusters * L1_ALPHA_CACHE_MEV
+        L2_energy = total_entanglement - L1_energy
+        
+        # Энергия на один указатель Глобального Барицентра (Звездная Топология: все Альфы смотрят в центр)
+        L2_per_alpha_pointer = L2_energy / n_alpha_clusters if n_alpha_clusters > 0 else 0
         
         results.append({
             "Protons (Z)": Z, "Neutrons (N)": N, "Mass (A)": Z + N,
-            "AME2020 Total BE (MeV)": be_exp,
-            "Grid Topology BE (MeV)": be_grid,
-            "Entanglement Energy (MeV)": entanglement_energy,
-            "Shared Memory Pointers": shared_pointers,
-            "Energy per Pointer (MeV)": quantum_per_pointer
+            "Alpha Clusters (L1 Nodes)": n_alpha_clusters,
+            "Total Entanglement (MeV)": total_entanglement,
+            "L1 Cache (Local Prefabs)": L1_energy,
+            "L2 Cache (Global Barycenter)": L2_energy,
+            "L2 Energy per Global Pointer (MeV)": L2_per_alpha_pointer
         })
     return pd.DataFrame(results)
 
 # --- STREAMLIT UI ---
-st.set_page_config(page_title="Entanglement Extractor", layout="wide")
-st.title("🌌 The Entanglement Extractor: Memory Deduplication")
-st.markdown("Извлечение энергии Квантовой Запутанности путем вычитания топологического профиля ГЦК-матрицы из экспериментальных баз AME2020.")
+st.set_page_config(page_title="Nested Entanglement: L1/L2 Cache", layout="wide")
+st.title("🌳 Hierarchical LOD: L1 & L2 Cache Separation")
+st.markdown("Мы отделили фиксированный бонус Альфа-префабов (L1) от глобальной скидки за удержание всего ядра (L2). Ищем константу Глобального Барицентра.")
 
 ame_db = load_ame2020()
 if not ame_db:
-    st.error("Файл mass.txt не найден! Положите базу AME2020 в папку со скриптом.")
+    st.error("Файл mass.txt не найден!")
 else:
-    with st.spinner("Декомпиляция энергии запутанности для всех изотопов..."):
-        df = scan_entanglement_energy(ame_db)
-        
-    st.success(f"Анализ завершен. Обработано {len(df)} изотопов.")
+    df = scan_nested_entanglement(ame_db)
     
-    # Визуализация: Как Энергия Запутанности растет с массой
-    fig1 = px.scatter(df, x="Mass (A)", y="Entanglement Energy (MeV)", color="Protons (Z)", 
-                      hover_data=["Protons (Z)", "Neutrons (N)", "Shared Memory Pointers"],
-                      title="Абсолютная Энергия Запутанности ядра (Memory Cache Bonus)")
-    fig1.update_layout(template="plotly_dark", yaxis_title="Entanglement Offset (MeV)")
+    # Визуализация 1: Разделение L1 и L2
+    df_sorted = df.sort_values("Mass (A)")
+    fig1 = go.Figure()
+    fig1.add_trace(go.Scatter(x=df_sorted["Mass (A)"], y=df_sorted["L1 Cache (Local Prefabs)"], name="L1 Cache (Alpha Prefabs)", fill='tozeroy', mode='none', fillcolor='rgba(0, 255, 127, 0.5)'))
+    fig1.add_trace(go.Scatter(x=df_sorted["Mass (A)"], y=df_sorted["L2 Cache (Global Barycenter)"], name="L2 Cache (Global Pointers)", fill='tonexty', mode='none', fillcolor='rgba(0, 191, 255, 0.5)'))
+    fig1.update_layout(title="Архитектура Памяти: Доля L1 и L2 кэша в стабильности ядра", xaxis_title="Mass (A)", yaxis_title="Entanglement Energy (MeV)", template="plotly_dark")
     st.plotly_chart(fig1, use_container_width=True)
 
-    # Визуализация: Квант Запутанности на один Указатель (Дедупликацию)
-    # Фильтруем экстремальные отклонения для чистоты графика
-    df_clean = df[(df["Energy per Pointer (MeV)"] > -2) & (df["Energy per Pointer (MeV)"] < 5)]
-    fig2 = px.box(df_clean, x="Protons (Z)", y="Energy per Pointer (MeV)", 
-                  title="Энергия на один Shared Pointer (Константа Запутанности)")
-    fig2.update_layout(template="plotly_dark", yaxis_title="Energy per Deduplicated Pair (MeV)")
-    fig2.add_hline(y=df_clean["Energy per Pointer (MeV)"].median(), line_dash="dash", line_color="yellow", annotation_text="Global Entanglement Quantum")
+    # Визуализация 2: Идеальная Константа L2?
+    fig2 = px.scatter(df, x="Mass (A)", y="L2 Energy per Global Pointer (MeV)", color="Protons (Z)", 
+                      title="Энергия на ОДИН Указатель Глобального Барицентра (Очищенный L2)",
+                      trendline="lowess", trendline_color_override="yellow")
+    fig2.update_layout(template="plotly_dark", yaxis_title="L2 Bonus per Alpha Cluster (MeV)")
     st.plotly_chart(fig2, use_container_width=True)
 
-    st.subheader("Raw Entanglement Data")
-    st.dataframe(df.sort_values(by="Entanglement Energy (MeV)", ascending=False), use_container_width=True)
+    st.dataframe(df.sort_values(by="Mass (A)", ascending=True).head(50), use_container_width=True)

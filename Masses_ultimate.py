@@ -12,11 +12,15 @@ E_LINK = 2.36
 E_PAIR = 1.18          
 JITTER_COST = 0.0131   
 
-# --- V6 NEW HARDWARE CONSTANTS (SKIN, TENSION & SHELLS) ---
+# --- V6/V7 NEW HARDWARE CONSTANTS (SKIN, TENSION, SHELLS, CLASH & DESYNC) ---
 E_SKIN_LINK = 1.35       # Профит за подключение нейтрона гало к поверхности 3D-ядра
 TENSION_PENALTY = 0.95   # Вычислительный штраф за макро-линк (распирание базы данных)
 E_MAGIC = 2.15           # Топологический профит за идеальную симметрию (закрытую оболочку ГЦК)
 MAGIC_NUMBERS = {2, 8, 20, 28, 50, 82, 126} # Идеальные геометрические префабы Матрицы
+
+# НОВЫЕ ШТРАФЫ МАРШРУТИЗАЦИИ (V7.0)
+TORSIONAL_CLASH_TAX = 0.711 # Аппаратный штраф за скрежет одинаковых I/O портов (CW-векторов)
+DESYNC_TAX = 23.2           # Штраф за фазовый сдвиг тактов (Flicker) при толстом скин-слое
 
 # --- ELEMENT DICTIONARY (Z to Symbol) ---
 ELEMENTS = {
@@ -120,8 +124,12 @@ class SimurealityMacroCore:
     def compile_mass(self, Z, N):
         # --- HARDWARE FIREWALL ---
         if Z < 0 or N < 0:
-            return float('inf') # Матрица блокирует антиматерию в этом слое вычислений
+            return float('inf') # Блокировка антиматерии
             
+        A = Z + N
+        if A == 0:
+            return 0.0
+
         n_alphas = min(Z // 2, N // 2)
         binding_alphas = n_alphas * E_ALPHA
         
@@ -137,18 +145,22 @@ class SimurealityMacroCore:
             
         if n_alphas > 0:
             surface_ports = (n_alphas ** (2/3)) * 6.5
-            
-            # Топологическая Деформация (Эллипсоид) для снятия напряжения тяжелых ядер
             if n_alphas > 25: 
-                tension_penalty *= 0.65       # Ядро вытягивается, сбрасывая 35% распирания
-                surface_ports *= 1.15         # Площадь поверхности вытянутого ядра больше на 15%
-                
+                tension_penalty *= 0.65       
+                surface_ports *= 1.15         
             surface_ports = int(surface_ports)
 
         # --- V6 LOGIC: MAGIC NUMBERS (Идеальные Оболочки) ---
         magic_profit = 0
         if Z in MAGIC_NUMBERS: magic_profit += E_MAGIC
         if N in MAGIC_NUMBERS: magic_profit += E_MAGIC
+
+        # --- V7 LOGIC: MACRO-ROUTING CONFLICTS ---
+        # 1. Торсионный Скрежет (Конфликт протонов CW-векторов)
+        clash_penalty = TORSIONAL_CLASH_TAX * (Z**2) / (A**(1/3)) if A > 0 else 0
+        
+        # 2. Десинхронизация Тактов (Сдвиг фазы Flicker из-за толстой нейтронной кольчуги)
+        desync_penalty = DESYNC_TAX * ((N - Z)**2) / A if A > 0 else 0
 
         rem_Z = Z - (n_alphas * 2)
         rem_N = N - (n_alphas * 2)
@@ -164,7 +176,6 @@ class SimurealityMacroCore:
             elif Z == 2 and N == 1:
                 binding_halo = 7.718                    
         else:
-            # --- V5/V6 LOGIC: NEUTRON SKIN WEAVING (Скин-слой) ---
             pairs = halo_total // 2
             unpaired = halo_total % 2
             binding_halo += pairs * E_PAIR
@@ -184,7 +195,8 @@ class SimurealityMacroCore:
             if overflow > 0:
                 jitter += overflow * E_ELECTRON 
 
-        total_binding = binding_alphas + binding_macro + binding_halo + magic_profit - tension_penalty - jitter
+        # Итоговая сборка: профит за узлы минус динамические штрафы Диспетчера
+        total_binding = binding_alphas + binding_macro + binding_halo + magic_profit - tension_penalty - clash_penalty - desync_penalty - jitter
         raw_mass = (Z * MASS_P) + (N * MASS_N)
         return raw_mass - total_binding
 
@@ -215,22 +227,22 @@ def generate_global_matrix(_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- UI RENDERING ---
-st.title("Simureality OS: Pure Hardware Task Dispatcher (V6.0)")
+st.title("Simureality OS: Ultimate Hardware Core (V7.0)")
 st.markdown("""
 **Core Capabilities:**
 1. Analytical calculation of ΣK (Mass) based on FCC-matrix.
 2. **Zero synthetic data:** strictly filters out theoretical estimations (`#`, `*`) from AME logs.
-3. **Geometric Integrity:** Implements Topological Deformation and Magic Numbers (Perfect FCC Shells) to resolve extreme core tension in heavy nuclei.
+3. **Macro-Routing Protocols:** Resolves core tension via Shell Magic Numbers, Torsional Port Clash penalties, and Flicker Desync penalties.
 """)
 
-with st.expander("📚 Architectural Patch V6.0: Shell Closures & Deformation"):
+with st.expander("📚 Architectural Patch V7.0: Torsional Clash & Flicker Desync"):
     st.markdown("""
-    ### The Macro-Scale Optimization
-    Previous algorithms forced all heavy nuclei into perfect spheres, creating artificial Core Tension and massive `ΣK` debt.
+    ### The Routing Bottleneck
+    Previous algorithms failed to account for the physical processing constraints of identical I/O ports.
     
-    ### The V6.0 Solution
-    1. **Topological Deformation:** Once a core exceeds $N_{alphas} > 25$, the Dispatcher relaxes the matrix into a prolate/oblate structure. This cuts Core Tension by 35% and increases surface area by 15%, allowing the Neutron Skin to weave more efficiently.
-    2. **Hardware Prefabs (Magic Numbers):** Numbers `2, 8, 20, 28, 50, 82, 126` represent perfectly closed, symmetrical polyhedra on the FCC lattice. When $Z$ or $N$ align with these prefabs, the topological friction drops to zero, granting a hardcoded `E_MAGIC` profit.
+    ### The V7.0 Solution
+    1. **Torsional Clash Tax:** Concentrating too many $CW$ twist vectors (protons) in a dense macro-crystal causes severe spatial interference. The Matrix applies a routing penalty proportional to $Z^2 / A^{1/3}$.
+    2. **Flicker Desync Tax:** A massive, asymmetrical neutron skin ($N \gg Z$) fails to synchronize with the core's system clock (Flicker rate), creating a topological lag proportional to $(N-Z)^2 / A$.
     """)
 
 df_masses = load_ame_masses("mass.txt")
@@ -295,7 +307,7 @@ with tab1:
             st.dataframe(global_df.drop(columns=['Absolute Debt (MeV)', 'Jitter Cache Load (%)']), use_container_width=True, height=400)
             
             csv_data = global_df.to_csv(index=False).encode('utf-8')
-            st.download_button("Download Matrix (CSV)", data=csv_data, file_name="simureality_v6_pure_log.csv", mime="text/csv")
+            st.download_button("Download Matrix (CSV)", data=csv_data, file_name="simureality_v7_pure_log.csv", mime="text/csv")
 
 with tab2:
     st.markdown("## Architectural Proofs of the FCC Matrix")

@@ -52,7 +52,7 @@ def get_dangling_port_tax(Z, N):
     if unpaired_p == 1: tax += PORT_PENALTY
     if unpaired_n == 1: tax += PORT_PENALTY
     return tax
-
+    
 def calculate_topological_profit(Z, N):
     if Z <= 0 or N <= 0: return 0
     N_alpha = min(Z // 2, N // 2)
@@ -62,7 +62,20 @@ def calculate_topological_profit(Z, N):
     BE = (N_alpha * E_ALPHA) + (max(0, l_ideal - l_lost) * E_MACRO)
     
     halo_n = N - Z
-    if halo_n > 0: BE += halo_n * E_LINK
+    if halo_n > 0: 
+        # ПАТЧ: Топологическое перенасыщение (Halo Saturation Limit)
+        # У ядра ограничена площадь поверхности для идеальных 1p-1n связей.
+        # В жестком ГЦК-ядре эффективное гало не превышает ~40% от числа протонов.
+        max_strong_links = int(Z * 0.4) 
+        
+        strong_halo = min(halo_n, max_strong_links)
+        weak_halo = halo_n - strong_halo
+        
+        # 1. Прямые линки (внутренний слой гало) дают полный профит
+        BE += strong_halo * E_LINK
+        
+        # 2. "Второй слой" (Neutron Skin) висит на слабых n-n связях
+        BE += weak_halo * (E_PAIR / 2.0)
     
     BE -= get_jitter_tax(Z, N)
     BE -= get_dangling_port_tax(Z, N)

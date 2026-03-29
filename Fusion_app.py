@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 
 # =====================================================================
-# SIMUREALITY: STELLAR NUCLEOSYNTHESIS & FUSION ENGINE
+# SIMUREALITY: STELLAR FORGE (SPACE & TIME UNIFIED ENGINE)
 # =====================================================================
 
 def generate_fcc_magic():
@@ -19,11 +20,12 @@ E_LINK = 2.360
 E_PAIR = 1.180      
 J_TAX = 0.0131         
 
+# --- ОСЬ ПРОСТРАНСТВА (НАША ТОПОЛОГИЯ) ---
 def get_jitter_tax(Z, N):
     if Z <= 0 or N <= 0: return 0
     dist_Z, dist_N = min([abs(Z - m) for m in MAGIC_NODES]), min([abs(N - m) for m in MAGIC_NODES])
     base_ports = 10.0 * ((Z + N)**(2/3))
-    return (base_ports + (15.0 * ((dist_Z + dist_N)**1.2))) * J_TAX
+    return (base_ports + (15.0 * ((dist_Z + dist_N)**1.6))) * J_TAX
 
 def get_dangling_port_tax(Z, N):
     return (E_LINK / 2.0) * ((Z % 2) + (N % 2))
@@ -68,70 +70,117 @@ def get_total_matrix_energy(Z, N):
     coulomb_penalty = C_TAX * ((Z * (Z - 1)) / 2.0) / get_discrete_graph_diameter(A)
     return base_profit - coulomb_penalty
 
-def get_fusion_profit(Z1, N1, Z2, N2):
-    """Вычисляет профит от геометрического слияния двух блоков"""
+def get_fusion_profit(Z1, N1, Z2, N2, confinement_tax_mev=0.0):
+    """
+    Вычисляет профит слияния. 
+    confinement_tax_mev - это Налог на Коллизию (Давление).
+    Когда блоки разделены, но сдавлены гравитацией, они несут убыток маршрутизации.
+    Слияние устраняет этот убыток.
+    """
     E_parent = get_total_matrix_energy(Z1 + Z2, N1 + N2)
     E_frag1 = get_total_matrix_energy(Z1, N1)
     E_frag2 = get_total_matrix_energy(Z2, N2)
-    return E_parent - (E_frag1 + E_frag2)
+    
+    # Энергия разделенного состояния: базовые энергии МИНУС налог на тесноту
+    Initial_State = E_frag1 + E_frag2 - confinement_tax_mev
+    Final_State = E_parent
+    
+    return Final_State - Initial_State
+
+# --- ОСЬ ВРЕМЕНИ (ТАКТОВАЯ ЧАСТОТА ОТ "УМНИЦЫ") ---
+def simulate_gamow_peak(lattice_impedance, max_latch_speed):
+    energies = np.linspace(1, 200, 400) 
+    p_penetration = np.exp(-lattice_impedance / np.sqrt(energies))
+    p_latch = np.exp(-energies / max_latch_speed)
+    cross_section = (1.0 / energies) * p_penetration * p_latch
+    if np.max(cross_section) > 0:
+        cross_section = (cross_section / np.max(cross_section)) * 100 
+    
+    df = pd.DataFrame({
+        "Kinetic Energy (keV)": energies,
+        "Grid Yielding Prob (Penetration)": p_penetration * 100,
+        "Matrix Latch Prob (Commit Success)": p_latch * 100,
+        "Fusion Cross-Section": cross_section
+    })
+    return df
 
 # --- STREAMLIT UI ---
-st.set_page_config(page_title="Fusion Matrix Assembly", layout="wide")
-st.title("☀️ Stellar Nucleosynthesis: Grid Assembly")
+st.set_page_config(page_title="Stellar Forge: Unified Grid Engine", layout="wide")
+st.title("🌟 Stellar Forge: Space-Time Fusion Engine")
+st.markdown("Объединенный движок: Эмерджентная геометрия ГЦК-матрицы (Ось Пространства) + Декомпиляция тактовой частоты (Ось Времени).")
 
-tab1, tab2 = st.tabs(["🪜 Alpha Ladder (Stellar Core)", "⚡ Custom Fusion (Tokamak)"])
+tab1, tab2, tab3 = st.tabs(["🪜 Alpha Ladder (Emergent Iron Wall)", "⚙️ Tokamak (Confinement Pressure)", "⏱️ Gamow Peak (Time Latch)"])
 
 with tab1:
-    st.markdown("Симуляция звездного нуклеосинтеза: последовательное присоединение тетраэдров Гелия-4 к растущему макро-кристаллу.")
+    st.subheader("Симуляция звездного нуклеосинтеза (Alpha-процесс)")
+    st.markdown("Алгоритм холодного синтеза. Железная стена возникает эмерджентно: Кулоновский налог на диагонали превышает профит от сборки новых тетраэдров.")
     
-    if st.button("Запустить цепочку альфа-захвата", type="primary"):
+    if st.button("Запустить цепочку альфа-захвата", type="primary", key="btn_ladder"):
         ladder_results = []
-        current_Z, current_N = 2, 2 # Стартуем с Гелия-4
+        current_Z, current_N = 2, 2 
+        elements = ["He", "Be", "C", "O", "Ne", "Mg", "Si", "S", "Ar", "Ca", "Ti", "Cr", "Fe", "Ni", "Zn", "Ge", "Se", "Kr"]
         
-        # Симулируем сборку вплоть до Цинка
-        for _ in range(14):
+        for idx in range(1, 15):
             target_Z, target_N = current_Z + 2, current_N + 2
+            elem_name = elements[idx] if idx < len(elements) else f"Z={target_Z}"
             step_profit = get_fusion_profit(current_Z, current_N, 2, 2)
             
             ladder_results.append({
-                "Reaction": f"Z={current_Z} + He-4 ➔ Z={target_Z}",
+                "Reaction": f"Z={current_Z} + He-4 ➔ {elem_name}-{target_Z+target_N}",
                 "Product Z": target_Z,
-                "Product Mass (A)": target_Z + target_N,
                 "Fusion Profit (MeV)": step_profit,
-                "Verdict": "✅ Одобрено (Экзотермическая)" if step_profit > 0 else "🚨 Заблокировано (Эндотермическая)"
+                "Verdict": "✅ Одобрено (Star Burns)" if step_profit > 0 else "🚨 Заблокировано (Endothermic)"
             })
             current_Z, current_N = target_Z, target_N
             
         df_ladder = pd.DataFrame(ladder_results)
         
-        st.subheader("Лог сборки решетки")
-        
-        fig = px.bar(df_ladder, x="Product Z", y="Fusion Profit (MeV)", 
+        fig1 = px.bar(df_ladder, x="Product Z", y="Fusion Profit (MeV)", 
                      color="Verdict", text_auto='.2f',
-                     color_discrete_map={"✅ Одобрено (Экзотермическая)": "#00BFFF", "🚨 Заблокировано (Эндотермическая)": "#FF4B4B"})
-        fig.update_layout(xaxis_title="Protons (Z) of Product", yaxis_title="Energy Released per Alpha Block (MeV)")
-        st.plotly_chart(fig, use_container_width=True)
-        
+                     color_discrete_map={"✅ Одобрено (Star Burns)": "#00FF7F", "🚨 Заблокировано (Endothermic)": "#FF4500"})
+        fig1.update_layout(xaxis_title="Protons (Z) of Product", yaxis_title="Marginal Fusion Profit (MeV)", template="plotly_dark")
+        fig1.add_hline(y=0, line_width=2, line_color="white")
+        st.plotly_chart(fig1, use_container_width=True)
         st.dataframe(df_ladder, use_container_width=True)
 
 with tab2:
-    st.markdown("Свободный конструктор: проверка слияния любых двух легких блоков.")
-    c1, c2, c3, c4 = st.columns(4)
-    z1 = c1.number_input("Fragment 1 (Z)", min_value=1, value=1, step=1)
-    n1 = c2.number_input("Fragment 1 (N)", min_value=0, value=1, step=1) # D
-    z2 = c3.number_input("Fragment 2 (Z)", min_value=1, value=1, step=1)
-    n2 = c4.number_input("Fragment 2 (N)", min_value=0, value=2, step=1) # T
+    st.subheader("Влияние Гравитации: Налог на пространственную коллизию")
+    st.markdown("В вакууме симметричные блоки Углерода/Кислорода не сливаются (убыток). Но если гравитация сжимает их, порты начинают конфликтовать. Матрица одобряет синтез, чтобы сбросить налог на коллизию кэша.")
     
-    if st.button("Выполнить слияние"):
-        profit = get_fusion_profit(z1, n1, z2, n2)
-        total_Z, total_N = z1 + z2, n1 + n2
+    col_c1, col_c2 = st.columns([1, 2])
+    with col_c1:
+        z1 = st.number_input("Fragment 1 (Z)", min_value=1, value=6, step=1)
+        n1 = st.number_input("Fragment 1 (N)", min_value=0, value=6, step=1)
+        z2 = st.number_input("Fragment 2 (Z)", min_value=1, value=6, step=1)
+        n2 = st.number_input("Fragment 2 (N)", min_value=0, value=6, step=1)
+        
+    with col_c2:
+        pressure = st.slider("Гравитационное Давление (Collision Tax, MeV)", min_value=0.0, max_value=25.0, value=0.0, step=0.5, help="Штраф Матрицы за то, что два независимых блока удерживаются в одной ячейке.")
+        
+        profit = get_fusion_profit(z1, n1, z2, n2, confinement_tax_mev=pressure)
         
         st.divider()
         if profit > 0:
-            st.success(f"🔥 УСПЕХ: Вакуум одобрил слияние. Выход энергии: {profit:.2f} МэВ")
+            st.success(f"🔥 УСПЕХ: Термоядерное Зажигание! Матрица спаяла блоки. Выход энергии: +{profit:.2f} МэВ")
         else:
-            st.error(f"❄️ ОТКАЗ: Сборка невыгодна. Энергия поглощается: {profit:.2f} МэВ")
+            st.error(f"❄️ ОТКАЗ: Давления недостаточно. Слияние заблокировано: {profit:.2f} МэВ")
             
-        m1, m2 = st.columns(2)
-        m1.metric("Собранный кристалл (Z)", total_Z)
-        m2.metric("Собранный кристалл (Mass)", total_Z + total_N)
+        st.info(f"Собранный макро-кристалл: Z={z1+z2}, N={n1+n2} (Масса {z1+z2+n1+n2})")
+
+with tab3:
+    st.subheader("Декомпиляция Пика Гамова (Аппаратный Latch Timeout)")
+    st.markdown("Температура — это Jitter-частота. Если ядро летит слишком быстро, Диспетчер Матрицы не успевает записать транзакцию (Пропуск Кадра / Latch Timeout).")
+    
+    col1, col2 = st.columns(2)
+    imp = col1.slider("Lattice Impedance (Сопротивление Сетки Кулоном)", 10.0, 150.0, 80.0, 10.0)
+    latch = col2.slider("Matrix Latch Timeout Speed (Тактовая частота)", 50.0, 300.0, 120.0, 10.0, help="Энергия, при которой скорость пролета превышает скорость коммита Матрицы.")
+    
+    df_gamow = simulate_gamow_peak(lattice_impedance=imp, max_latch_speed=latch)
+    
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=df_gamow["Kinetic Energy (keV)"], y=df_gamow["Grid Yielding Prob (Penetration)"], name="Успех Прогиба Сетки", line=dict(dash='dash', color='#00BFFF')))
+    fig2.add_trace(go.Scatter(x=df_gamow["Kinetic Energy (keV)"], y=df_gamow["Matrix Latch Prob (Commit Success)"], name="Успех Коммита (До тайм-аута)", line=dict(dash='dash', color='#FF4500')))
+    fig2.add_trace(go.Scatter(x=df_gamow["Kinetic Energy (keV)"], y=df_gamow["Fusion Cross-Section"], name="Итоговое Сечение (Пик Гамова)", line=dict(color='#32CD32', width=4), fill='tozeroy'))
+    
+    fig2.update_layout(title="Hardware Simulation of Thermonuclear Fusion Rates", xaxis_title="Kinetic Energy / Temperature (keV)", yaxis_title="Probability (Normalized)", template="plotly_dark", hovermode="x unified")
+    st.plotly_chart(fig2, use_container_width=True)

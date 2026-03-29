@@ -4,97 +4,67 @@ import numpy as np
 import os
 
 # =====================================================================
-# SIMUREALITY: ULTIMATE MASS ENGINE (V9)
-# Phase 1: Cold FCC Geometry | Phase 2: Memory Deduplication (LOD)
+# SIMUREALITY V10: ULTIMATE MASS ENGINE (GEOMETRY + ENTANGLEMENT)
 # =====================================================================
 
-def generate_fcc_magic():
-    base_shells = [int((n+1)*(n+2)*(n+3)/3) for n in range(6)] 
-    twist_shifts = [28, 50, 82, 126] 
-    return sorted(list(set(base_shells + twist_shifts)))
+# --- Фундаментальные Константы (Эффективная Геометрия) ---
+MASS_P = 938.272
+MASS_N = 939.565
+E_ALPHA = 28.295       
+E_MACRO_LINK = 2.425   
+E_LINK = 2.36          
+E_PAIR = 1.18          
+JITTER_COST = 0.0131   
 
-MAGIC_NODES = generate_fcc_magic()
+MAGIC_NODES = [2, 8, 14, 28, 50, 82, 126, 184]
 
-# --- ФАЗА 1: ХОЛОДНАЯ ГЕОМЕТРИЯ (SPACE AXIS) ---
-E_ALPHA = 28.320       
-E_MACRO = 2.425        
-E_LINK = 2.360 
-E_PAIR = 1.180      
-J_TAX = 0.0131         
-
-# --- ФАЗА 2: КЭШ МАСТРИЦЫ / ЗАПУТАННОСТЬ (TIME & MEMORY AXIS) ---
-L1_ALPHA_CACHE = 1.736      # МэВ за каждый Альфа-префаб
-L2_BASE_RATE = 9.7          # МэВ базовая ставка Глобального Указателя
-VACUUM_BANDWIDTH = 137.036  # Лимит Шины (Постоянная тонкой структуры)
-L3_ORPHAN_SUBSIDY = 0.47    # МэВ компенсации за маршрутизацию висячего порта
-
-def get_discrete_graph_diameter(A):
-    if A <= 0: return 1
-    diameter = 1
-    for magic_size in MAGIC_NODES:
-        if A > magic_size: diameter += 1
-        else: break
-    current_layer_base = MAGIC_NODES[diameter - 2] if diameter > 1 else 0
-    next_layer_base = MAGIC_NODES[diameter - 1] if diameter <= len(MAGIC_NODES) else A
-    layer_progress = (A - current_layer_base) / max(1, (next_layer_base - current_layer_base))
-    return diameter + layer_progress
-
-def compile_ultimate_mass(Z, N):
-    if Z <= 0 or N <= 0: return None
-    A = Z + N
+def get_base_binding_energy(Z, N):
+    """Фаза 1: Расчет чистой топологии графа (Старая архитектура)"""
+    if Z <= 0 or N <= 0: return 0
     
-    # ---------------------------------------------------------
-    # ШАГ 1: СБОРКА ХОЛОДНОГО ГРАФА (RAW TOPOLOGY)
-    # ---------------------------------------------------------
     n_alpha = min(Z // 2, N // 2)
     l_ideal = max(0, 3 * n_alpha - 6)
-    dist_Z, dist_N = min([abs(Z - m) for m in MAGIC_NODES]), min([abs(N - m) for m in MAGIC_NODES])
+    
+    dist_Z = min([abs(Z - m) for m in MAGIC_NODES])
+    dist_N = min([abs(N - m) for m in MAGIC_NODES])
     l_lost = (dist_Z + dist_N) * 0.4
     
-    raw_profit = (n_alpha * E_ALPHA) + (max(0, l_ideal - l_lost) * E_MACRO)
+    profit = (n_alpha * E_ALPHA) + (max(0, l_ideal - l_lost) * E_MACRO_LINK)
     
     halo_n = N - Z
-    if halo_n > 0: 
-        max_strong_links = int(Z * 0.4) 
-        strong_halo = min(halo_n, max_strong_links)
-        weak_halo = halo_n - strong_halo
-        raw_profit += strong_halo * E_LINK
-        raw_profit += weak_halo * (E_PAIR / 2.0)
+    if halo_n > 0:
+        max_strong = int(Z * 0.4)
+        strong = min(halo_n, max_strong)
+        weak = halo_n - strong
+        profit += strong * E_LINK
+        profit += weak * (E_PAIR / 2.0)
         
-    base_ports = 10.0 * (A**(2/3))
-    jitter_tax = (base_ports + (15.0 * ((dist_Z + dist_N)**1.6))) * J_TAX
+    base_ports = 10.0 * ((Z + N)**(2/3))
+    jitter = (base_ports + (15.0 * ((dist_Z + dist_N)**1.6))) * JITTER_COST
+    dangling = (E_LINK / 2.0) * ((Z % 2) + (N % 2))
     
-    # ЖЕСТКИЙ КУЛОНОВСКИЙ НАЛОГ (Без оптимизации)
-    coulomb_tax = (E_LINK * np.sqrt(2)) * ((Z * (Z - 1)) / 2.0) / get_discrete_graph_diameter(A)
+    return profit - jitter - dangling
+
+def get_entanglement_cache(Z, N):
+    """Фаза 2: Динамический Кэш Запутанности (Иерархический LOD)"""
+    A = Z + N
+    if A <= 16: 
+        return 0 # Для легких ядер достаточно базовой геометрии
+        
+    dist_Z = min([abs(Z - m) for m in MAGIC_NODES])
+    dist_N = min([abs(N - m) for m in MAGIC_NODES])
     
-    cold_geometry_be = raw_profit - jitter_tax - coulomb_tax
+    # 1. Базовый L2 кэшбек (Премия за объем и Барицентр)
+    base_l2 = A * 0.466  
     
-    # ---------------------------------------------------------
-    # ШАГ 2: ИЕРАРХИЧЕСКАЯ ДЕДУПЛИКАЦИЯ ПАМЯТИ (ENTANGLEMENT)
-    # ---------------------------------------------------------
-    # 1. L1 Cache: Замыкание локальных тетраэдров
-    l1_subsidy = n_alpha * L1_ALPHA_CACHE
+    # 2. Штраф за Асимметрию (Удаление "строительных лесов" из скидки)
+    asymmetry_tax = (dist_Z + dist_N) * 1.22
     
-    # 2. L2 Cache: Стяжка на Барицентр + Штраф перегрузки Шины 137
-    l2_subsidy = n_alpha * L2_BASE_RATE * (1.0 + (A / VACUUM_BANDWIDTH))
+    # 3. L3 Субсидия (Компенсация маршрутизации висячих портов)
+    orphan_count = (Z % 2) + (N % 2)
+    l3_subsidy = orphan_count * 8.4
     
-    # 3. L3 Cache: Динамическая балансировка непарных "сирот"
-    unpaired_ports = (Z % 2) + (N % 2)
-    l3_subsidy = unpaired_ports * L3_ORPHAN_SUBSIDY
-    
-    # ---------------------------------------------------------
-    # ИТОГОВЫЙ КОММИТ
-    # ---------------------------------------------------------
-    ultimate_be = cold_geometry_be + l1_subsidy + l2_subsidy + l3_subsidy
-    
-    return {
-        "Z": Z, "N": N, "A": A,
-        "Cold Geometry BE": cold_geometry_be,
-        "L1 Cache Subsidy": l1_subsidy,
-        "L2 Cache Subsidy": l2_subsidy,
-        "L3 Routing Bonus": l3_subsidy,
-        "Ultimate BE": ultimate_be
-    }
+    return max(0, base_l2 - asymmetry_tax + l3_subsidy)
 
 @st.cache_data
 def load_ame2020():
@@ -108,43 +78,65 @@ def load_ame2020():
                 n_str, z_str, be_str = line[4:9].strip(), line[9:14].strip(), line[54:67].strip().replace('#', '')
                 if not n_str.isdigit() or not z_str.isdigit() or '*' in be_str or not be_str: continue
                 N, Z = int(n_str), int(z_str)
+                # Извлекаем общую энергию связи
                 db[(Z, N)] = (float(be_str) * (N + Z)) / 1000.0
             except ValueError: continue
     return db
 
 # --- STREAMLIT UI ---
-st.set_page_config(page_title="Simureality Ultimate Engine", layout="wide")
-st.title("💠 Simureality V9: Ultimate Mass Defect Engine")
-st.markdown("Полный рендер массы: Холодная Геометрия ГЦК-решетки + Иерархический Кэш Матрицы (Запутанность).")
+st.set_page_config(page_title="Simureality V10 Engine", layout="wide")
+st.title("💠 Simureality V10: Entanglement Architecture")
+st.markdown("Финальный рендер: Базовая ГЦК-топология + Динамический Кэш Матрицы (L2/L3).")
 
 ame_db = load_ame2020()
 
-if st.button("🚀 ЗАПУСТИТЬ ГЛОБАЛЬНЫЙ БЕНЧМАРК", type="primary"):
+if st.button("🚀 ЗАПУСТИТЬ АБСОЛЮТНЫЙ БЕНЧМАРК", type="primary"):
     if not ame_db:
-        st.error("Файл mass.txt не найден!")
+        st.error("Файл mass.txt не найден! Положи базу AME2020 в папку со скриптом.")
     else:
-        with st.spinner("Компиляция ядерной архитектуры..."):
+        with st.spinner("Компиляция ядерной архитектуры и расчет кэша..."):
             results = []
             for (Z, N), exp_be in ame_db.items():
-                if Z < 2: continue
-                data = compile_ultimate_mass(Z, N)
-                if not data: continue
+                if Z < 2: continue # Пропускаем Водород
                 
-                error_mev = exp_be - data["Ultimate BE"]
+                # Считаем сырую геометрию
+                base_be = get_base_binding_energy(Z, N)
+                # Считаем бонус запутанности
+                cache_bonus = get_entanglement_cache(Z, N)
+                
+                # Итоговая Энергия Связи (Геометрия + Скидка Матрицы)
+                ultimate_be = base_be + cache_bonus
+                
+                error_mev = ultimate_be - exp_be
+                
+                # Чтобы не делить на ноль
                 error_pct = (abs(error_mev) / exp_be) * 100 if exp_be > 0 else 0
+                accuracy = 100.0 - error_pct
                 
-                data["AME2020 BE"] = exp_be
-                data["Error (MeV)"] = error_mev
-                data["Accuracy (%)"] = 100.0 - error_pct
-                results.append(data)
+                results.append({
+                    "Element": f"Z={Z}, N={N}",
+                    "Z": Z, "N": N, "A": Z + N,
+                    "AME2020 BE (MeV)": exp_be,
+                    "Raw Geometry BE": base_be,
+                    "Entanglement Cache": cache_bonus,
+                    "Simureality V10 BE": ultimate_be,
+                    "Delta Error (MeV)": error_mev,
+                    "Accuracy (%)": accuracy
+                })
                 
             df = pd.DataFrame(results)
             
         st.success(f"Рендер завершен. Обработано {len(df)} изотопов.")
         
+        # Вывод статистики
         c1, c2, c3 = st.columns(3)
-        c1.metric("Средняя Точность", f"{df['Accuracy (%)'].mean():.4f}%")
-        c2.metric("Медианная Ошибка", f"{df['Error (MeV)'].median():.3f} MeV")
-        c3.metric("L2 Кэш (Максимум)", f"{df['L2 Cache Subsidy'].max():.1f} MeV")
+        c1.metric("Средняя Точность", f"{df['Accuracy (%)'].mean():.5f}%")
+        c2.metric("Медианная Ошибка", f"{df['Delta Error (MeV)'].median():.3f} MeV")
         
-        st.dataframe(df.sort_values("A").style.background_gradient(subset=['Accuracy (%)'], cmap='Greens'), use_container_width=True)
+        # Находим и выводим наши "эталонные" элементы для быстрой сверки
+        st.subheader("Критическая Выборка (Проверка Инсайтов)")
+        bench_elements = df[(df['Z'].isin([2, 6, 26, 82, 92])) & (df['N'].isin([2, 6, 30, 126, 146]))]
+        st.dataframe(bench_elements.style.format(precision=3), use_container_width=True)
+        
+        st.subheader("Полный Дамп Изотопов")
+        st.dataframe(df.sort_values("A").style.background_gradient(subset=['Accuracy (%)'], cmap='Greens').format(precision=3), use_container_width=True)

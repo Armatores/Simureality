@@ -12,6 +12,10 @@ E_LINK = 2.36
 E_PAIR = 1.18          
 JITTER_COST = 0.0131   
 
+# --- V5 NEW HARDWARE CONSTANTS (SKIN & TENSION) ---
+E_SKIN_LINK = 1.35       # Профит за подключение нейтрона гало к поверхности 3D-ядра
+TENSION_PENALTY = 0.95   # Вычислительный штраф за макро-линк (распирание базы данных)
+
 # --- ELEMENT DICTIONARY (Z to Symbol) ---
 ELEMENTS = {
     0: 'n', 1: 'H', 2: 'He', 3: 'Li', 4: 'Be', 5: 'B', 6: 'C', 7: 'N', 8: 'O', 9: 'F', 10: 'Ne',
@@ -26,23 +30,21 @@ ELEMENTS = {
     91: 'Pa', 92: 'U', 93: 'Np', 94: 'Pu', 95: 'Am', 96: 'Cm', 97: 'Bk', 98: 'Cf', 99: 'Es', 100: 'Fm',
     101: 'Md', 102: 'No', 103: 'Lr', 104: 'Rf', 105: 'Db', 106: 'Sg', 107: 'Bh', 108: 'Hs', 109: 'Mt',
     110: 'Ds', 111: 'Rg', 112: 'Cn', 113: 'Nh', 114: 'Fl', 115: 'Mc', 116: 'Lv', 117: 'Ts', 118: 'Og',
-    119: 'Uue', 120: 'Ubn' 
+    119: 'Uue', 120: 'Ubn'
 }
 
 st.set_page_config(page_title="Simureality OS | Task Dispatcher", layout="wide")
 
 @st.cache_data
 def load_ame_masses(filename="mass.txt"):
-    """Strict fixed-width parser for AME format. Drops synthetic (poisoned) data."""
+    """Strict parser for AME format. DROPS SYNTHETIC DATA (# and *)."""
     data = []
     try:
         with open(filename, 'r', encoding='utf-8') as f:
             for line in f:
-                # Базовый фильтр заголовков
                 if len(line) < 65 or 'N-Z' in line or 'keV' in line: continue
                 
-                # --- PURE HARDWARE FILTER (Анти-Галлюцинатор) ---
-                # Если в строке есть # или * - это расчетный мусор старой физики. Дропаем транзакцию.
+                # ВЕРИФИКАЦИЯ: Отбрасываем теоретические галлюцинации AME
                 if '#' in line or '*' in line:
                     continue
                     
@@ -78,7 +80,7 @@ class SimurealityMacroCore:
         return [(x+dx, y+dy, z+dz) for dx, dy, dz in deltas]
 
     def compile_3d_crystal(self, n_clusters):
-        """Алгоритм Диспетчера Задач: жадная 3D-компиляция Альфа-кластеров"""
+        """Жадная 3D-компиляция Альфа-кластеров"""
         if n_clusters in self._macro_link_cache:
             return self._macro_link_cache[n_clusters]
             
@@ -120,30 +122,56 @@ class SimurealityMacroCore:
         macro_links = self.compile_3d_crystal(n_alphas)
         binding_macro = macro_links * E_MACRO_LINK
 
+        # --- V5 LOGIC: CORE TENSION ---
+        # Штраф за геометрическое распирание плотного 3D-макро-ядра
+        tension_penalty = 0
+        if macro_links > 10:
+            tension_penalty = (macro_links - 10) * TENSION_PENALTY
+
         rem_Z = Z - (n_alphas * 2)
         rem_N = N - (n_alphas * 2)
+        halo_total = rem_Z + rem_N
         
         binding_halo = 0
         jitter = 0
         
         if n_alphas == 0:
+            # Fallback для сверхлегких ядер
             if Z == 1:
                 if N == 1: binding_halo = 2.225         
                 elif N >= 2: binding_halo = 8.482       
             elif Z == 2 and N == 1:
                 binding_halo = 7.718                    
         else:
-            is_drip_line = False
-            if Z == 2 and N >= 4: is_drip_line = True
-            if Z == 3 and N >= 7: is_drip_line = True
-            if Z > 1 and N == 0: is_drip_line = True    
+            # --- V5 LOGIC: NEUTRON SKIN WEAVING (Скин-слой) ---
+            # Оценка доступных свободных портов на поверхности макро-ядра
+            surface_ports = int((n_alphas ** (2/3)) * 6.5) 
             
-            if not is_drip_line:
-                if rem_N == 2 and rem_Z == 0: 
-                    binding_halo = (5 * E_LINK) + E_PAIR
-                    jitter = 10 * JITTER_COST
+            # 1. Спаривание в гало
+            pairs = halo_total // 2
+            unpaired = halo_total % 2
+            binding_halo += pairs * E_PAIR
+            
+            # 2. Подключение к поверхности
+            connected_halo = min(halo_total, surface_ports)
+            binding_halo += connected_halo * E_SKIN_LINK
+            
+            # 3. Эффект Корсета (Стяжка распирания)
+            # Чем плотнее гало покрывает ядро, тем сильнее оно гасит Core Tension
+            if connected_halo > 0 and tension_penalty > 0:
+                coverage_ratio = connected_halo / surface_ports
+                corset_relief = tension_penalty * (coverage_ratio * 0.85) # Гасит до 85% распирания
+                tension_penalty -= corset_relief
+            
+            # 4. Штрафы за нехватку портов и висячие узлы
+            if unpaired > 0:
+                jitter += JITTER_COST * 10
+                
+            overflow = halo_total - surface_ports
+            if overflow > 0:
+                jitter += overflow * E_ELECTRON # Жесткий штраф за переполнение буфера портов
 
-        total_binding = binding_alphas + binding_macro + binding_halo - jitter
+        total_binding = binding_alphas + binding_macro + binding_halo - tension_penalty - jitter
         raw_mass = (Z * MASS_P) + (N * MASS_N)
         return raw_mass - total_binding
 
@@ -158,55 +186,54 @@ def generate_global_matrix(_engine, df_ame):
         m_b_minus = _engine.compile_mass(Z + 1, N - 1) + E_ELECTRON
         m_b_plus = _engine.compile_mass(Z - 1, N + 1) + E_ELECTRON
         
-        if m_b_minus < calc_mass: status = "BETA MINUS"
-        elif m_b_plus < calc_mass: status = "BETA PLUS"
+        if m_b_minus < calc_mass: status = "BETA MINUS (Garbage Collect)"
+        elif m_b_plus < calc_mass: status = "BETA PLUS (Garbage Collect)"
         else: status = "STABLE"
             
         sym = ELEMENTS.get(Z, "?")
         results.append({
             "Element": f"{sym}-{Z+N}",
             "Z": Z, "N": N, "A": Z+N,
-            "Hardware Log (MeV)": round(exp_mass, 3),
+            "Pure Hardware Log (MeV)": round(exp_mass, 3),
             "Calculated ΣK (MeV)": round(calc_mass, 3),
-            "Jitter Debt (MeV)": round(delta, 3),
+            "Unresolved Debt (MeV)": round(delta, 3),
             "Dispatcher Decision": status
         })
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- UI RENDERING ---
-st.title("Simureality OS: Pure Hardware Task Dispatcher")
+st.title("Simureality OS: Pure Hardware Task Dispatcher (V5)")
 st.markdown("""
 **Core Capabilities:**
-1. Analytical calculation of ΣK (Mass) based on the FCC-matrix.
-2. Zero synthetic data: strictly filters out all theoretical estimations from the AME logs.
-3. Deterministic prediction of Beta Decay as a **Garbage Collection** transaction driven by Topological Debt.
+1. Analytical calculation of ΣK (Mass) based on FCC-matrix.
+2. **Zero synthetic data:** strictly filters out theoretical estimations (`#`, `*`) from AME logs.
+3. **Core Tension & Halo Weaving:** Implements surface port mapping and topological corset mechanics to stabilize heavy nuclei.
 """)
 
-with st.expander("📚 Ontological Framework: Variables & Cache"):
+with st.expander("📚 Architectural Patch V5: Skin Layer & Core Tension"):
     st.markdown("""
-    ### The Grid Physics Paradigm
-    The nucleus is a deterministic spatial processor on a 3D Face-Centered Cubic (FCC) lattice. Mass is a measure of computational tax (ΣK). 
-    What legacy physics calls "mass error" is actually **Unresolved Computational Debt** residing in the node's Jitter Cache.
+    ### The Geometric Bottleneck
+    Previous models struggled with heavy nuclei. **Pb-186** exhibited severe *Core Tension* (macro-link crowding causing geometric expansion/strain). **Tl-210** exhibited a *Halo Packaging* error (excess neutrons were treated as unlinked garbage).
     
-    **ΣK = (Z × MASS_P) + (N × MASS_N) - [ (N_alphas × E_ALPHA) + (N_macro × E_MACRO_LINK) + (N_halo × E_LINK) + E_PAIR - JITTER_TAX ]**
-    
-    #### Beta Decay (Buffer Overflow):
-    If the Topological Debt of the current assembly exceeds the hardware cost of compiling an I/O port (electron patch: **0.511 MeV**), the Dispatcher ejects the patch to prevent a system crash.
+    ### The V5 Solution
+    1. **Core Tension Penalty:** Dense 3D assemblies now accrue a dynamic computational debt `(macro_links - 10) * TENSION_PENALTY`.
+    2. **Surface Ports Mapping:** The matrix calculates available surface interfaces scaling as $N_{alphas}^{2/3}$.
+    3. **The Corset Effect:** Excess halo neutrons are routed to surface ports (`E_SKIN_LINK`). If they form a contiguous layer (Neutron Skin), they physically bind the core, actively **canceling out** the Core Tension penalty.
     """)
 
 df_masses = load_ame_masses("mass.txt")
 engine = SimurealityMacroCore()
 
 st.sidebar.header("Target Configuration")
-target_Z = st.sidebar.number_input("Protons (Z)", min_value=0, max_value=120, value=6, step=1)
-target_N = st.sidebar.number_input("Neutrons (N)", min_value=0, max_value=184, value=8, step=1)
+target_Z = st.sidebar.number_input("Protons (Z)", min_value=0, max_value=120, value=82, step=1)
+target_N = st.sidebar.number_input("Neutrons (N)", min_value=0, max_value=184, value=104, step=1)
 
 target_A = target_Z + target_N
 symbol = ELEMENTS.get(target_Z, "Unknown")
 st.sidebar.markdown(f"### Selected Node: **{symbol}-{target_A}**")
 
 if df_masses.empty:
-    st.sidebar.error("⚠️ Hardware logs not loaded.")
+    st.sidebar.error("⚠️ Hardware logs not loaded. Ensure mass.txt is present.")
 else:
     st.sidebar.success(f"✅ Pure Logs loaded ({len(df_masses)} verified nodes)")
 
@@ -241,12 +268,11 @@ with tab1:
         with st.spinner('Compiling matrix...'):
             global_df = generate_global_matrix(engine, df_masses)
             
-            # --- ONOTOLOGICAL METRICS ---
-            global_df['Unresolved Debt (MeV)'] = global_df['Jitter Debt (MeV)'].abs()
-            global_df['Jitter Cache Load (%)'] = (global_df['Unresolved Debt (MeV)'] / global_df['Hardware Log (MeV)']) * 100
+            global_df['Absolute Debt (MeV)'] = global_df['Unresolved Debt (MeV)'].abs()
+            global_df['Jitter Cache Load (%)'] = (global_df['Absolute Debt (MeV)'] / global_df['Pure Hardware Log (MeV)']) * 100
             
-            max_debt_mev = global_df['Unresolved Debt (MeV)'].max()
-            mean_debt_mev = global_df['Unresolved Debt (MeV)'].mean()
+            max_debt_mev = global_df['Absolute Debt (MeV)'].max()
+            mean_debt_mev = global_df['Absolute Debt (MeV)'].mean()
             overall_efficiency = 100.0 - global_df['Jitter Cache Load (%)'].mean()
             
             sc1, sc2, sc3 = st.columns(3)
@@ -254,10 +280,10 @@ with tab1:
             sc2.metric(label="Mean Jitter Cache (Lag)", value=f"{mean_debt_mev:.3f} MeV")
             sc3.metric(label="Max Debt (Heavy Nuclei)", value=f"{max_debt_mev:.3f} MeV")
             
-            st.dataframe(global_df.drop(columns=['Unresolved Debt (MeV)', 'Jitter Cache Load (%)']), use_container_width=True, height=400)
+            st.dataframe(global_df.drop(columns=['Absolute Debt (MeV)', 'Jitter Cache Load (%)']), use_container_width=True, height=400)
             
             csv_data = global_df.to_csv(index=False).encode('utf-8')
-            st.download_button("Download Matrix (CSV)", data=csv_data, file_name="simureality_pure_hardware_log.csv", mime="text/csv")
+            st.download_button("Download Matrix (CSV)", data=csv_data, file_name="simureality_v5_pure_log.csv", mime="text/csv")
 
 with tab2:
     st.markdown("## Architectural Proofs of the FCC Matrix")

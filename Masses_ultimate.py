@@ -12,9 +12,11 @@ E_LINK = 2.36
 E_PAIR = 1.18          
 JITTER_COST = 0.0131   
 
-# --- V5 NEW HARDWARE CONSTANTS (SKIN & TENSION) ---
+# --- V6 NEW HARDWARE CONSTANTS (SKIN, TENSION & SHELLS) ---
 E_SKIN_LINK = 1.35       # Профит за подключение нейтрона гало к поверхности 3D-ядра
 TENSION_PENALTY = 0.95   # Вычислительный штраф за макро-линк (распирание базы данных)
+E_MAGIC = 2.15           # Топологический профит за идеальную симметрию (закрытую оболочку ГЦК)
+MAGIC_NUMBERS = {2, 8, 20, 28, 50, 82, 126} # Идеальные геометрические префабы Матрицы
 
 # --- ELEMENT DICTIONARY (Z to Symbol) ---
 ELEMENTS = {
@@ -118,7 +120,7 @@ class SimurealityMacroCore:
     def compile_mass(self, Z, N):
         # --- HARDWARE FIREWALL ---
         if Z < 0 or N < 0:
-            return float('inf') # Матрица блокирует отрицательные координаты
+            return float('inf') # Матрица блокирует антиматерию в этом слое вычислений
             
         n_alphas = min(Z // 2, N // 2)
         binding_alphas = n_alphas * E_ALPHA
@@ -126,10 +128,27 @@ class SimurealityMacroCore:
         macro_links = self.compile_3d_crystal(n_alphas)
         binding_macro = macro_links * E_MACRO_LINK
 
-        # --- V5 LOGIC: CORE TENSION ---
+        # --- V6 LOGIC: CORE TENSION & DEFORMATION ---
         tension_penalty = 0
+        surface_ports = 0
+        
         if macro_links > 10:
             tension_penalty = (macro_links - 10) * TENSION_PENALTY
+            
+        if n_alphas > 0:
+            surface_ports = (n_alphas ** (2/3)) * 6.5
+            
+            # Топологическая Деформация (Эллипсоид) для снятия напряжения тяжелых ядер
+            if n_alphas > 25: 
+                tension_penalty *= 0.65       # Ядро вытягивается, сбрасывая 35% распирания
+                surface_ports *= 1.15         # Площадь поверхности вытянутого ядра больше на 15%
+                
+            surface_ports = int(surface_ports)
+
+        # --- V6 LOGIC: MAGIC NUMBERS (Идеальные Оболочки) ---
+        magic_profit = 0
+        if Z in MAGIC_NUMBERS: magic_profit += E_MAGIC
+        if N in MAGIC_NUMBERS: magic_profit += E_MAGIC
 
         rem_Z = Z - (n_alphas * 2)
         rem_N = N - (n_alphas * 2)
@@ -145,9 +164,7 @@ class SimurealityMacroCore:
             elif Z == 2 and N == 1:
                 binding_halo = 7.718                    
         else:
-            # --- V5 LOGIC: NEUTRON SKIN WEAVING (Скин-слой) ---
-            surface_ports = int((n_alphas ** (2/3)) * 6.5) 
-            
+            # --- V5/V6 LOGIC: NEUTRON SKIN WEAVING (Скин-слой) ---
             pairs = halo_total // 2
             unpaired = halo_total % 2
             binding_halo += pairs * E_PAIR
@@ -167,7 +184,7 @@ class SimurealityMacroCore:
             if overflow > 0:
                 jitter += overflow * E_ELECTRON 
 
-        total_binding = binding_alphas + binding_macro + binding_halo - tension_penalty - jitter
+        total_binding = binding_alphas + binding_macro + binding_halo + magic_profit - tension_penalty - jitter
         raw_mass = (Z * MASS_P) + (N * MASS_N)
         return raw_mass - total_binding
 
@@ -198,23 +215,22 @@ def generate_global_matrix(_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- UI RENDERING ---
-st.title("Simureality OS: Pure Hardware Task Dispatcher (V5.1)")
+st.title("Simureality OS: Pure Hardware Task Dispatcher (V6.0)")
 st.markdown("""
 **Core Capabilities:**
 1. Analytical calculation of ΣK (Mass) based on FCC-matrix.
 2. **Zero synthetic data:** strictly filters out theoretical estimations (`#`, `*`) from AME logs.
-3. **Core Tension & Halo Weaving:** Implements surface port mapping and topological corset mechanics to stabilize heavy nuclei.
+3. **Geometric Integrity:** Implements Topological Deformation and Magic Numbers (Perfect FCC Shells) to resolve extreme core tension in heavy nuclei.
 """)
 
-with st.expander("📚 Architectural Patch V5.1: Skin Layer & Core Tension"):
+with st.expander("📚 Architectural Patch V6.0: Shell Closures & Deformation"):
     st.markdown("""
-    ### The Geometric Bottleneck
-    Previous models struggled with heavy nuclei. **Pb-186** exhibited severe *Core Tension* (macro-link crowding causing geometric expansion/strain). **Tl-210** exhibited a *Halo Packaging* error (excess neutrons were treated as unlinked garbage).
+    ### The Macro-Scale Optimization
+    Previous algorithms forced all heavy nuclei into perfect spheres, creating artificial Core Tension and massive `ΣK` debt.
     
-    ### The V5.1 Solution
-    1. **Core Tension Penalty:** Dense 3D assemblies now accrue a dynamic computational debt `(macro_links - 10) * TENSION_PENALTY`.
-    2. **Surface Ports Mapping:** The matrix calculates available surface interfaces scaling as $N_{alphas}^{2/3}$.
-    3. **The Corset Effect:** Excess halo neutrons are routed to surface ports (`E_SKIN_LINK`). If they form a contiguous layer (Neutron Skin), they physically bind the core, actively **canceling out** the Core Tension penalty.
+    ### The V6.0 Solution
+    1. **Topological Deformation:** Once a core exceeds $N_{alphas} > 25$, the Dispatcher relaxes the matrix into a prolate/oblate structure. This cuts Core Tension by 35% and increases surface area by 15%, allowing the Neutron Skin to weave more efficiently.
+    2. **Hardware Prefabs (Magic Numbers):** Numbers `2, 8, 20, 28, 50, 82, 126` represent perfectly closed, symmetrical polyhedra on the FCC lattice. When $Z$ or $N$ align with these prefabs, the topological friction drops to zero, granting a hardcoded `E_MAGIC` profit.
     """)
 
 df_masses = load_ame_masses("mass.txt")
@@ -222,7 +238,7 @@ engine = SimurealityMacroCore()
 
 st.sidebar.header("Target Configuration")
 target_Z = st.sidebar.number_input("Protons (Z)", min_value=0, max_value=120, value=82, step=1)
-target_N = st.sidebar.number_input("Neutrons (N)", min_value=0, max_value=184, value=104, step=1)
+target_N = st.sidebar.number_input("Neutrons (N)", min_value=0, max_value=184, value=126, step=1)
 
 target_A = target_Z + target_N
 symbol = ELEMENTS.get(target_Z, "Unknown")
@@ -279,7 +295,7 @@ with tab1:
             st.dataframe(global_df.drop(columns=['Absolute Debt (MeV)', 'Jitter Cache Load (%)']), use_container_width=True, height=400)
             
             csv_data = global_df.to_csv(index=False).encode('utf-8')
-            st.download_button("Download Matrix (CSV)", data=csv_data, file_name="simureality_v51_pure_log.csv", mime="text/csv")
+            st.download_button("Download Matrix (CSV)", data=csv_data, file_name="simureality_v6_pure_log.csv", mime="text/csv")
 
 with tab2:
     st.markdown("## Architectural Proofs of the FCC Matrix")

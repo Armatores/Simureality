@@ -116,6 +116,10 @@ class SimurealityMacroCore:
         return total_macro_links
 
     def compile_mass(self, Z, N):
+        # --- HARDWARE FIREWALL ---
+        if Z < 0 or N < 0:
+            return float('inf') # Матрица блокирует отрицательные координаты
+            
         n_alphas = min(Z // 2, N // 2)
         binding_alphas = n_alphas * E_ALPHA
         
@@ -123,7 +127,6 @@ class SimurealityMacroCore:
         binding_macro = macro_links * E_MACRO_LINK
 
         # --- V5 LOGIC: CORE TENSION ---
-        # Штраф за геометрическое распирание плотного 3D-макро-ядра
         tension_penalty = 0
         if macro_links > 10:
             tension_penalty = (macro_links - 10) * TENSION_PENALTY
@@ -136,7 +139,6 @@ class SimurealityMacroCore:
         jitter = 0
         
         if n_alphas == 0:
-            # Fallback для сверхлегких ядер
             if Z == 1:
                 if N == 1: binding_halo = 2.225         
                 elif N >= 2: binding_halo = 8.482       
@@ -144,32 +146,26 @@ class SimurealityMacroCore:
                 binding_halo = 7.718                    
         else:
             # --- V5 LOGIC: NEUTRON SKIN WEAVING (Скин-слой) ---
-            # Оценка доступных свободных портов на поверхности макро-ядра
             surface_ports = int((n_alphas ** (2/3)) * 6.5) 
             
-            # 1. Спаривание в гало
             pairs = halo_total // 2
             unpaired = halo_total % 2
             binding_halo += pairs * E_PAIR
             
-            # 2. Подключение к поверхности
             connected_halo = min(halo_total, surface_ports)
             binding_halo += connected_halo * E_SKIN_LINK
             
-            # 3. Эффект Корсета (Стяжка распирания)
-            # Чем плотнее гало покрывает ядро, тем сильнее оно гасит Core Tension
             if connected_halo > 0 and tension_penalty > 0:
                 coverage_ratio = connected_halo / surface_ports
-                corset_relief = tension_penalty * (coverage_ratio * 0.85) # Гасит до 85% распирания
+                corset_relief = tension_penalty * (coverage_ratio * 0.85) 
                 tension_penalty -= corset_relief
             
-            # 4. Штрафы за нехватку портов и висячие узлы
             if unpaired > 0:
                 jitter += JITTER_COST * 10
                 
             overflow = halo_total - surface_ports
             if overflow > 0:
-                jitter += overflow * E_ELECTRON # Жесткий штраф за переполнение буфера портов
+                jitter += overflow * E_ELECTRON 
 
         total_binding = binding_alphas + binding_macro + binding_halo - tension_penalty - jitter
         raw_mass = (Z * MASS_P) + (N * MASS_N)
@@ -202,7 +198,7 @@ def generate_global_matrix(_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- UI RENDERING ---
-st.title("Simureality OS: Pure Hardware Task Dispatcher (V5)")
+st.title("Simureality OS: Pure Hardware Task Dispatcher (V5.1)")
 st.markdown("""
 **Core Capabilities:**
 1. Analytical calculation of ΣK (Mass) based on FCC-matrix.
@@ -210,12 +206,12 @@ st.markdown("""
 3. **Core Tension & Halo Weaving:** Implements surface port mapping and topological corset mechanics to stabilize heavy nuclei.
 """)
 
-with st.expander("📚 Architectural Patch V5: Skin Layer & Core Tension"):
+with st.expander("📚 Architectural Patch V5.1: Skin Layer & Core Tension"):
     st.markdown("""
     ### The Geometric Bottleneck
     Previous models struggled with heavy nuclei. **Pb-186** exhibited severe *Core Tension* (macro-link crowding causing geometric expansion/strain). **Tl-210** exhibited a *Halo Packaging* error (excess neutrons were treated as unlinked garbage).
     
-    ### The V5 Solution
+    ### The V5.1 Solution
     1. **Core Tension Penalty:** Dense 3D assemblies now accrue a dynamic computational debt `(macro_links - 10) * TENSION_PENALTY`.
     2. **Surface Ports Mapping:** The matrix calculates available surface interfaces scaling as $N_{alphas}^{2/3}$.
     3. **The Corset Effect:** Excess halo neutrons are routed to surface ports (`E_SKIN_LINK`). If they form a contiguous layer (Neutron Skin), they physically bind the core, actively **canceling out** the Core Tension penalty.
@@ -283,7 +279,7 @@ with tab1:
             st.dataframe(global_df.drop(columns=['Absolute Debt (MeV)', 'Jitter Cache Load (%)']), use_container_width=True, height=400)
             
             csv_data = global_df.to_csv(index=False).encode('utf-8')
-            st.download_button("Download Matrix (CSV)", data=csv_data, file_name="simureality_v5_pure_log.csv", mime="text/csv")
+            st.download_button("Download Matrix (CSV)", data=csv_data, file_name="simureality_v51_pure_log.csv", mime="text/csv")
 
 with tab2:
     st.markdown("## Architectural Proofs of the FCC Matrix")

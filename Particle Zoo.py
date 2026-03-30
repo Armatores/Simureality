@@ -1,10 +1,9 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import itertools
 
 # =====================================================================
-# SIMUREALITY: V8 PARTICLE ZOO COMPILER 
+# SIMUREALITY: V8.1 PARTICLE ZOO COMPILER 
 # Automated Topo-Algorithmic Generation of Hadrons
 # =====================================================================
 
@@ -23,24 +22,31 @@ def compile_v8_zoo():
     # 1. MESON COMPILER (Short-lived, Gamma = 1.0)
     # ==========================================
     # Формула: (N_nodes * ALPHA_INV) + Payload - Defect
+    
     meson_topologies = [
-        {"name": "Pion (π±)", "nodes": 1, "q_pair": ['u', 'd'], "defect": 0, "pdg": 139.57},
-        {"name": "Kaon (K±)", "nodes": 3, "q_pair": ['u', 's'], "defect": 14.0, "pdg": 493.67},
-        {"name": "Eta (η)", "nodes": 4, "q_pair": [], "defect": 0, "pdg": 547.86}, # Чистый 4-узловой контур
-        {"name": "Rho (ρ)", "nodes": 6, "q_pair": ['u', 'd'], "defect": 54.0, "pdg": 775.26}, # Гексагон (6 узлов) с утяжкой
-        {"name": "Omega (ω)", "nodes": 6, "q_pair": ['u', 'd', 'u'], "defect": 48.0, "pdg": 782.65} 
+        # Pion: 1D пробой. Векторы встречные. Информационная нагрузка = разница (Дельта)
+        {"name": "Pion (π±)", "nodes": 1, "payload": abs(QUARKS['d'] - QUARKS['u']), "defect": 0, "pdg": 139.57},
+        
+        # Kaon: 3D-асинхронная задержка. Векторы не компенсируют друг друга. Нагрузка = Сумма.
+        {"name": "Kaon (K±)", "nodes": 3, "payload": QUARKS['s'] + QUARKS['u'], "defect": 14.0, "pdg": 493.67},
+        
+        # Eta: 4-узловой контур. Сбалансированная петля (чистый Routing Lag).
+        {"name": "Eta (η)", "nodes": 4, "payload": 0.0, "defect": 0, "pdg": 547.86}, 
+        
+        # Rho и Omega: 6-узловые векторные мезоны (гексагоны). Векторы разнесены.
+        {"name": "Rho (ρ)", "nodes": 6, "payload": QUARKS['u'] + QUARKS['d'], "defect": 54.0, "pdg": 775.26},
+        {"name": "Omega (ω)", "nodes": 6, "payload": QUARKS['u'] + QUARKS['d'] + QUARKS['u'], "defect": 48.0, "pdg": 782.65} 
     ]
     
     for m in meson_topologies:
-        payload = sum(QUARKS[q] for q in m["q_pair"])
         routing_lag = (m["nodes"] * ALPHA_INV)
-        calc_mass = payload + routing_lag - m["defect"]
+        calc_mass = m["payload"] + routing_lag - m["defect"]
         
         results.append({
-            "Class": "Meson (1D/2D)",
+            "Class": "Meson (1D/2D/Loop)",
             "Particle": m["name"],
             "Topo_Nodes": str(m["nodes"]),
-            "Payload (MeV)": payload,
+            "Payload (MeV)": m["payload"],
             "Routing_Lag (MeV)": routing_lag,
             "Grid_Mass (MeV)": calc_mass,
             "PDG_Mass (MeV)": m["pdg"]
@@ -84,8 +90,8 @@ def compile_v8_zoo():
     return df
 
 # --- UI RENDER ENGINE ---
-st.set_page_config(page_title="V8 Particle Compiler", layout="wide")
-st.title("⚙️ V8 Engine: Algorithmic Generation of the Particle Zoo")
+st.set_page_config(page_title="V8.1 Particle Compiler", layout="wide")
+st.title("⚙️ V8.1 Engine: Algorithmic Generation of the Particle Zoo")
 st.markdown("Этот скрипт доказывает, что массы всех адронов алгоритмически выводятся из комбинаторики ГЦК-узлов ($\alpha^{-1}$) и импеданса вакуума ($Z_0$). Квантовые 'ароматы' — это топологические дефекты маршрутизации.")
 
 df = compile_v8_zoo()
@@ -97,7 +103,7 @@ fig.add_trace(go.Scatter(x=df["Particle"], y=df["PDG_Mass (MeV)"], mode='markers
 fig.update_layout(title="Матрица Масс: Топология против Эксперимента", yaxis_title="Mass (MeV)", template="plotly_dark", barmode='group')
 st.plotly_chart(fig, use_container_width=True)
 
-# Форматирование и вывод таблицы (используем pandas styling)
+# Форматирование и вывод таблицы
 st.subheader("Логи Транзакций Диспетчера")
 format_dict = {"Payload (MeV)": "{:.2f}", "Routing_Lag (MeV)": "{:.2f}", "Grid_Mass (MeV)": "{:.2f}", "PDG_Mass (MeV)": "{:.2f}", "Accuracy (%)": "{:.3f}%"}
 styled_df = df.style.format(format_dict).background_gradient(subset=["Accuracy (%)"], cmap="Blues")

@@ -34,7 +34,7 @@ By inputting deterministic integers into the Encapsulation Level ($L$), the algo
     * *Geometry:* Inverted routing vectors wrapped in 7 encapsulation layers.
     * *Calculation:* $4.5 \times 10^{-24} \cdot 137^7 \approx 2.6 \times 10^{-8} \text{ s}$.
 
-* **$L = 12$ (3D Tri-zistor / ROM): The Neutron ($n$)**
+* **$L = 12$ ( / ROM): The Neutron ($n$)**
     * *Geometry:* A complex 3D closed routing loop (udd). It is heavily armored by 12 layers of topological encryption.
     * *Calculation:* $4.5 \times 10^{-24} \cdot 137^{12} \approx 880 \text{ s}$ (~15 minutes).
     * *Result:* On the 880th second, the GC finally decrypts the core, causing a Buffer Overflow. To prevent a localized lattice crash, the Matrix executes a `DROP` command, ejecting excess entropy along the FCC path of least resistance (resulting in an electron emission). Standard physics calls this prolonged decryption latency the "Weak Force."

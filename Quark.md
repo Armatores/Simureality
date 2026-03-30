@@ -1,4 +1,3 @@
-
 # Grid Physics: The Topo-Algorithmic Origin of the "Particle Zoo"
 
 ## Абстракт (The Ontological Shift)

@@ -6,3 +6,4 @@ sympy
 scipy
 statsmodels
 scikit-learn
+matplotlib

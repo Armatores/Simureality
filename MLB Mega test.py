@@ -4,12 +4,13 @@ import numpy as np
 import plotly.express as px
 import time
 import os
+from rdkit import Chem
 
 # =====================================================================
-# SIMUREALITY: V8.4 GLOBAL MATRIX SCANNER & TRIUMPH AUDIT
+# SIMUREALITY: V8.5 RDKIT CORE + TRIUMPH AUDIT
 # =====================================================================
 
-st.set_page_config(page_title="V8.4 Grid Physics", layout="wide", page_icon="💠")
+st.set_page_config(page_title="V8.5 Grid Physics", layout="wide", page_icon="🕸️")
 
 GAMMA_SYS = 1.0418
 GRID_CONSTANTS = {
@@ -18,6 +19,60 @@ GRID_CONSTANTS = {
 }
 STRAIN_PI = 78.1
 STRAIN_TRIPLE = 199.5
+STRAIN_CYCLO3 = 143.1
+STRAIN_CYCLO4 = 128.8
+STRAIN_CONJUGATION = STRAIN_PI / 2
+
+# L1 ПАТЧИ
+TAX_DANGLING_POINTER = 320.0  
+STRAIN_SP_SP = 290.0          
+STRAIN_SP2_SP2 = 60.0         
+REFUND_RESONANCE = 80.0       
+
+def analyze_topology_rdkit(row):
+    """
+    RDKit-парсер: Считывает локальный контекст конкретного разрываемого узла.
+    """
+    smiles = str(row['molecule'])
+    bond_idx = int(row['bond_index'])
+    
+    mol = Chem.MolFromSmiles(smiles)
+    if not mol:
+        return pd.Series([False, 0.0, False, False, 0.0, False])
+    
+    try:
+        bond = mol.GetBondWithIdx(bond_idx)
+        a1 = bond.GetBeginAtom()
+        a2 = bond.GetEndAtom()
+        
+        # 1. Ион на концах связи
+        has_ion = (a1.GetFormalCharge() != 0) or (a2.GetFormalCharge() != 0)
+        
+        # 2. Натяжение струны (Только для разрываемых атомов!)
+        hyb1 = a1.GetHybridization()
+        hyb2 = a2.GetHybridization()
+        sp_strain = 0.0
+        if hyb1 == Chem.rdchem.HybridizationType.SP and hyb2 == Chem.rdchem.HybridizationType.SP:
+            sp_strain = STRAIN_SP_SP
+        elif hyb1 == Chem.rdchem.HybridizationType.SP2 and hyb2 == Chem.rdchem.HybridizationType.SP2:
+            sp_strain = STRAIN_SP2_SP2
+            
+        # 3. Кольца
+        is_ring = bond.IsInRing()
+        ring_relief = 0.0
+        if is_ring:
+            if bond.IsInRingSize(3): ring_relief = STRAIN_CYCLO3
+            elif bond.IsInRingSize(4): ring_relief = STRAIN_CYCLO4
+            elif bond.IsInRingSize(5): ring_relief = 20.0
+            else: ring_relief = 30.0 
+            
+        # 4. Резонанс
+        is_bond_conj = bond.GetIsConjugated()
+        is_radical_cached = (a1.GetIsConjugated() or a2.GetIsConjugated()) and not is_bond_conj
+        
+        return pd.Series([has_ion, sp_strain, is_bond_conj, is_ring, ring_relief, is_radical_cached])
+    except:
+        return pd.Series([False, 0.0, False, False, 0.0, False])
 
 @st.cache_data(show_spinner=False)
 def load_and_compile(file_path):
@@ -27,61 +82,44 @@ def load_and_compile(file_path):
         
     df = pd.read_csv(file_path, compression='gzip')
     
-    # Жесткая адресация колонок ALFABET
     df['bond_clean'] = df['bond_type'].astype(str).str.upper().str.strip()
     df_valid = df[df['bond_clean'].isin(GRID_CONSTANTS.keys())].copy()
     df_valid['Actual_BDE_kJ'] = pd.to_numeric(df['bde'], errors='coerce') * 4.184
     df_valid = df_valid.dropna(subset=['Actual_BDE_kJ'])
     
-    # --- V8.4 ВЕКТОРНЫЙ СКАНЕР МАТРИЦЫ (Глобальный контекст) ---
-    smiles_str = df_valid['molecule'].astype(str)
+    # --- RDKIT АНАЛИЗ (Точная 3D-топология) ---
+    df_valid[['has_ion', 'sp_strain', 'is_bond_conj', 'is_ring', 'ring_relief', 'is_radical_cached']] = df_valid.apply(analyze_topology_rdkit, axis=1)
     
-    # Глобальные маркеры аппаратного напряжения
-    df_valid['has_ion'] = smiles_str.str.contains(r'\[.*?[-+].*?\]', regex=True)
-    df_valid['has_halogen'] = smiles_str.str.contains(r'I|Br', regex=True)
-    df_valid['has_sp_tension'] = smiles_str.str.contains(r'C#C|C#N', regex=True)
-    df_valid['is_conj'] = smiles_str.str.contains(r'[a-z]', regex=True)
-
-    # --- БАЗОВАЯ МАТЕМАТИКА (GRID PHYSICS) ---
+    # --- GRID PHYSICS MATH ---
     df_valid['Grid_BDE_Base'] = df_valid['bond_clean'].map(GRID_CONSTANTS) * GAMMA_SYS
     df_valid['Grid_BDE_Final'] = df_valid['Grid_BDE_Base']
     
-    # Снятие прямых штрафов за кратные связи
     df_valid.loc[df_valid['bond_clean'] == 'C=C', 'Grid_BDE_Final'] -= STRAIN_PI
     df_valid.loc[df_valid['bond_clean'] == 'C#C', 'Grid_BDE_Final'] -= STRAIN_TRIPLE
     
-    # --- ПРИМЕНЕНИЕ ГЛОБАЛЬНЫХ ПАТЧЕЙ (Исправление логики Топ-20) ---
-    # 1. Ионное переполнение (Buffer Overflow)
-    df_valid.loc[df_valid['has_ion'], 'Grid_BDE_Final'] += 320.0
-    
-    # 2. Переполнение вокселя (Voxel Overflow)
-    df_valid.loc[df_valid['has_halogen'], 'Grid_BDE_Final'] += 150.0
-    
-    # 3. Эффект натянутой струны (SP Tension) - применяется только при разрыве одинарных связей
-    single_bonds = ['C-C', 'C-O', 'C-N']
-    df_valid.loc[df_valid['has_sp_tension'] & (df_valid['bond_clean'].isin(single_bonds)), 'Grid_BDE_Final'] += 280.0
-    
-    # 4. Резонансная скидка (Token Ring Refund) - компенсация для аномально дешевых C-H в ароматике
-    df_valid.loc[df_valid['is_conj'] & (df_valid['bond_clean'] == 'C-H'), 'Grid_BDE_Final'] -= 80.0
+    # Применяем точные патчи
+    df_valid.loc[df_valid['has_ion'], 'Grid_BDE_Final'] += TAX_DANGLING_POINTER
+    df_valid['Grid_BDE_Final'] += df_valid['sp_strain']
+    df_valid.loc[df_valid['is_bond_conj'] & (df_valid['bond_clean'] == 'C-C'), 'Grid_BDE_Final'] += STRAIN_CONJUGATION
+    df_valid.loc[df_valid['is_ring'] & ~df_valid['is_bond_conj'], 'Grid_BDE_Final'] -= df_valid['ring_relief']
+    df_valid.loc[df_valid['is_radical_cached'], 'Grid_BDE_Final'] -= REFUND_RESONANCE
 
-    # --- РАСЧЕТ МЕТРИК И ТОЧНОСТИ ---
+    # Метрики
     df_valid['Abs_Error'] = np.abs(df_valid['Grid_BDE_Final'] - df_valid['Actual_BDE_kJ'])
     df_valid['Rel_Error_Pct'] = np.where(df_valid['Actual_BDE_kJ'] != 0, 
                                         (df_valid['Abs_Error'] / df_valid['Actual_BDE_kJ']) * 100, 0)
-    
-    # Точность = 100% - Ошибка%
     df_valid['Accuracy'] = np.maximum(0, 100.0 - df_valid['Rel_Error_Pct'])
     
     return df_valid, "OK", time.time() - start
 
 # --- UI ---
-st.title("💠 V8.4 Grid Physics: Global Scanner & Triumph Audit")
-st.markdown("Мы починили локальную слепоту скрипта. Теперь $\Sigma$-Алгоритм сканирует всю молекулу на наличие ионов, галогенов и натянутых струн. Добавлен модуль анализа наших сильных сторон.")
+st.title("🕸️ V8.5 Grid Physics: RDKit Core + Triumph Audit")
+st.markdown("Возврат к точному парсингу 3D-графов через RDKit с добавлением модуля анализа точности.")
 
 FILE_NAME = "bde-db2.csv.gz"
 
-if st.button("🚀 Запустить Полный Аудит Матрицы"):
-    with st.spinner("Векторное сканирование сотен тысяч графов..."):
+if st.button("🚀 Декомпилировать Топологию (RDKit)"):
+    with st.spinner("RDKit собирает 3D-графы и высчитывает натяжение узлов..."):
         df, status, calc_time = load_and_compile(FILE_NAME)
 
     if df is not None:
@@ -101,9 +139,8 @@ if st.button("🚀 Запустить Полный Аудит Матрицы"):
         col4.metric("Общая средняя точность", f"{df['Accuracy'].mean():.2f}%")
         
         st.markdown("---")
-        st.header("🏆 АНАЛИТИКА ТРИУМФОВ (Где мы абсолютно сильны)")
+        st.header("🏆 АНАЛИТИКА ТРИУМФОВ (Точность $\Sigma$-Алгоритма)")
         
-        # Срезы точности
         tier_99 = df[df['Accuracy'] >= 99.0]
         tier_96 = df[(df['Accuracy'] >= 96.0) & (df['Accuracy'] < 99.0)]
         tier_93 = df[(df['Accuracy'] >= 93.0) & (df['Accuracy'] < 96.0)]
@@ -126,7 +163,5 @@ if st.button("🚀 Запустить Полный Аудит Матрицы"):
 
         st.markdown("---")
         st.header("⚠️ АНАЛИТИКА АНОМАЛИЙ (Топ-20 Ошибок)")
-        st.markdown("Эти молекулы все еще требуют ручной декомпиляции L2. Проверьте новые сработавшие флаги контекста.")
-        
-        error_cols = ['molecule', 'bond_clean', 'has_ion', 'has_halogen', 'has_sp_tension', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
+        error_cols = ['molecule', 'bond_clean', 'has_ion', 'sp_strain', 'is_radical_cached', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
         st.dataframe(df.nlargest(20, 'Abs_Error')[error_cols].style.background_gradient(subset=['Abs_Error'], cmap='Reds').format({"Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", "Abs_Error": "{:.1f}"}))

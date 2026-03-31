@@ -7,10 +7,10 @@ import os
 from rdkit import Chem
 
 # =====================================================================
-# SIMUREALITY: V8.7 GLOBAL RDKIT RADAR + TRIUMPH AUDIT + BATCH LIMITER
+# SIMUREALITY: V8.8 TRUE MONOLITH (RDKit AddHs + Triumph Audit)
 # =====================================================================
 
-st.set_page_config(page_title="V8.7 Grid Physics", layout="wide", page_icon="🕸️")
+st.set_page_config(page_title="V8.8 Grid Physics", layout="wide", page_icon="🕸️")
 
 GAMMA_SYS = 1.0418
 GRID_CONSTANTS = {
@@ -25,9 +25,9 @@ TAX_DANGLING_POINTER = 320.0
 TAX_VOXEL_OVERFLOW = 150.0
 STRAIN_GLOBAL_SP = 280.0         
 
-def analyze_global_topology(row):
+def analyze_true_topology(row):
     """
-    RDKit-парсер: Считывает ГЛОБАЛЬНОЕ напряжение молекулы + локальные кольца.
+    RDKit-парсер с восстановлением водородов (AddHs) для совпадения индексов ALFABET.
     """
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
@@ -35,20 +35,26 @@ def analyze_global_topology(row):
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
         return pd.Series([False, False, False, False, 0.0, False])
-    
-    try:
-        # ГЛОБАЛЬНЫЕ СКАНЕРЫ (Весь граф)
-        has_global_ion = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
-        has_heavy_halogen = any(atom.GetSymbol() in ['I', 'Br'] for atom in mol.GetAtoms())
-        has_sp_tension = any(atom.GetHybridization() == Chem.rdchem.HybridizationType.SP for atom in mol.GetAtoms())
         
-        # ЛОКАЛЬНЫЕ СКАНЕРЫ (Для связи)
-        bond = mol.GetBondWithIdx(bond_idx)
+    # 1. ГЛОБАЛЬНЫЕ ФЛАГИ (Абсолютно независимы от bond_idx)
+    has_global_ion = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
+    has_heavy_halogen = any(atom.GetSymbol() in ['I', 'Br'] for atom in mol.GetAtoms())
+    has_sp_tension = any(atom.GetHybridization() == Chem.rdchem.HybridizationType.SP for atom in mol.GetAtoms())
+    
+    is_ring = False
+    ring_relief = 0.0
+    is_radical_cached = False
+    
+    # 2. ЛОКАЛЬНЫЕ ФЛАГИ (С восстановлением 3D-геометрии)
+    try:
+        # ВОССТАНАВЛИВАЕМ ВОДОРОДЫ! Иначе ALFABET bond_index укажет в пустоту.
+        mol_h = Chem.AddHs(mol)
+        
+        bond = mol_h.GetBondWithIdx(bond_idx)
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
         
         is_ring = bond.IsInRing()
-        ring_relief = 0.0
         if is_ring:
             if bond.IsInRingSize(3): ring_relief = 143.1
             elif bond.IsInRingSize(4): ring_relief = 128.8
@@ -57,10 +63,10 @@ def analyze_global_topology(row):
             
         is_bond_conj = bond.GetIsConjugated()
         is_radical_cached = (a1.GetIsConjugated() or a2.GetIsConjugated()) and not is_bond_conj
-        
-        return pd.Series([has_global_ion, has_heavy_halogen, has_sp_tension, is_ring, ring_relief, is_radical_cached])
     except:
-        return pd.Series([False, False, False, False, 0.0, False])
+        pass # Если ALFABET всё же подсунул кривой индекс, мы хотя бы спасем глобальные флаги
+        
+    return pd.Series([has_global_ion, has_heavy_halogen, has_sp_tension, is_ring, ring_relief, is_radical_cached])
 
 @st.cache_data(show_spinner=False)
 def load_and_compile(file_path, sample_limit):
@@ -75,12 +81,11 @@ def load_and_compile(file_path, sample_limit):
     df_valid['Actual_BDE_kJ'] = pd.to_numeric(df['bde'], errors='coerce') * 4.184
     df_valid = df_valid.dropna(subset=['Actual_BDE_kJ'])
     
-    # --- ОГРАНИЧИТЕЛЬ ВЫБОРКИ (Batch Limiter) ---
     if 0 < sample_limit < len(df_valid):
         df_valid = df_valid.sample(sample_limit, random_state=42)
     
     # --- RDKIT АНАЛИЗ ---
-    df_valid[['has_global_ion', 'has_heavy_halogen', 'has_sp_tension', 'is_ring', 'ring_relief', 'is_radical_cached']] = df_valid.apply(analyze_global_topology, axis=1)
+    df_valid[['has_global_ion', 'has_heavy_halogen', 'has_sp_tension', 'is_ring', 'ring_relief', 'is_radical_cached']] = df_valid.apply(analyze_true_topology, axis=1)
     
     # --- GRID PHYSICS ---
     df_valid['Grid_BDE_Base'] = df_valid['bond_clean'].map(GRID_CONSTANTS) * GAMMA_SYS
@@ -89,7 +94,7 @@ def load_and_compile(file_path, sample_limit):
     df_valid.loc[df_valid['bond_clean'] == 'C=C', 'Grid_BDE_Final'] -= STRAIN_PI
     df_valid.loc[df_valid['bond_clean'] == 'C#C', 'Grid_BDE_Final'] -= STRAIN_TRIPLE
     
-    # Патчи
+    # Патчи L1
     df_valid.loc[df_valid['has_global_ion'], 'Grid_BDE_Final'] += TAX_DANGLING_POINTER
     df_valid.loc[df_valid['has_heavy_halogen'], 'Grid_BDE_Final'] += TAX_VOXEL_OVERFLOW
     
@@ -108,14 +113,14 @@ def load_and_compile(file_path, sample_limit):
     return df_valid, "OK", time.time() - start
 
 # --- UI ---
-st.title("🕸️ V8.7 Grid Physics: Global RDKit + Limiter")
-st.markdown("Скрипт проверяет глобальное напряжение Матрицы (ионы, галогены, натяжение) с предохранителем от таймаутов сервера.")
+st.title("🕸️ V8.8 Grid Physics: True Topology & AddHs Fix")
+st.markdown("Скрипт восстанавливает водороды для синхронизации индексов ALFABET и честно тарифицирует 3D-напряжения.")
 
 FILE_NAME = "bde-db2.csv.gz"
-sample_limit = st.slider("Аппаратный Ограничитель (Кол-во узлов для анализа)", 1000, 100000, 10000, step=1000)
+sample_limit = st.slider("Аппаратный Ограничитель (Батч)", 1000, 100000, 10000, step=1000)
 
 if st.button("🚀 Декомпилировать Топологию"):
-    with st.spinner(f"RDKit сканирует глобальное напряжение Матрицы ({sample_limit} графов)..."):
+    with st.spinner(f"RDKit разворачивает 3D-модели ({sample_limit} графов)..."):
         df, status, calc_time = load_and_compile(FILE_NAME, sample_limit)
 
     if df is not None:
@@ -135,7 +140,7 @@ if st.button("🚀 Декомпилировать Топологию"):
         col4.metric("Общая средняя точность", f"{df['Accuracy'].mean():.2f}%")
         
         st.markdown("---")
-        st.header("🏆 АНАЛИТИКА ТРИУМФОВ (Точность $\Sigma$-Алгоритма)")
+        st.header("🏆 АНАЛИТИКА ТРИУМФОВ (Где Матрица идеальна)")
         
         tier_99 = df[df['Accuracy'] >= 99.0]
         tier_96 = df[(df['Accuracy'] >= 96.0) & (df['Accuracy'] < 99.0)]

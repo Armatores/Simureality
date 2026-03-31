@@ -7,66 +7,50 @@ import os
 from rdkit import Chem
 
 # =====================================================================
-# SIMUREALITY: V8.8 TRUE MONOLITH (RDKit AddHs + Triumph Audit)
+# SIMUREALITY: V8.9 PURIST ENGINE (No Hacks, Only Grid Physics)
 # =====================================================================
 
-st.set_page_config(page_title="V8.8 Grid Physics", layout="wide", page_icon="🕸️")
+st.set_page_config(page_title="V8.9 Purist Grid Physics", layout="wide", page_icon="💠")
 
+# ФУНДАМЕНТАЛЬНЫЕ КОНСТАНТЫ
 GAMMA_SYS = 1.0418
 GRID_CONSTANTS = {
     "C-C": 327.51, "C-H": 398.11, "C-O": 330.91, "O-H": 437.81,
     "C-N": 327.18, "N-H": 387.58, "C=C": 655.02, "C#C": 982.53
 }
+
+# Геометрические штрафы решетки
 STRAIN_PI = 78.1
 STRAIN_TRIPLE = 199.5
 
-# Глобальные L1 Патчи
-TAX_DANGLING_POINTER = 320.0  
-TAX_VOXEL_OVERFLOW = 150.0
-STRAIN_GLOBAL_SP = 280.0         
-
-def analyze_true_topology(row):
+def analyze_pure_topology(row):
     """
-    RDKit-парсер с восстановлением водородов (AddHs) для совпадения индексов ALFABET.
+    Хирургический RDKit-парсер: ищет только истинное кольцевое напряжение (Ring Strain)
+    для конкретной разрываемой связи. Восстанавливает водороды для точности индексов.
     """
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
     
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
-        return pd.Series([False, False, False, False, 0.0, False])
-        
-    # 1. ГЛОБАЛЬНЫЕ ФЛАГИ (Абсолютно независимы от bond_idx)
-    has_global_ion = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
-    has_heavy_halogen = any(atom.GetSymbol() in ['I', 'Br'] for atom in mol.GetAtoms())
-    has_sp_tension = any(atom.GetHybridization() == Chem.rdchem.HybridizationType.SP for atom in mol.GetAtoms())
+        return pd.Series([False, 0.0])
     
-    is_ring = False
-    ring_relief = 0.0
-    is_radical_cached = False
-    
-    # 2. ЛОКАЛЬНЫЕ ФЛАГИ (С восстановлением 3D-геометрии)
     try:
-        # ВОССТАНАВЛИВАЕМ ВОДОРОДЫ! Иначе ALFABET bond_index укажет в пустоту.
-        mol_h = Chem.AddHs(mol)
-        
+        mol_h = Chem.AddHs(mol) # Восстанавливаем 3D-каркас
         bond = mol_h.GetBondWithIdx(bond_idx)
-        a1 = bond.GetBeginAtom()
-        a2 = bond.GetEndAtom()
         
         is_ring = bond.IsInRing()
+        ring_relief = 0.0
+        # Сброс напряжения при разрыве тесного кольца
         if is_ring:
             if bond.IsInRingSize(3): ring_relief = 143.1
             elif bond.IsInRingSize(4): ring_relief = 128.8
             elif bond.IsInRingSize(5): ring_relief = 20.0
             else: ring_relief = 30.0 
             
-        is_bond_conj = bond.GetIsConjugated()
-        is_radical_cached = (a1.GetIsConjugated() or a2.GetIsConjugated()) and not is_bond_conj
+        return pd.Series([is_ring, ring_relief])
     except:
-        pass # Если ALFABET всё же подсунул кривой индекс, мы хотя бы спасем глобальные флаги
-        
-    return pd.Series([has_global_ion, has_heavy_halogen, has_sp_tension, is_ring, ring_relief, is_radical_cached])
+        return pd.Series([False, 0.0])
 
 @st.cache_data(show_spinner=False)
 def load_and_compile(file_path, sample_limit):
@@ -81,30 +65,25 @@ def load_and_compile(file_path, sample_limit):
     df_valid['Actual_BDE_kJ'] = pd.to_numeric(df['bde'], errors='coerce') * 4.184
     df_valid = df_valid.dropna(subset=['Actual_BDE_kJ'])
     
+    # Batch Limiter для скорости
     if 0 < sample_limit < len(df_valid):
         df_valid = df_valid.sample(sample_limit, random_state=42)
     
-    # --- RDKIT АНАЛИЗ ---
-    df_valid[['has_global_ion', 'has_heavy_halogen', 'has_sp_tension', 'is_ring', 'ring_relief', 'is_radical_cached']] = df_valid.apply(analyze_true_topology, axis=1)
+    # --- RDKIT ТОПОЛОГИЯ ---
+    df_valid[['is_ring', 'ring_relief']] = df_valid.apply(analyze_pure_topology, axis=1)
     
-    # --- GRID PHYSICS ---
+    # --- ЧИСТАЯ МАТЕМАТИКА GRID PHYSICS ---
     df_valid['Grid_BDE_Base'] = df_valid['bond_clean'].map(GRID_CONSTANTS) * GAMMA_SYS
     df_valid['Grid_BDE_Final'] = df_valid['Grid_BDE_Base']
     
+    # 1. Штрафы кратных связей
     df_valid.loc[df_valid['bond_clean'] == 'C=C', 'Grid_BDE_Final'] -= STRAIN_PI
     df_valid.loc[df_valid['bond_clean'] == 'C#C', 'Grid_BDE_Final'] -= STRAIN_TRIPLE
     
-    # Патчи L1
-    df_valid.loc[df_valid['has_global_ion'], 'Grid_BDE_Final'] += TAX_DANGLING_POINTER
-    df_valid.loc[df_valid['has_heavy_halogen'], 'Grid_BDE_Final'] += TAX_VOXEL_OVERFLOW
-    
-    single_bonds = ['C-C', 'C-O', 'C-N']
-    df_valid.loc[df_valid['has_sp_tension'] & df_valid['bond_clean'].isin(single_bonds), 'Grid_BDE_Final'] += STRAIN_GLOBAL_SP
-    
+    # 2. Локальное кольцевое напряжение (Relaxation Profile)
     df_valid.loc[df_valid['is_ring'], 'Grid_BDE_Final'] -= df_valid['ring_relief']
-    df_valid.loc[df_valid['is_radical_cached'] & (df_valid['bond_clean'] == 'C-H'), 'Grid_BDE_Final'] -= 80.0
 
-    # Метрики
+    # --- МЕТРИКИ ---
     df_valid['Abs_Error'] = np.abs(df_valid['Grid_BDE_Final'] - df_valid['Actual_BDE_kJ'])
     df_valid['Rel_Error_Pct'] = np.where(df_valid['Actual_BDE_kJ'] != 0, 
                                         (df_valid['Abs_Error'] / df_valid['Actual_BDE_kJ']) * 100, 0)
@@ -113,14 +92,14 @@ def load_and_compile(file_path, sample_limit):
     return df_valid, "OK", time.time() - start
 
 # --- UI ---
-st.title("🕸️ V8.8 Grid Physics: True Topology & AddHs Fix")
-st.markdown("Скрипт восстанавливает водороды для синхронизации индексов ALFABET и честно тарифицирует 3D-напряжения.")
+st.title("💠 V8.9 Purist Engine: The True Grid Physics")
+st.markdown("Мы удалили все AI-хаки и оставили только чистые константы решетки + хирургический расчет локального кольцевого излома.")
 
 FILE_NAME = "bde-db2.csv.gz"
-sample_limit = st.slider("Аппаратный Ограничитель (Батч)", 1000, 100000, 10000, step=1000)
+sample_limit = st.slider("Аппаратный Батч", 1000, 100000, 10000, step=1000)
 
-if st.button("🚀 Декомпилировать Топологию"):
-    with st.spinner(f"RDKit разворачивает 3D-модели ({sample_limit} графов)..."):
+if st.button("🚀 Запустить Чистую Декомпиляцию"):
+    with st.spinner(f"Диспетчер применяет базовые константы ({sample_limit} узлов)..."):
         df, status, calc_time = load_and_compile(FILE_NAME, sample_limit)
 
     if df is not None:
@@ -140,7 +119,7 @@ if st.button("🚀 Декомпилировать Топологию"):
         col4.metric("Общая средняя точность", f"{df['Accuracy'].mean():.2f}%")
         
         st.markdown("---")
-        st.header("🏆 АНАЛИТИКА ТРИУМФОВ (Где Матрица идеальна)")
+        st.header("🏆 АНАЛИТИКА ТРИУМФОВ (Мощь базовой геометрии)")
         
         tier_99 = df[df['Accuracy'] >= 99.0]
         tier_96 = df[(df['Accuracy'] >= 96.0) & (df['Accuracy'] < 99.0)]
@@ -164,5 +143,6 @@ if st.button("🚀 Декомпилировать Топологию"):
 
         st.markdown("---")
         st.header("⚠️ АНАЛИТИКА АНОМАЛИЙ (Топ-20 Ошибок)")
-        error_cols = ['molecule', 'bond_clean', 'has_global_ion', 'has_sp_tension', 'is_radical_cached', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
+        st.markdown("Эти экстремальные квантовые флуктуации требуют разработки L2-роутера. Мы больше не пытаемся заткнуть их грязными патчами.")
+        error_cols = ['molecule', 'bond_clean', 'is_ring', 'ring_relief', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
         st.dataframe(df.nlargest(20, 'Abs_Error')[error_cols].style.background_gradient(subset=['Abs_Error'], cmap='Reds').format({"Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", "Abs_Error": "{:.1f}"}))

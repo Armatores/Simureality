@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 import os
 import time
 
@@ -41,25 +40,24 @@ def load_and_compile_dataset(file_path):
     except Exception as e:
         return None, str(e), 0
 
-    # 1. АВТО-ДЕТЕКТ КОЛОНОК (базы BDE бывают разные)
-    col_bond = next((c for c in df.columns if 'bond' in c.lower() or 'type' in c.lower()), df.columns[1])
-    col_bde = next((c for c in df.columns if 'bde' in c.lower() or 'energy' in c.lower() or 'kcal' in c.lower()), df.columns[-1])
-    col_smiles = next((c for c in df.columns if 'smiles' in c.lower() or 'mol' in c.lower()), df.columns[0])
+    # 1. ЖЕСТКАЯ АДРЕСАЦИЯ КОЛОНОК (По результатам V-Probe)
+    col_bond = 'bond_type'
+    col_bde = 'bde'
+    col_smiles = 'molecule'
 
     # Очистка: берем только те связи, которые знает Матрица L0
     df['bond_clean'] = df[col_bond].astype(str).str.upper().str.strip()
     df_valid = df[df['bond_clean'].isin(GRID_CONSTANTS.keys())].copy()
     
     if df_valid.empty:
-        return None, "Не найдены базовые связи (C-C, C-H) в датасете.", 0
+        return None, "Не найдены базовые связи в датасете. Проверь формат колонок.", 0
         
-    # 2. АДАПТАЦИЯ ДАННЫХ (Квантовые базы обычно в ккал/моль)
+    # 2. АДАПТАЦИЯ ДАННЫХ (Конвертация ALFABET ккал/моль -> кДж/моль)
     df_valid['bde_actual'] = pd.to_numeric(df_valid[col_bde], errors='coerce')
     df_valid = df_valid.dropna(subset=['bde_actual'])
     
-    # Если среднее BDE < 200, это ккал/моль. Переводим в кДж/моль.
-    is_kcal = df_valid['bde_actual'].mean() < 200
-    df_valid['Actual_BDE_kJ'] = df_valid['bde_actual'] * (4.184 if is_kcal else 1.0)
+    # Переводим в кДж/моль (4.184)
+    df_valid['Actual_BDE_kJ'] = df_valid['bde_actual'] * 4.184
 
     # 3. ВЕКТОРНЫЙ КОМПИЛЯТОР GRID PHYSICS (Выполняется за 0.1 сек для 850k строк)
     
@@ -68,9 +66,9 @@ def load_and_compile_dataset(file_path):
     
     # Шаг Б: Эвристика графа (быстрый парсинг SMILES через векторы)
     smiles_str = df_valid[col_smiles].astype(str)
-    # Если в SMILES есть 'c' — связь находится рядом с ароматическим кольцом
-    is_conj = smiles_str.str.contains('c', case=True, regex=False)
-    # Цифры в SMILES (1, 2) означают наличие циклов
+    # Если в SMILES есть 'c' (или 'n','o' в нижнем регистре) — связь находится в ароматическом кольце
+    is_conj = smiles_str.str.contains(r'[a-z]', regex=True)
+    # Цифры в SMILES (1, 2) означают наличие алифатических циклов
     is_ring = smiles_str.str.contains(r'[1-9]', regex=True)
     
     # Шаг В: Применение топологических правил к базовой энергии
@@ -159,9 +157,11 @@ if df is not None:
         st.plotly_chart(fig_hist, use_container_width=True)
 
     st.markdown("### 🔍 Системный Журнал: Аномалии и Идеалы (Случайные 100)")
-    display_cols = [c for c in df.columns if 'smiles' in c.lower() or 'bond' in c.lower()] + ['Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
-    # Оставляем только нужные колонки
-    df_display = df[display_cols].sample(min(100, len(df)))
+    display_cols = [c for c in df.columns if 'molecule' in c.lower() or 'bond' in c.lower()] + ['Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
+    
+    # Оставляем только нужные колонки, если они есть
+    valid_display_cols = [c for c in display_cols if c in df.columns]
+    df_display = df[valid_display_cols].sample(min(100, len(df)))
     
     styled_df = df_display.style.format({
         "Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", "Abs_Error": "{:.1f}"

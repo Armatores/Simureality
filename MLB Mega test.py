@@ -7,10 +7,10 @@ import os
 from rdkit import Chem
 
 # =====================================================================
-# SIMUREALITY: V8.6 GLOBAL RDKIT RADAR + TRIUMPH AUDIT
+# SIMUREALITY: V8.7 GLOBAL RDKIT RADAR + TRIUMPH AUDIT + BATCH LIMITER
 # =====================================================================
 
-st.set_page_config(page_title="V8.6 Grid Physics", layout="wide", page_icon="🕸️")
+st.set_page_config(page_title="V8.7 Grid Physics", layout="wide", page_icon="🕸️")
 
 GAMMA_SYS = 1.0418
 GRID_CONSTANTS = {
@@ -37,17 +37,16 @@ def analyze_global_topology(row):
         return pd.Series([False, False, False, False, 0.0, False])
     
     try:
-        # ГЛОБАЛЬНЫЕ СКАНЕРЫ (Проверяем весь граф)
+        # ГЛОБАЛЬНЫЕ СКАНЕРЫ (Весь граф)
         has_global_ion = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
         has_heavy_halogen = any(atom.GetSymbol() in ['I', 'Br'] for atom in mol.GetAtoms())
         has_sp_tension = any(atom.GetHybridization() == Chem.rdchem.HybridizationType.SP for atom in mol.GetAtoms())
         
-        # ЛОКАЛЬНЫЕ СКАНЕРЫ (Для конкретной связи)
+        # ЛОКАЛЬНЫЕ СКАНЕРЫ (Для связи)
         bond = mol.GetBondWithIdx(bond_idx)
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
         
-        # Кольца (Сброс напряжения)
         is_ring = bond.IsInRing()
         ring_relief = 0.0
         if is_ring:
@@ -56,7 +55,6 @@ def analyze_global_topology(row):
             elif bond.IsInRingSize(5): ring_relief = 20.0
             else: ring_relief = 30.0 
             
-        # Резонансная Скидка (Корзина)
         is_bond_conj = bond.GetIsConjugated()
         is_radical_cached = (a1.GetIsConjugated() or a2.GetIsConjugated()) and not is_bond_conj
         
@@ -65,7 +63,7 @@ def analyze_global_topology(row):
         return pd.Series([False, False, False, False, 0.0, False])
 
 @st.cache_data(show_spinner=False)
-def load_and_compile(file_path):
+def load_and_compile(file_path, sample_limit):
     start = time.time()
     if not os.path.exists(file_path):
         return None, "Файл не найден.", 0
@@ -77,25 +75,27 @@ def load_and_compile(file_path):
     df_valid['Actual_BDE_kJ'] = pd.to_numeric(df['bde'], errors='coerce') * 4.184
     df_valid = df_valid.dropna(subset=['Actual_BDE_kJ'])
     
+    # --- ОГРАНИЧИТЕЛЬ ВЫБОРКИ (Batch Limiter) ---
+    if 0 < sample_limit < len(df_valid):
+        df_valid = df_valid.sample(sample_limit, random_state=42)
+    
     # --- RDKIT АНАЛИЗ ---
     df_valid[['has_global_ion', 'has_heavy_halogen', 'has_sp_tension', 'is_ring', 'ring_relief', 'is_radical_cached']] = df_valid.apply(analyze_global_topology, axis=1)
     
-    # --- МАТЕМАТИКА GRID PHYSICS ---
+    # --- GRID PHYSICS ---
     df_valid['Grid_BDE_Base'] = df_valid['bond_clean'].map(GRID_CONSTANTS) * GAMMA_SYS
     df_valid['Grid_BDE_Final'] = df_valid['Grid_BDE_Base']
     
     df_valid.loc[df_valid['bond_clean'] == 'C=C', 'Grid_BDE_Final'] -= STRAIN_PI
     df_valid.loc[df_valid['bond_clean'] == 'C#C', 'Grid_BDE_Final'] -= STRAIN_TRIPLE
     
-    # ПРИМЕНЯЕМ ПАТЧИ (Убиваем аномалии):
+    # Патчи
     df_valid.loc[df_valid['has_global_ion'], 'Grid_BDE_Final'] += TAX_DANGLING_POINTER
     df_valid.loc[df_valid['has_heavy_halogen'], 'Grid_BDE_Final'] += TAX_VOXEL_OVERFLOW
     
-    # Штраф струны применяется только если рвем одинарный линк (чтобы не штрафовать саму тройную связь)
     single_bonds = ['C-C', 'C-O', 'C-N']
     df_valid.loc[df_valid['has_sp_tension'] & df_valid['bond_clean'].isin(single_bonds), 'Grid_BDE_Final'] += STRAIN_GLOBAL_SP
     
-    # Локальные патчи графа
     df_valid.loc[df_valid['is_ring'], 'Grid_BDE_Final'] -= df_valid['ring_relief']
     df_valid.loc[df_valid['is_radical_cached'] & (df_valid['bond_clean'] == 'C-H'), 'Grid_BDE_Final'] -= 80.0
 
@@ -108,14 +108,15 @@ def load_and_compile(file_path):
     return df_valid, "OK", time.time() - start
 
 # --- UI ---
-st.title("🕸️ V8.6 Grid Physics: Global RDKit + Triumph Audit")
-st.markdown("Скрипт проверяет всю молекулу на наличие глобального напряжения (ионы, галогены, натяжение), сохраняя точный 3D-разбор локального узла.")
+st.title("🕸️ V8.7 Grid Physics: Global RDKit + Limiter")
+st.markdown("Скрипт проверяет глобальное напряжение Матрицы (ионы, галогены, натяжение) с предохранителем от таймаутов сервера.")
 
 FILE_NAME = "bde-db2.csv.gz"
+sample_limit = st.slider("Аппаратный Ограничитель (Кол-во узлов для анализа)", 1000, 100000, 10000, step=1000)
 
-if st.button("🚀 Декомпилировать Топологию (100k)"):
-    with st.spinner("RDKit сканирует глобальное напряжение Матрицы... Это займет около 5 минут."):
-        df, status, calc_time = load_and_compile(FILE_NAME)
+if st.button("🚀 Декомпилировать Топологию"):
+    with st.spinner(f"RDKit сканирует глобальное напряжение Матрицы ({sample_limit} графов)..."):
+        df, status, calc_time = load_and_compile(FILE_NAME, sample_limit)
 
     if df is not None:
         mae = df['Abs_Error'].mean()

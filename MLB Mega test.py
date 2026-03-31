@@ -7,10 +7,10 @@ import os
 from rdkit import Chem
 
 # =====================================================================
-# SIMUREALITY: V8.5 RDKIT CORE + TRIUMPH AUDIT
+# SIMUREALITY: V8.6 GLOBAL RDKIT RADAR + TRIUMPH AUDIT
 # =====================================================================
 
-st.set_page_config(page_title="V8.5 Grid Physics", layout="wide", page_icon="🕸️")
+st.set_page_config(page_title="V8.6 Grid Physics", layout="wide", page_icon="🕸️")
 
 GAMMA_SYS = 1.0418
 GRID_CONSTANTS = {
@@ -19,60 +19,50 @@ GRID_CONSTANTS = {
 }
 STRAIN_PI = 78.1
 STRAIN_TRIPLE = 199.5
-STRAIN_CYCLO3 = 143.1
-STRAIN_CYCLO4 = 128.8
-STRAIN_CONJUGATION = STRAIN_PI / 2
 
-# L1 ПАТЧИ
+# Глобальные L1 Патчи
 TAX_DANGLING_POINTER = 320.0  
-STRAIN_SP_SP = 290.0          
-STRAIN_SP2_SP2 = 60.0         
-REFUND_RESONANCE = 80.0       
+TAX_VOXEL_OVERFLOW = 150.0
+STRAIN_GLOBAL_SP = 280.0         
 
-def analyze_topology_rdkit(row):
+def analyze_global_topology(row):
     """
-    RDKit-парсер: Считывает локальный контекст конкретного разрываемого узла.
+    RDKit-парсер: Считывает ГЛОБАЛЬНОЕ напряжение молекулы + локальные кольца.
     """
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
     
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
-        return pd.Series([False, 0.0, False, False, 0.0, False])
+        return pd.Series([False, False, False, False, 0.0, False])
     
     try:
+        # ГЛОБАЛЬНЫЕ СКАНЕРЫ (Проверяем весь граф)
+        has_global_ion = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
+        has_heavy_halogen = any(atom.GetSymbol() in ['I', 'Br'] for atom in mol.GetAtoms())
+        has_sp_tension = any(atom.GetHybridization() == Chem.rdchem.HybridizationType.SP for atom in mol.GetAtoms())
+        
+        # ЛОКАЛЬНЫЕ СКАНЕРЫ (Для конкретной связи)
         bond = mol.GetBondWithIdx(bond_idx)
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
         
-        # 1. Ион на концах связи
-        has_ion = (a1.GetFormalCharge() != 0) or (a2.GetFormalCharge() != 0)
-        
-        # 2. Натяжение струны (Только для разрываемых атомов!)
-        hyb1 = a1.GetHybridization()
-        hyb2 = a2.GetHybridization()
-        sp_strain = 0.0
-        if hyb1 == Chem.rdchem.HybridizationType.SP and hyb2 == Chem.rdchem.HybridizationType.SP:
-            sp_strain = STRAIN_SP_SP
-        elif hyb1 == Chem.rdchem.HybridizationType.SP2 and hyb2 == Chem.rdchem.HybridizationType.SP2:
-            sp_strain = STRAIN_SP2_SP2
-            
-        # 3. Кольца
+        # Кольца (Сброс напряжения)
         is_ring = bond.IsInRing()
         ring_relief = 0.0
         if is_ring:
-            if bond.IsInRingSize(3): ring_relief = STRAIN_CYCLO3
-            elif bond.IsInRingSize(4): ring_relief = STRAIN_CYCLO4
+            if bond.IsInRingSize(3): ring_relief = 143.1
+            elif bond.IsInRingSize(4): ring_relief = 128.8
             elif bond.IsInRingSize(5): ring_relief = 20.0
             else: ring_relief = 30.0 
             
-        # 4. Резонанс
+        # Резонансная Скидка (Корзина)
         is_bond_conj = bond.GetIsConjugated()
         is_radical_cached = (a1.GetIsConjugated() or a2.GetIsConjugated()) and not is_bond_conj
         
-        return pd.Series([has_ion, sp_strain, is_bond_conj, is_ring, ring_relief, is_radical_cached])
+        return pd.Series([has_global_ion, has_heavy_halogen, has_sp_tension, is_ring, ring_relief, is_radical_cached])
     except:
-        return pd.Series([False, 0.0, False, False, 0.0, False])
+        return pd.Series([False, False, False, False, 0.0, False])
 
 @st.cache_data(show_spinner=False)
 def load_and_compile(file_path):
@@ -87,22 +77,27 @@ def load_and_compile(file_path):
     df_valid['Actual_BDE_kJ'] = pd.to_numeric(df['bde'], errors='coerce') * 4.184
     df_valid = df_valid.dropna(subset=['Actual_BDE_kJ'])
     
-    # --- RDKIT АНАЛИЗ (Точная 3D-топология) ---
-    df_valid[['has_ion', 'sp_strain', 'is_bond_conj', 'is_ring', 'ring_relief', 'is_radical_cached']] = df_valid.apply(analyze_topology_rdkit, axis=1)
+    # --- RDKIT АНАЛИЗ ---
+    df_valid[['has_global_ion', 'has_heavy_halogen', 'has_sp_tension', 'is_ring', 'ring_relief', 'is_radical_cached']] = df_valid.apply(analyze_global_topology, axis=1)
     
-    # --- GRID PHYSICS MATH ---
+    # --- МАТЕМАТИКА GRID PHYSICS ---
     df_valid['Grid_BDE_Base'] = df_valid['bond_clean'].map(GRID_CONSTANTS) * GAMMA_SYS
     df_valid['Grid_BDE_Final'] = df_valid['Grid_BDE_Base']
     
     df_valid.loc[df_valid['bond_clean'] == 'C=C', 'Grid_BDE_Final'] -= STRAIN_PI
     df_valid.loc[df_valid['bond_clean'] == 'C#C', 'Grid_BDE_Final'] -= STRAIN_TRIPLE
     
-    # Применяем точные патчи
-    df_valid.loc[df_valid['has_ion'], 'Grid_BDE_Final'] += TAX_DANGLING_POINTER
-    df_valid['Grid_BDE_Final'] += df_valid['sp_strain']
-    df_valid.loc[df_valid['is_bond_conj'] & (df_valid['bond_clean'] == 'C-C'), 'Grid_BDE_Final'] += STRAIN_CONJUGATION
-    df_valid.loc[df_valid['is_ring'] & ~df_valid['is_bond_conj'], 'Grid_BDE_Final'] -= df_valid['ring_relief']
-    df_valid.loc[df_valid['is_radical_cached'], 'Grid_BDE_Final'] -= REFUND_RESONANCE
+    # ПРИМЕНЯЕМ ПАТЧИ (Убиваем аномалии):
+    df_valid.loc[df_valid['has_global_ion'], 'Grid_BDE_Final'] += TAX_DANGLING_POINTER
+    df_valid.loc[df_valid['has_heavy_halogen'], 'Grid_BDE_Final'] += TAX_VOXEL_OVERFLOW
+    
+    # Штраф струны применяется только если рвем одинарный линк (чтобы не штрафовать саму тройную связь)
+    single_bonds = ['C-C', 'C-O', 'C-N']
+    df_valid.loc[df_valid['has_sp_tension'] & df_valid['bond_clean'].isin(single_bonds), 'Grid_BDE_Final'] += STRAIN_GLOBAL_SP
+    
+    # Локальные патчи графа
+    df_valid.loc[df_valid['is_ring'], 'Grid_BDE_Final'] -= df_valid['ring_relief']
+    df_valid.loc[df_valid['is_radical_cached'] & (df_valid['bond_clean'] == 'C-H'), 'Grid_BDE_Final'] -= 80.0
 
     # Метрики
     df_valid['Abs_Error'] = np.abs(df_valid['Grid_BDE_Final'] - df_valid['Actual_BDE_kJ'])
@@ -113,13 +108,13 @@ def load_and_compile(file_path):
     return df_valid, "OK", time.time() - start
 
 # --- UI ---
-st.title("🕸️ V8.5 Grid Physics: RDKit Core + Triumph Audit")
-st.markdown("Возврат к точному парсингу 3D-графов через RDKit с добавлением модуля анализа точности.")
+st.title("🕸️ V8.6 Grid Physics: Global RDKit + Triumph Audit")
+st.markdown("Скрипт проверяет всю молекулу на наличие глобального напряжения (ионы, галогены, натяжение), сохраняя точный 3D-разбор локального узла.")
 
 FILE_NAME = "bde-db2.csv.gz"
 
-if st.button("🚀 Декомпилировать Топологию (RDKit)"):
-    with st.spinner("RDKit собирает 3D-графы и высчитывает натяжение узлов..."):
+if st.button("🚀 Декомпилировать Топологию (100k)"):
+    with st.spinner("RDKit сканирует глобальное напряжение Матрицы... Это займет около 5 минут."):
         df, status, calc_time = load_and_compile(FILE_NAME)
 
     if df is not None:
@@ -163,5 +158,5 @@ if st.button("🚀 Декомпилировать Топологию (RDKit)"):
 
         st.markdown("---")
         st.header("⚠️ АНАЛИТИКА АНОМАЛИЙ (Топ-20 Ошибок)")
-        error_cols = ['molecule', 'bond_clean', 'has_ion', 'sp_strain', 'is_radical_cached', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
+        error_cols = ['molecule', 'bond_clean', 'has_global_ion', 'has_sp_tension', 'is_radical_cached', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
         st.dataframe(df.nlargest(20, 'Abs_Error')[error_cols].style.background_gradient(subset=['Abs_Error'], cmap='Reds').format({"Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", "Abs_Error": "{:.1f}"}))

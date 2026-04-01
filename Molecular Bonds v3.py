@@ -9,16 +9,16 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: V13.0 EXCLUDED VOLUME TESTER (ПАУЛИ-ВЫТЕСНЕНИЕ)
+# SIMUREALITY: V14.0 GRAPH RELAXATION ENGINE (ГЛОБАЛЬНЫЙ КЭШБЕК)
 # =====================================================================
 
-st.set_page_config(page_title="V13.0 Pauli Exclusion Geometry", layout="wide", page_icon="🪐")
+st.set_page_config(page_title="V14.0 Graph Relaxation", layout="wide", page_icon="🕸️")
 
-# ОНТОЛОГИЧЕСКИЕ КОНСТАНТЫ V13
-VACUUM_GATE = 3.325              # Гармоника вакуумных врат (Å)
-BUFFER_RADIUS = VACUUM_GATE / 2  # 1.6625 Å (Радиус 137-узлового буфера)
-STATIC_BASE_LOCK = 286.5         # Базовая цена Shared Pointer (кДж/моль)
-VOLUME_BONUS = 12.75             # Энергия за 1 Å³ ЧИСТОГО пересечения (кДж/моль)
+# БАЗОВЫЕ ОНТОЛОГИЧЕСКИЕ КОНСТАНТЫ
+VACUUM_GATE = 3.325              
+BUFFER_RADIUS = VACUUM_GATE / 2  # 1.6625 Å
+STATIC_BASE_LOCK = 286.5         # Цена Shared Pointer
+VOLUME_BONUS = 12.75             # Энергия за 1 Å³ чистого V_net
 
 def get_graph_complexity(smiles):
     try:
@@ -28,30 +28,22 @@ def get_graph_complexity(smiles):
         return -1
 
 def calculate_asymmetric_overlap(d, r1, r2):
-    """Аналитический расчет объема пересечения двух сфер РАЗНОГО радиуса."""
     if d >= r1 + r2 or d <= 0: return 0.0
     if d <= abs(r1 - r2): return (4/3) * math.pi * (min(r1, r2) ** 3)
-    
     d1 = (d**2 - r2**2 + r1**2) / (2 * d)
     d2 = d - d1
     h1 = r1 - d1
     h2 = r2 - d2
-    
-    v1 = (math.pi * h1**2 / 3) * (3 * r1 - h1)
-    v2 = (math.pi * h2**2 / 3) * (3 * r2 - h2)
-    return v1 + v2
+    return ((math.pi * h1**2 / 3) * (3 * r1 - h1)) + ((math.pi * h2**2 / 3) * (3 * r2 - h2))
 
-def analyze_geometry_v13(row):
-    """
-    Расчет ЧИСТОГО объема (Shared Bus) с учетом вытеснения кэша плотными ядрами.
-    """
+def analyze_v14(row):
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
     pt = Chem.GetPeriodicTable()
     
     try:
         mol = Chem.MolFromSmiles(smiles)
-        if not mol: return pd.Series([np.nan, np.nan, np.nan, np.nan, np.nan, np.nan])
+        if not mol: return pd.Series([np.nan]*7)
         
         mol_h = Chem.AddHs(mol)
         bond = mol_h.GetBondWithIdx(bond_idx)
@@ -62,8 +54,26 @@ def analyze_geometry_v13(row):
         r_cov2 = pt.GetRcovalent(a2.GetAtomicNum())
         interface_type = bond.GetBondTypeAsDouble()
         
+        # --- БЛОК V14: ПАРСИНГ СОСЕДЕЙ (ТОПОЛОГИЧЕСКОЕ НАПРЯЖЕНИЕ) ---
+        strain_score = 0.0
+        
+        # Обходим соседей первого атома (исключая второй)
+        for n in a1.GetNeighbors():
+            if n.GetIdx() == a2.GetIdx(): continue
+            b_order = mol_h.GetBondBetweenAtoms(a1.GetIdx(), n.GetIdx()).GetBondTypeAsDouble()
+            r_n = pt.GetRcovalent(n.GetAtomicNum())
+            strain_score += r_n * b_order  # Сила натяжения ГЦК-решетки
+            
+        # Обходим соседей второго атома (исключая первый)
+        for n in a2.GetNeighbors():
+            if n.GetIdx() == a1.GetIdx(): continue
+            b_order = mol_h.GetBondBetweenAtoms(a2.GetIdx(), n.GetIdx()).GetBondTypeAsDouble()
+            r_n = pt.GetRcovalent(n.GetAtomicNum())
+            strain_score += r_n * b_order
+        # -----------------------------------------------------------
+        
         if AllChem.EmbedMolecule(mol_h, randomSeed=42) != 0:
-            return pd.Series([np.nan, np.nan, np.nan, r_cov1, r_cov2, interface_type])
+            return pd.Series([np.nan]*7)
         AllChem.MMFFOptimizeMolecule(mol_h)
         
         conf = mol_h.GetConformer()
@@ -71,20 +81,15 @@ def analyze_geometry_v13(row):
         pos2 = np.array(conf.GetAtomPosition(a2.GetIdx()))
         d_actual = np.linalg.norm(pos1 - pos2)
         
-        # 1. Считаем полный объем пересечения идеальных ВАКУУМНЫХ буферов (V11)
         v_total_buf = calculate_asymmetric_overlap(d_actual, BUFFER_RADIUS, BUFFER_RADIUS)
+        v_exc_1 = calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS)
+        v_exc_2 = calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS)
         
-        # 2. Считаем ВЫТЕСНЕНИЕ (Сколько ядро 1 отъело от буфера 2, и ядро 2 от буфера 1)
-        v_excluded_by_core1 = calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS)
-        v_excluded_by_core2 = calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS)
+        v_net = max(0.0, v_total_buf - v_exc_1 - v_exc_2)
         
-        # 3. Чистый Shared Bus (Доступный кэш для оптимизации)
-        v_net = v_total_buf - v_excluded_by_core1 - v_excluded_by_core2
-        if v_net < 0: v_net = 0.0
-        
-        return pd.Series([d_actual, v_net, v_total_buf, r_cov1, r_cov2, interface_type])
+        return pd.Series([d_actual, v_net, r_cov1, r_cov2, interface_type, strain_score, True])
     except:
-        return pd.Series([np.nan, np.nan, np.nan, np.nan, np.nan, np.nan])
+        return pd.Series([np.nan]*7)
 
 @st.cache_data(show_spinner=False)
 def load_base_data(file_path):
@@ -96,16 +101,18 @@ def load_base_data(file_path):
     df_valid['Graph_Complexity'] = df_valid['molecule'].apply(get_graph_complexity)
     return df_valid[df_valid['Graph_Complexity'] > 0]
 
-def compile_unit_test(df_tier):
+def compile_unit_test(df_tier, relax_coeff):
     start = time.time()
     
-    df_tier[['d_actual', 'v_net', 'v_total', 'r1', 'r2', 'interface_type']] = df_tier.apply(analyze_geometry_v13, axis=1)
-    df_tier = df_tier.dropna(subset=['d_actual', 'v_net']).copy()
+    df_tier[['d_actual', 'v_net', 'r1', 'r2', 'interface_type', 'strain_score', 'valid']] = df_tier.apply(analyze_v14, axis=1)
+    df_tier = df_tier.dropna(subset=['valid']).copy()
     
     if len(df_tier) == 0: return df_tier, time.time() - start
         
-    # Онтология V13: База + Бонус за ЧИСТЫЙ (net) объем пересечения
-    df_tier['Grid_BDE_Final'] = (df_tier['interface_type'] * STATIC_BASE_LOCK) + (VOLUME_BONUS * df_tier['v_net'])
+    # ОНТОЛОГИЯ V14: Аппаратная прочность МИНУС Кэшбек Релаксации
+    df_tier['Hardware_BDE'] = (df_tier['interface_type'] * STATIC_BASE_LOCK) + (VOLUME_BONUS * df_tier['v_net'])
+    df_tier['Cashback'] = df_tier['strain_score'] * relax_coeff
+    df_tier['Grid_BDE_Final'] = df_tier['Hardware_BDE'] - df_tier['Cashback']
     
     df_tier['Abs_Error'] = np.abs(df_tier['Grid_BDE_Final'] - df_tier['Actual_BDE_kJ'])
     df_tier['Rel_Error_Pct'] = np.where(df_tier['Actual_BDE_kJ'] != 0, 
@@ -115,68 +122,63 @@ def compile_unit_test(df_tier):
     return df_tier, time.time() - start
 
 # --- UI ---
-st.title("🪐 V13.0: Архитектура Вытесненного Кэша (Excluded Volume)")
-st.markdown("Модель вычисляет общий вакуумный буфер (1.6625 Å) и **вычитает** из него объем, аппаратно заблокированный плотными ядрами атомов ($r_{cov}$).")
+st.title("🕸️ V14.0: Декомпиляция Термодинамики (Graph Relaxation)")
+st.markdown("Формула Матрицы: `Официальный BDE = Физическая Прочность Сцепки (V_net) - Возврат Энергии за Релаксацию Соседей`")
 
 FILE_NAME = "bde-db2.csv.gz"
 
-with st.spinner("Синхронизация с базой Матрицы..."):
+with st.spinner("Синхронизация с базой..."):
     df_base = load_base_data(FILE_NAME)
 
 if df_base is not None:
     max_bonds = int(df_base['Graph_Complexity'].max())
     
-    col_ui1, col_ui2 = st.columns([2, 1])
+    col_ui1, col_ui2, col_ui3 = st.columns([1, 1, 1])
     with col_ui1:
-        target_bonds = st.slider("Сложность графа (Количество тяжелых связей)", 1, max_bonds, 1, step=1)
+        target_bonds = st.slider("Сложность графа", 1, max_bonds, 1, step=1)
+    with col_ui2:
+        relax_coeff = st.slider("Множитель Кэшбека (кДж на 1 единицу Strain)", 0.0, 200.0, 50.0, step=5.0)
     
     df_filtered = df_base[df_base['Graph_Complexity'] == target_bonds].copy()
     
-    with col_ui2:
-        st.info(f"Доступно транзакций: {len(df_filtered)}")
+    with col_ui3:
+        st.info(f"Транзакций: {len(df_filtered)}")
     
-    if st.button(f"🚀 Скомпилировать V13 (N={target_bonds})"):
+    if st.button(f"🚀 Декомпилировать Граф (N={target_bonds})"):
         if len(df_filtered) == 0:
-            st.warning("Отсутствуют данные для этого уровня сложности.")
+            st.warning("Отсутствуют данные.")
         else:
-            with st.spinner(f"Расчет чистых геометрических буферов для N={target_bonds}..."):
-                df_result, calc_time = compile_unit_test(df_filtered)
+            with st.spinner("Анализ топологии соседей и вычисление кэшбека..."):
+                df_result, calc_time = compile_unit_test(df_filtered, relax_coeff)
                 
-            if len(df_result) == 0:
-                st.error("Системный сбой 3D-рендеринга.")
-            else:
+            if len(df_result) > 0:
                 mae = df_result['Abs_Error'].mean()
                 mape = df_result['Rel_Error_Pct'].mean()
-                
                 ss_res = np.sum((df_result['Actual_BDE_kJ'] - df_result['Grid_BDE_Final']) ** 2)
                 ss_tot = np.sum((df_result['Actual_BDE_kJ'] - df_result['Actual_BDE_kJ'].mean()) ** 2)
                 r2_score = (1 - (ss_res / ss_tot)) if ss_tot != 0 else 0.0
                 
-                st.success(f"Анализ завершен за {calc_time:.2f} сек. Обраработано связей: {len(df_result)}")
+                st.success(f"Завершено за {calc_time:.2f} сек.")
                 
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("МАЕ", f"{mae:.2f} kJ/mol")
                 col2.metric("MAPE", f"{mape:.2f}%")
                 col3.metric("R² Score", f"{r2_score:.3f}")
-                col4.metric("Средняя точность", f"{df_result['Accuracy'].mean():.2f}%")
+                col4.metric("Точность", f"{df_result['Accuracy'].mean():.2f}%")
                 
                 fig = px.scatter(df_result, x="Actual_BDE_kJ", y="Grid_BDE_Final", color="bond_clean", 
-                                 hover_data=["d_actual", "v_total", "v_net", "r1", "r2"],
-                                 opacity=0.7, title=f"V13 Вытеснение vs Факт (Сложность: {target_bonds})")
+                                 hover_data=["v_net", "strain_score", "Cashback"],
+                                 opacity=0.7, title=f"V14 vs Факт (Strain Cashback: {relax_coeff})")
                 min_val = min(df_result['Actual_BDE_kJ'].min(), df_result['Grid_BDE_Final'].min())
                 max_val = max(df_result['Actual_BDE_kJ'].max(), df_result['Grid_BDE_Final'].max())
                 fig.add_shape(type="line", x0=min_val, y0=min_val, x1=max_val, y1=max_val, line=dict(color="red", dash="dash"))
                 fig.update_layout(template="plotly_dark")
                 st.plotly_chart(fig, use_container_width=True)
                 
-                st.markdown("### 🔍 Журнал Геометрии (Excluded Volume)")
-                display_cols = ['molecule', 'bond_clean', 'r1', 'r2', 'd_actual', 'v_total', 'v_net', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
+                st.markdown("### 🔍 Лог Релаксации (Strain Vector)")
+                display_cols = ['molecule', 'bond_clean', 'v_net', 'strain_score', 'Hardware_BDE', 'Cashback', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
                 st.dataframe(df_result.sort_values(by='Abs_Error', ascending=False)[display_cols].style.format({
-                    "r1": "{:.2f} Å", "r2": "{:.2f} Å",
-                    "d_actual": "{:.3f} Å",
-                    "v_total": "{:.2f} Å³", "v_net": "{:.2f} Å³",
-                    "Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", 
-                    "Abs_Error": "{:.1f}"
+                    "v_net": "{:.2f} Å³", "strain_score": "{:.2f}",
+                    "Hardware_BDE": "{:.1f}", "Cashback": "{:.1f}",
+                    "Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", "Abs_Error": "{:.1f}"
                 }))
-else:
-    st.error("Критическая ошибка: файл базы bde-db2.csv.gz не найден.")

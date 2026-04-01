@@ -7,10 +7,10 @@ import os
 from rdkit import Chem
 
 # =====================================================================
-# SIMUREALITY: V9.1 UNIT TESTER + L1 COMPRESSION PATCH
+# SIMUREALITY: V9.2 UNIT TESTER + ASYMMETRIC SINK PATCH
 # =====================================================================
 
-st.set_page_config(page_title="V9.1 Unit Tester", layout="wide", page_icon="🧱")
+st.set_page_config(page_title="V9.2 Unit Tester", layout="wide", page_icon="🧱")
 
 GAMMA_SYS = 1.0418
 GRID_CONSTANTS = {
@@ -21,8 +21,8 @@ STRAIN_PI = 78.1
 STRAIN_TRIPLE = 199.5
 
 # --- L1 АППАРАТНЫЕ НАЛОГИ НА КОМПРЕССИЮ ВОКСЕЛЯ ---
-TAX_COMPRESSION_SP = 136.0   # 1D-Сжатие (тройные связи)
-TAX_COMPRESSION_SP2 = 40.0   # 2D-Сжатие (двойные связи)
+TAX_COMPRESSION_SP = 136.0   
+TAX_COMPRESSION_SP2 = 40.0   
 
 def get_graph_complexity(smiles):
     try:
@@ -33,28 +33,38 @@ def get_graph_complexity(smiles):
 
 def analyze_node_compression(row):
     """
-    Сканирует локальное топологическое сжатие узла (гибридизацию) и наличие колец.
+    Сканирует гибридизацию, наличие гетероатомных 'сливов данных' (Data Sinks) и кольцевые изломы.
     """
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
     
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
-        return pd.Series(['UNKNOWN', False, 0.0])
+        return pd.Series(['UNKNOWN', False, False, False, 0.0])
+        
     try:
+        # 1. Сканируем молекулу на наличие "Сливов" (Sinks)
+        is_o_sink = False
+        is_n_sink = False
+        for b in mol.GetBonds():
+            if b.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                syms = {b.GetBeginAtom().GetSymbol(), b.GetEndAtom().GetSymbol()}
+                if 'O' in syms: is_o_sink = True
+                if 'N' in syms: is_n_sink = True
+                
         mol_h = Chem.AddHs(mol) 
         bond = mol_h.GetBondWithIdx(bond_idx)
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
         
-        # Чтение аппаратной компрессии углеродного порта для связи C-H
+        # 2. Чтение компрессии порта для C-H
         hyb = 'UNKNOWN'
         if a1.GetSymbol() == 'H' and a2.GetSymbol() == 'C':
             hyb = str(a2.GetHybridization())
         elif a2.GetSymbol() == 'H' and a1.GetSymbol() == 'C':
             hyb = str(a1.GetHybridization())
             
-        # Кольцевой излом
+        # 3. Кольцевой излом
         is_ring = bond.IsInRing()
         ring_relief = 0.0
         if is_ring:
@@ -63,9 +73,9 @@ def analyze_node_compression(row):
             elif bond.IsInRingSize(5): ring_relief = 20.0
             else: ring_relief = 30.0 
             
-        return pd.Series([hyb, is_ring, ring_relief])
+        return pd.Series([hyb, is_o_sink, is_n_sink, is_ring, ring_relief])
     except:
-        return pd.Series(['UNKNOWN', False, 0.0])
+        return pd.Series(['UNKNOWN', False, False, False, 0.0])
 
 @st.cache_data(show_spinner=False)
 def load_base_data(file_path):
@@ -83,28 +93,40 @@ def load_base_data(file_path):
 def compile_unit_test(df_tier):
     start = time.time()
     
-    # 1. Топологический скан
-    df_tier[['c_hybridization', 'is_ring', 'ring_relief']] = df_tier.apply(analyze_node_compression, axis=1)
+    df_tier[['c_hybridization', 'is_o_sink', 'is_n_sink', 'is_ring', 'ring_relief']] = df_tier.apply(analyze_node_compression, axis=1)
     
-    # 2. Базовая физика
     df_tier['Grid_BDE_Base'] = df_tier['bond_clean'].map(GRID_CONSTANTS) * GAMMA_SYS
     df_tier['Grid_BDE_Final'] = df_tier['Grid_BDE_Base']
     
-    # Снятие напряжения кратных связей
     df_tier.loc[df_tier['bond_clean'] == 'C=C', 'Grid_BDE_Final'] -= STRAIN_PI
     df_tier.loc[df_tier['bond_clean'] == 'C#C', 'Grid_BDE_Final'] -= STRAIN_TRIPLE
     
-    # 3. ПРИМЕНЕНИЕ ПАТЧА КОМПРЕССИИ (Для C-H портов)
-    mask_sp = (df_tier['bond_clean'] == 'C-H') & (df_tier['c_hybridization'] == 'SP')
-    mask_sp2 = (df_tier['bond_clean'] == 'C-H') & (df_tier['c_hybridization'] == 'SP2')
+    # --- ПАТЧ КОМПРЕССИИ И СЛИВА ДАННЫХ (Data Sink) ---
+    for idx, row in df_tier.iterrows():
+        if row['bond_clean'] != 'C-H':
+            continue
+            
+        hyb = row['c_hybridization']
+        o_sink = row['is_o_sink']
+        n_sink = row['is_n_sink']
+        
+        penalty = 0.0
+        if hyb == 'SP':
+            penalty = TAX_COMPRESSION_SP  # 1D Сжатие (Ацетилен)
+            if n_sink: penalty -= 8.0     # Легкий слив цианогруппы
+            
+        elif hyb == 'SP2':
+            if o_sink:
+                penalty = -50.0  # Экстремальный слив кислорода (Формальдегид)
+            elif n_sink:
+                penalty = 0.0    # Полная компенсация азотом (Формальдимин)
+            else:
+                penalty = TAX_COMPRESSION_SP2  # Симметричное сжатие C=C
+                
+        df_tier.at[idx, 'Grid_BDE_Final'] += penalty
     
-    df_tier.loc[mask_sp, 'Grid_BDE_Final'] += TAX_COMPRESSION_SP
-    df_tier.loc[mask_sp2, 'Grid_BDE_Final'] += TAX_COMPRESSION_SP2
-    
-    # 4. Сброс кольцевого напряжения
     df_tier.loc[df_tier['is_ring'], 'Grid_BDE_Final'] -= df_tier['ring_relief']
 
-    # 5. Метрики
     df_tier['Abs_Error'] = np.abs(df_tier['Grid_BDE_Final'] - df_tier['Actual_BDE_kJ'])
     df_tier['Rel_Error_Pct'] = np.where(df_tier['Actual_BDE_kJ'] != 0, 
                                         (df_tier['Abs_Error'] / df_tier['Actual_BDE_kJ']) * 100, 0)
@@ -113,8 +135,8 @@ def compile_unit_test(df_tier):
     return df_tier, time.time() - start
 
 # --- UI ---
-st.title("🧱 V9.1 Unit Tester: L1 Compression Patch")
-st.markdown("Мы научили $\Sigma$-Алгоритм видеть топологическую компрессию вокселя (1D и 2D сжатие). Проверяем фундамент Матрицы на N=1.")
+st.title("🧱 V9.2 Unit Tester: Asymmetric Data Sinks")
+st.markdown("Патч L1: $\Sigma$-Алгоритм теперь отличает симметричное сжатие вокселя от асимметричного слива кэша в гетероатомы (O, N).")
 
 FILE_NAME = "bde-db2.csv.gz"
 
@@ -164,7 +186,7 @@ if df_base is not None:
             st.plotly_chart(fig, use_container_width=True)
             
             st.markdown("### 🔍 Журнал Транзакций (Топ ошибок)")
-            display_cols = ['molecule', 'bond_clean', 'c_hybridization', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error', 'Accuracy']
+            display_cols = ['molecule', 'bond_clean', 'c_hybridization', 'is_o_sink', 'is_n_sink', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error', 'Accuracy']
             st.dataframe(df_result.sort_values(by='Abs_Error', ascending=False).head(15)[display_cols].style.format({
                 "Actual_BDE_kJ": "{:.2f}", 
                 "Grid_BDE_Final": "{:.2f}", 

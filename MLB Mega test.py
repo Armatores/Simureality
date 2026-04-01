@@ -7,142 +7,141 @@ import os
 from rdkit import Chem
 
 # =====================================================================
-# SIMUREALITY: V8.9 PURIST ENGINE (No Hacks, Only Grid Physics)
+# SIMUREALITY: V9.0 INCREMENTAL UNIT TESTER
 # =====================================================================
 
-st.set_page_config(page_title="V8.9 Purist Grid Physics", layout="wide", page_icon="💠")
+st.set_page_config(page_title="V9.0 Unit Tester", layout="wide", page_icon="🧱")
 
-# ФУНДАМЕНТАЛЬНЫЕ КОНСТАНТЫ
 GAMMA_SYS = 1.0418
 GRID_CONSTANTS = {
     "C-C": 327.51, "C-H": 398.11, "C-O": 330.91, "O-H": 437.81,
     "C-N": 327.18, "N-H": 387.58, "C=C": 655.02, "C#C": 982.53
 }
-
-# Геометрические штрафы решетки
 STRAIN_PI = 78.1
 STRAIN_TRIPLE = 199.5
 
+def get_graph_complexity(smiles):
+    """Считает количество тяжелых связей в макроузле"""
+    try:
+        mol = Chem.MolFromSmiles(str(smiles))
+        return mol.GetNumBonds() if mol else -1
+    except:
+        return -1
+
 def analyze_pure_topology(row):
-    """
-    Хирургический RDKit-парсер: ищет только истинное кольцевое напряжение (Ring Strain)
-    для конкретной разрываемой связи. Восстанавливает водороды для точности индексов.
-    """
+    """Хирургический сброс напряжения малых колец (без лишних хаков)"""
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
     
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
         return pd.Series([False, 0.0])
-    
     try:
-        mol_h = Chem.AddHs(mol) # Восстанавливаем 3D-каркас
+        mol_h = Chem.AddHs(mol) 
         bond = mol_h.GetBondWithIdx(bond_idx)
-        
         is_ring = bond.IsInRing()
         ring_relief = 0.0
-        # Сброс напряжения при разрыве тесного кольца
         if is_ring:
             if bond.IsInRingSize(3): ring_relief = 143.1
             elif bond.IsInRingSize(4): ring_relief = 128.8
             elif bond.IsInRingSize(5): ring_relief = 20.0
             else: ring_relief = 30.0 
-            
         return pd.Series([is_ring, ring_relief])
     except:
         return pd.Series([False, 0.0])
 
 @st.cache_data(show_spinner=False)
-def load_and_compile(file_path, sample_limit):
-    start = time.time()
+def load_base_data(file_path):
     if not os.path.exists(file_path):
-        return None, "Файл не найден.", 0
-        
+        return None
     df = pd.read_csv(file_path, compression='gzip')
-    
     df['bond_clean'] = df['bond_type'].astype(str).str.upper().str.strip()
     df_valid = df[df['bond_clean'].isin(GRID_CONSTANTS.keys())].copy()
     df_valid['Actual_BDE_kJ'] = pd.to_numeric(df['bde'], errors='coerce') * 4.184
     df_valid = df_valid.dropna(subset=['Actual_BDE_kJ'])
     
-    # Batch Limiter для скорости
-    if 0 < sample_limit < len(df_valid):
-        df_valid = df_valid.sample(sample_limit, random_state=42)
-    
-    # --- RDKIT ТОПОЛОГИЯ ---
-    df_valid[['is_ring', 'ring_relief']] = df_valid.apply(analyze_pure_topology, axis=1)
-    
-    # --- ЧИСТАЯ МАТЕМАТИКА GRID PHYSICS ---
-    df_valid['Grid_BDE_Base'] = df_valid['bond_clean'].map(GRID_CONSTANTS) * GAMMA_SYS
-    df_valid['Grid_BDE_Final'] = df_valid['Grid_BDE_Base']
-    
-    # 1. Штрафы кратных связей
-    df_valid.loc[df_valid['bond_clean'] == 'C=C', 'Grid_BDE_Final'] -= STRAIN_PI
-    df_valid.loc[df_valid['bond_clean'] == 'C#C', 'Grid_BDE_Final'] -= STRAIN_TRIPLE
-    
-    # 2. Локальное кольцевое напряжение (Relaxation Profile)
-    df_valid.loc[df_valid['is_ring'], 'Grid_BDE_Final'] -= df_valid['ring_relief']
+    # Считаем топологическую сложность всего датасета (занимает пару секунд)
+    df_valid['Graph_Complexity'] = df_valid['molecule'].apply(get_graph_complexity)
+    return df_valid[df_valid['Graph_Complexity'] > 0]
 
-    # --- МЕТРИКИ ---
-    df_valid['Abs_Error'] = np.abs(df_valid['Grid_BDE_Final'] - df_valid['Actual_BDE_kJ'])
-    df_valid['Rel_Error_Pct'] = np.where(df_valid['Actual_BDE_kJ'] != 0, 
-                                        (df_valid['Abs_Error'] / df_valid['Actual_BDE_kJ']) * 100, 0)
-    df_valid['Accuracy'] = np.maximum(0, 100.0 - df_valid['Rel_Error_Pct'])
+def compile_unit_test(df_tier):
+    start = time.time()
     
-    return df_valid, "OK", time.time() - start
+    df_tier[['is_ring', 'ring_relief']] = df_tier.apply(analyze_pure_topology, axis=1)
+    
+    df_tier['Grid_BDE_Base'] = df_tier['bond_clean'].map(GRID_CONSTANTS) * GAMMA_SYS
+    df_tier['Grid_BDE_Final'] = df_tier['Grid_BDE_Base']
+    
+    df_tier.loc[df_tier['bond_clean'] == 'C=C', 'Grid_BDE_Final'] -= STRAIN_PI
+    df_tier.loc[df_tier['bond_clean'] == 'C#C', 'Grid_BDE_Final'] -= STRAIN_TRIPLE
+    df_tier.loc[df_tier['is_ring'], 'Grid_BDE_Final'] -= df_tier['ring_relief']
+
+    df_tier['Abs_Error'] = np.abs(df_tier['Grid_BDE_Final'] - df_tier['Actual_BDE_kJ'])
+    df_tier['Rel_Error_Pct'] = np.where(df_tier['Actual_BDE_kJ'] != 0, 
+                                        (df_tier['Abs_Error'] / df_tier['Actual_BDE_kJ']) * 100, 0)
+    df_tier['Accuracy'] = np.maximum(0, 100.0 - df_tier['Rel_Error_Pct'])
+    
+    return df_tier, time.time() - start
 
 # --- UI ---
-st.title("💠 V8.9 Purist Engine: The True Grid Physics")
-st.markdown("Мы удалили все AI-хаки и оставили только чистые константы решетки + хирургический расчет локального кольцевого излома.")
+st.title("🧱 V9.0 Unit Tester: Топологическая Эскалация")
+st.markdown("Пошаговый тест Матрицы. Изолируем графы по количеству связей, чтобы найти точку возникновения аппаратного напряжения.")
 
 FILE_NAME = "bde-db2.csv.gz"
-sample_limit = st.slider("Аппаратный Батч", 1000, 100000, 10000, step=1000)
 
-if st.button("🚀 Запустить Чистую Декомпиляцию"):
-    with st.spinner(f"Диспетчер применяет базовые константы ({sample_limit} узлов)..."):
-        df, status, calc_time = load_and_compile(FILE_NAME, sample_limit)
+with st.spinner("Загрузка и индексация датасета..."):
+    df_base = load_base_data(FILE_NAME)
 
-    if df is not None:
-        mae = df['Abs_Error'].mean()
-        mape = df['Rel_Error_Pct'].mean()
-        
-        ss_res = np.sum((df['Actual_BDE_kJ'] - df['Grid_BDE_Final']) ** 2)
-        ss_tot = np.sum((df['Actual_BDE_kJ'] - df['Actual_BDE_kJ'].mean()) ** 2)
-        r2_score = 1 - (ss_res / ss_tot)
-        
-        st.success(f"Анализ завершен за {calc_time:.2f} сек. Обработано {len(df):,} связей.")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("МАЕ (Средняя Ошибка)", f"{mae:.2f} kJ/mol")
-        col2.metric("MAPE (Относ. Ошибка)", f"{mape:.2f}%")
-        col3.metric("R² Score", f"{r2_score:.3f}")
-        col4.metric("Общая средняя точность", f"{df['Accuracy'].mean():.2f}%")
-        
-        st.markdown("---")
-        st.header("🏆 АНАЛИТИКА ТРИУМФОВ (Мощь базовой геометрии)")
-        
-        tier_99 = df[df['Accuracy'] >= 99.0]
-        tier_96 = df[(df['Accuracy'] >= 96.0) & (df['Accuracy'] < 99.0)]
-        tier_93 = df[(df['Accuracy'] >= 93.0) & (df['Accuracy'] < 96.0)]
-        
-        t_col1, t_col2, t_col3 = st.columns(3)
-        t_col1.metric("Точность 99% (Идеал)", f"{len(tier_99):,} связей")
-        t_col2.metric("Точность 96% (Отлично)", f"{len(tier_96):,} связей")
-        t_col3.metric("Точность 93% (Хорошо)", f"{len(tier_93):,} связей")
-        
-        display_cols = ['molecule', 'bond_clean', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Accuracy']
-        
-        with st.expander("Посмотреть Топ-10 идеальных предсказаний (99% Точность)", expanded=True):
-            st.dataframe(tier_99.nlargest(10, 'Accuracy')[display_cols].style.format({"Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", "Accuracy": "{:.2f}%"}))
+if df_base is not None:
+    max_bonds = int(df_base['Graph_Complexity'].max())
+    
+    col_ui1, col_ui2 = st.columns([2, 1])
+    with col_ui1:
+        target_bonds = st.slider("Сложность графа (Количество тяжелых связей)", 1, max_bonds, 1, step=1)
+    
+    df_filtered = df_base[df_base['Graph_Complexity'] == target_bonds].copy()
+    
+    with col_ui2:
+        st.info(f"Найдено молекул: {len(df_filtered)}")
+    
+    if st.button(f"🚀 Декомпилировать графы (N={target_bonds})"):
+        if len(df_filtered) == 0:
+            st.warning("В датасете нет молекул с такой сложностью.")
+        else:
+            with st.spinner(f"Расчет базовой физики для N={target_bonds}..."):
+                df_result, calc_time = compile_unit_test(df_filtered)
+                
+            mae = df_result['Abs_Error'].mean()
+            mape = df_result['Rel_Error_Pct'].mean()
             
-        with st.expander("Посмотреть Топ-10 отличных предсказаний (96% Точность)"):
-            st.dataframe(tier_96.nlargest(10, 'Accuracy')[display_cols].style.format({"Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", "Accuracy": "{:.2f}%"}))
+            ss_res = np.sum((df_result['Actual_BDE_kJ'] - df_result['Grid_BDE_Final']) ** 2)
+            ss_tot = np.sum((df_result['Actual_BDE_kJ'] - df_result['Actual_BDE_kJ'].mean()) ** 2)
+            # Защита от деления на ноль, если все актуальные значения одинаковы (дисперсия = 0)
+            r2_score = (1 - (ss_res / ss_tot)) if ss_tot != 0 else 0.0
             
-        with st.expander("Посмотреть Топ-10 хороших предсказаний (93% Точность)"):
-            st.dataframe(tier_93.nlargest(10, 'Accuracy')[display_cols].style.format({"Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", "Accuracy": "{:.2f}%"}))
-
-        st.markdown("---")
-        st.header("⚠️ АНАЛИТИКА АНОМАЛИЙ (Топ-20 Ошибок)")
-        st.markdown("Эти экстремальные квантовые флуктуации требуют разработки L2-роутера. Мы больше не пытаемся заткнуть их грязными патчами.")
-        error_cols = ['molecule', 'bond_clean', 'is_ring', 'ring_relief', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
-        st.dataframe(df.nlargest(20, 'Abs_Error')[error_cols].style.background_gradient(subset=['Abs_Error'], cmap='Reds').format({"Actual_BDE_kJ": "{:.1f}", "Grid_BDE_Final": "{:.1f}", "Abs_Error": "{:.1f}"}))
+            st.success(f"Анализ завершен за {calc_time:.2f} сек.")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("МАЕ", f"{mae:.2f} kJ/mol")
+            col2.metric("MAPE", f"{mape:.2f}%")
+            col3.metric("R² Score", f"{r2_score:.3f}")
+            col4.metric("Средняя точность", f"{df_result['Accuracy'].mean():.2f}%")
+            
+            fig = px.scatter(df_result, x="Actual_BDE_kJ", y="Grid_BDE_Final", color="bond_clean", 
+                             opacity=0.7, title=f"Grid Physics vs Data (Только графы сложности {target_bonds})")
+            min_val = min(df_result['Actual_BDE_kJ'].min(), df_result['Grid_BDE_Final'].min())
+            max_val = max(df_result['Actual_BDE_kJ'].max(), df_result['Grid_BDE_Final'].max())
+            fig.add_shape(type="line", x0=min_val, y0=min_val, x1=max_val, y1=max_val, line=dict(color="red", dash="dash"))
+            fig.update_layout(template="plotly_dark")
+            st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("### 🔍 Журнал Транзакций")
+            display_cols = ['molecule', 'bond_clean', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error', 'Accuracy']
+            st.dataframe(df_result.sort_values(by='Abs_Error', ascending=False)[display_cols].style.format({
+                "Actual_BDE_kJ": "{:.2f}", 
+                "Grid_BDE_Final": "{:.2f}", 
+                "Abs_Error": "{:.2f}",
+                "Accuracy": "{:.2f}%"
+            }))
+else:
+    st.error("Файл датасета не найден. Убедитесь, что bde-db2.csv.gz в корневой папке.")

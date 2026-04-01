@@ -9,10 +9,10 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: V16.0 HARDWARE RIGIDITY INDEX
+# SIMUREALITY: V17.0 TOPOLOGICAL RADICAL SHIELDING
 # =====================================================================
 
-st.set_page_config(page_title="V16.0 Rigidity Index", layout="wide", page_icon="🔗")
+st.set_page_config(page_title="V17.0 Radical Shielding", layout="wide", page_icon="🛡️")
 
 VACUUM_GATE = 3.325              
 BUFFER_RADIUS = VACUUM_GATE / 2  # 1.6625 Å
@@ -35,7 +35,7 @@ def calculate_asymmetric_overlap(d, r1, r2):
     h2 = r2 - d2
     return ((math.pi * h1**2 / 3) * (3 * r1 - h1)) + ((math.pi * h2**2 / 3) * (3 * r2 - h2))
 
-def analyze_v16(row):
+def analyze_v17(row):
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
     pt = Chem.GetPeriodicTable()
@@ -53,21 +53,36 @@ def analyze_v16(row):
         r_cov2 = pt.GetRcovalent(a2.GetAtomicNum())
         interface_type = bond.GetBondTypeAsDouble()
         
-        # --- БЛОК V16: ИНДЕКС ГИБКОСТИ (Шарниры vs Сварка) ---
+        # --- БЛОК V17.0: ИНДЕКС АППАРАТНОГО КЭШИРОВАНИЯ (Topological Radical Shielding) ---
         flex_score = 0.0
         
-        def parse_flexibility(atom, exclude_idx):
+        def parse_hardware_cashback(atom, exclude_idx):
             score = 0.0
             for n in atom.GetNeighbors():
                 if n.GetIdx() == exclude_idx: continue
+                
                 b_order = mol_h.GetBondBetweenAtoms(atom.GetIdx(), n.GetIdx()).GetBondTypeAsDouble()
-                # Только одинарные связи дают кэшбек при релаксации (работают как шарниры)
-                if b_order == 1.0:
-                    score += pt.GetRcovalent(n.GetAtomicNum())
+                atomic_num = n.GetAtomicNum()
+                
+                # ПРАВИЛО 1: Водородные терминалы (1D-заглушки)
+                if atomic_num == 1:
+                    continue
+                
+                r_cov = pt.GetRcovalent(atomic_num)
+                
+                # ПРАВИЛО 2: Динамическая Шина (Token Ring / Resonance)
+                if b_order > 1.0 or n.GetIsAromatic():
+                    score += r_cov * 3.0  
+                
+                # ПРАВИЛО 3: Топологическое Экранирование (Hyperconjugation / Steric Relief)
+                elif b_order == 1.0:
+                    score += r_cov * 1.0  
+                    
             return score
 
-        flex_score += parse_flexibility(a1, a2.GetIdx())
-        flex_score += parse_flexibility(a2, a1.GetIdx())
+        # Считаем потенциал аппаратного кэшбека для обоих осколков
+        flex_score += parse_hardware_cashback(a1, a2.GetIdx())
+        flex_score += parse_hardware_cashback(a2, a1.GetIdx())
         # ---------------------------------------------------
         
         if AllChem.EmbedMolecule(mol_h, randomSeed=42) != 0:
@@ -79,7 +94,6 @@ def analyze_v16(row):
         pos2 = np.array(conf.GetAtomPosition(a2.GetIdx()))
         d_actual = np.linalg.norm(pos1 - pos2)
         
-        # Объем чистого железа (V_net)
         v_total_buf = calculate_asymmetric_overlap(d_actual, BUFFER_RADIUS, BUFFER_RADIUS)
         v_exc_1 = calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS)
         v_exc_2 = calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS)
@@ -102,12 +116,11 @@ def load_base_data(file_path):
 def compile_unit_test(df_tier, relax_coeff):
     start = time.time()
     
-    df_tier[['d_actual', 'v_net', 'r1', 'r2', 'interface_type', 'flex_score', 'valid']] = df_tier.apply(analyze_v16, axis=1)
+    df_tier[['d_actual', 'v_net', 'r1', 'r2', 'interface_type', 'flex_score', 'valid']] = df_tier.apply(analyze_v17, axis=1)
     df_tier = df_tier.dropna(subset=['valid']).copy()
     
     if len(df_tier) == 0: return df_tier, time.time() - start
         
-    # ОНТОЛОГИЯ V16
     df_tier['Hardware_BDE'] = (df_tier['interface_type'] * STATIC_BASE_LOCK) + (VOLUME_BONUS * df_tier['v_net'])
     df_tier['Cashback'] = df_tier['flex_score'] * relax_coeff
     df_tier['Grid_BDE_Final'] = df_tier['Hardware_BDE'] - df_tier['Cashback']
@@ -120,8 +133,8 @@ def compile_unit_test(df_tier, relax_coeff):
     return df_tier, time.time() - start
 
 # --- UI ---
-st.title("🔗 V16.0: Индекс Аппаратной Жесткости")
-st.markdown("Двойные/тройные связи — это блокираторы. Одинарные — шарниры, дающие кэшбек релаксации.")
+st.title("🛡️ V17.0: Индекс Аппаратного Кэширования Радикалов")
+st.markdown("Двойные связи и ароматика работают как Динамическая Шина (Token Ring), поглощая ошибки висячих указателей.")
 
 FILE_NAME = "bde-db2.csv.gz"
 
@@ -135,18 +148,18 @@ if df_base is not None:
     with col_ui1:
         target_bonds = st.slider("Сложность графа", 1, max_bonds, 1, step=1)
     with col_ui2:
-        relax_coeff = st.slider("Множитель Релаксации Шарниров", 0.0, 200.0, 50.0, step=5.0)
+        relax_coeff = st.slider("Множитель Кэшбека (Шина Данных)", 0.0, 100.0, 20.0, step=1.0)
     
     df_filtered = df_base[df_base['Graph_Complexity'] == target_bonds].copy()
     
     with col_ui3:
         st.info(f"Транзакций: {len(df_filtered)}")
     
-    if st.button(f"🚀 Декомпилировать V16 (N={target_bonds})"):
+    if st.button(f"🚀 Декомпилировать V17 (N={target_bonds})"):
         if len(df_filtered) == 0:
             st.warning("Отсутствуют данные.")
         else:
-            with st.spinner("Анализ шарниров и расчет возврата энергии..."):
+            with st.spinner("Оценка аппаратной емкости буферов и динамических шин..."):
                 df_result, calc_time = compile_unit_test(df_filtered, relax_coeff)
                 
             if len(df_result) > 0:
@@ -166,14 +179,14 @@ if df_base is not None:
                 
                 fig = px.scatter(df_result, x="Actual_BDE_kJ", y="Grid_BDE_Final", color="bond_clean", 
                                  hover_data=["v_net", "flex_score", "Cashback"],
-                                 opacity=0.7, title=f"V16 Аппаратная Жесткость (Coeff: {relax_coeff})")
+                                 opacity=0.7, title=f"V17 Экранирование Радикалов (Coeff: {relax_coeff})")
                 min_val = min(df_result['Actual_BDE_kJ'].min(), df_result['Grid_BDE_Final'].min())
                 max_val = max(df_result['Actual_BDE_kJ'].max(), df_result['Grid_BDE_Final'].max())
                 fig.add_shape(type="line", x0=min_val, y0=min_val, x1=max_val, y1=max_val, line=dict(color="red", dash="dash"))
                 fig.update_layout(template="plotly_dark")
                 st.plotly_chart(fig, use_container_width=True)
                 
-                st.markdown("### 🔍 Лог Аппаратных Шарниров")
+                st.markdown("### 🔍 Лог Аппаратного Экранирования (Shielding)")
                 display_cols = ['molecule', 'bond_clean', 'v_net', 'flex_score', 'Hardware_BDE', 'Cashback', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
                 st.dataframe(df_result.sort_values(by='Abs_Error', ascending=False)[display_cols].style.format({
                     "v_net": "{:.2f} Å³", "flex_score": "{:.2f}",

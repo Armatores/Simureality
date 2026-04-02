@@ -6,10 +6,10 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: FULL CYCLE ENGINE V9 (SYNTHESIS & DEGRADATION)
+# SIMUREALITY: FULL CYCLE V10 (INERTIA & MASS JITTER)
 # =====================================================================
 
-st.set_page_config(page_title="V9: Full Cycle Engine", layout="wide", page_icon="🌪️")
+st.set_page_config(page_title="V10: Full Cycle (Mass Inertia)", layout="wide", page_icon="☄️")
 
 GAMMA_SYS = 1.0418               
 Z0 = 377.0                       
@@ -68,10 +68,17 @@ def evaluate_lifecycle_tick(smiles, T_sys, P_sys=1.0):
         
         pos1, pos2 = np.array(conf.GetAtomPosition(a1.GetIdx())), np.array(conf.GetAtomPosition(a2.GetIdx()))
         
-        # Термальное растяжение связей (Джиттер дистанции)
-        d_actual = np.linalg.norm(pos1 - pos2) * p_modifier * (1.0 + (T_sys / 20000.0))
+        # --- V10 PATCH: ИНЕРЦИОННЫЙ ДЖИТТЕР (Reduced Mass) ---
+        mass1 = pt.GetAtomicWeight(z1) if z1 != 1 else 1.008
+        mass2 = pt.GetAtomicWeight(z2) if z2 != 1 else 1.008
+        reduced_mass = (mass1 * mass2) / (mass1 + mass2)
         
-        # Эфирное распухание атомов под нагрузкой
+        # Легкие атомы (как H) имеют малую приведенную массу и раскачиваются термо-джиттером гораздо сильнее
+        thermal_stretch = 1.0 + ((T_sys / 3500.0) / math.sqrt(reduced_mass))
+        
+        d_actual = np.linalg.norm(pos1 - pos2) * p_modifier * thermal_stretch
+        # -----------------------------------------------------
+
         t_expansion_1 = 1.0 + (T_sys / get_t_crit(z1)) * 0.12 
         t_expansion_2 = 1.0 + (T_sys / get_t_crit(z2)) * 0.12
         r_cov1 = pt.GetRcovalent(z1) * t_expansion_1
@@ -80,12 +87,10 @@ def evaluate_lifecycle_tick(smiles, T_sys, P_sys=1.0):
         bond_activation_temp = min(get_t_crit(z1), get_t_crit(z2)) * 0.35 
         if bond_activation_temp > max_t_activation: max_t_activation = bond_activation_temp
 
-        # Если слишком холодно - транзакция отвергается
         if T_sys < bond_activation_temp: continue
             
         bonds_formed += 1
         
-        # Пересечение сфер (V_net падает по мере распухания r_cov)
         v_total_buf = calculate_asymmetric_overlap(d_actual, BUFFER_RADIUS, BUFFER_RADIUS)
         exc1 = 0.0 if z1 == 1 else calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS)
         exc2 = 0.0 if z2 == 1 else calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS)
@@ -98,7 +103,6 @@ def evaluate_lifecycle_tick(smiles, T_sys, P_sys=1.0):
         tax_sys = raw_hw * (GAMMA_SYS - 1.0)
         total_hw += (raw_hw - tax_sys)
 
-        # Термальный штраф за вибрацию базового замка
         total_thermal_tax += (T_sys / 1000.0) * 35.0 * bo
 
         if d_actual < BUFFER_RADIUS:
@@ -121,7 +125,6 @@ def evaluate_lifecycle_tick(smiles, T_sys, P_sys=1.0):
                         val = max(-1.0, min(1.0, np.dot(v1, v2) / (n1 * n2)))
                         angle = math.degrees(math.acos(val))
                         if angle > max_angle: max_angle = angle
-            # Термальное усиление углового напряжения
             total_tension += (K_THETA * abs(max_angle - 109.47)) * (1.0 + (T_sys / 3000.0))
 
     heavy_atoms = mol_h.GetNumHeavyAtoms()
@@ -129,17 +132,15 @@ def evaluate_lifecycle_tick(smiles, T_sys, P_sys=1.0):
 
     sigma_k = total_hw - total_tension - total_repulsion - total_thermal_tax + final_cashback
     
-    # DROPOUT: Если баланс ушел в минус, Матрица обрывает связи
     if sigma_k < 0: return 0.0, "Плазма (Распад)"
-    
     return sigma_k, "Стабильный Макро-Узел"
 
 # --- UI ---
-st.title("🌪️ V9: Full Cycle Engine (Термодинамический Жизненный Цикл)")
-st.markdown("Движок симулирует полный цикл молекулы: от холодного изолированного состояния до активации (сборки), а затем до критического перегрева и пиролиза (Dropout).")
+st.title("☄️ V10: Full Cycle (Инерция и Деградация Метана)")
+st.markdown("Патч: Внедрена масса-зависимая кинетика. Связи с легкими атомами ($H$) раскачиваются и рвутся значительно быстрее под воздействием температуры.")
 
-target_mol = st.selectbox("Выберите макро-граф для сканирования:", ["O=C=O", "C", "O=O", "[HH]", "N#N", "ClCl"])
-mol_names = {"O=C=O": "Углекислый газ (CO2)", "C": "Метан (CH4)", "O=O": "Кислород (O2)", "[HH]": "Водород (H2)", "N#N": "Азот (N2)", "ClCl": "Хлор (Cl2)"}
+target_mol = st.selectbox("Выберите макро-граф для сканирования:", ["C", "O=C=O", "O=O", "[HH]", "N#N", "ClCl"])
+mol_names = {"C": "Метан (CH4)", "O=C=O": "Углекислый газ (CO2)", "O=O": "Кислород (O2)", "[HH]": "Водород (H2)", "N#N": "Азот (N2)", "ClCl": "Хлор (Cl2)"}
 
 if st.button(f"Сканировать Зону Жизни: {mol_names[target_mol]}"):
     with st.spinner("Прогон термодинамического градиента (0 - 8000 K)..."):
@@ -160,14 +161,10 @@ if st.button(f"Сканировать Зону Жизни: {mol_names[target_mol
         df_plot = pd.DataFrame({"Температура (T_sys)": temps, "ΣK (Энергия Связи)": energies})
         df_plot.set_index("Температура (T_sys)", inplace=True)
         
-        # Рендер графика
-        st.area_chart(df_plot, color="#00ff88")
+        st.area_chart(df_plot, color="#ff4444" if target_mol == "C" else "#00ff88")
         
-        # Метрики
         c1, c2, c3 = st.columns(3)
         c1.metric("Точка Сборки (T_act)", f"{t_act} K" if t_act else "N/A")
         c2.metric("Точка Распада (T_deg)", f"{t_deg} K" if t_deg else "Недостижима < 8000")
         habitable = (t_deg - t_act) if (t_act and t_deg) else "N/A"
         c3.metric("Ширина Зоны Жизни", f"{habitable} K" if habitable != "N/A" else "N/A")
-        
-        st.success(f"**Анализ:** Молекула {mol_names[target_mol]} активируется при **{t_act} K**, достигает оптимума, но при дальнейшем нагреве ее эфирные буферы начинают задыхаться от энтропии. При **{t_deg} K** Диспетчер Матрицы принудительно обрывает связи (Dropout), спасая базовые атомы от перегрузки.")

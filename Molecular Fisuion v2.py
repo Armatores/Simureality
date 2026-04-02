@@ -1,11 +1,15 @@
-import math
+import streamlit as st
+import pandas as pd
 import numpy as np
+import math
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: DYNAMIC STATE MACHINE (V24 CORE)
+# SIMUREALITY: DYNAMIC STATE MACHINE (STREAMLIT ENGINE)
 # =====================================================================
+
+st.set_page_config(page_title="Dynamic State Machine", layout="wide", page_icon="⚙️")
 
 GAMMA_SYS = 1.0418               
 VACUUM_GATE = 3.325              
@@ -47,7 +51,6 @@ def parse_edge_topology(mol_h, a1, a2, bo):
     return e_pen, e_cash
 
 def evaluate_transaction(smiles, target_bond_indices):
-    """Оценивает энергию конкретной транзакции (связи) в заданном состоянии графа"""
     mol = Chem.MolFromSmiles(smiles)
     mol_h = Chem.AddHs(mol)
     AllChem.EmbedMolecule(mol_h, randomSeed=42)
@@ -75,32 +78,48 @@ def evaluate_transaction(smiles, target_bond_indices):
     tension_penalty = tp1 + tp2 + ep
     resonance_cashback = max(0.0, rc1 + rc2 + ec)
     
-    transaction_energy = hw_profit + tension_penalty - resonance_cashback
+    transaction_energy = hw_profit - tension_penalty + resonance_cashback
     
     return {
         "bo": bo, "v_net": v_net, "hw": hw_profit, "tax": tension_penalty, 
         "cash": resonance_cashback, "total": transaction_energy
     }
 
-print("\n🌐 СИМУЛЯЦИЯ ПОЭТАПНОЙ СБОРКИ: УГЛЕКИСЛЫЙ ГАЗ (CO2)\n")
+# --- UI ---
+st.title("⚙️ Динамическая Машина Состояний")
+st.markdown("Симулятор доказывает принцип **Динамического Импеданса**: Матрица считает энергию не по финальному чертежу молекулы, а суммируя каждую транзакцию реструктуризации графа.")
 
-# ШАГ 1: Углерод + Кислород = Угарный газ
-print("ШАГ 1: Формирование ядра (C + O -> CO)")
-print("  Матрица максимизирует порты, формируя тройную связь.")
-step1 = evaluate_transaction("[C-]#[O+]", (0, 1)) # Индексы C и O
-print(f"  -> BO: {step1['bo']}, V_net: {step1['v_net']:.2f} Å³")
-print(f"  -> HW Профит: {step1['hw']:.1f} кДж, Налог Сжатия: {step1['tax']:.1f} кДж")
-print(f"  => Энергия Транзакции 1: {step1['total']:.1f} kJ/mol\n")
+if st.button("🚀 Запустить симуляцию сборки CO₂ (Углекислый газ)"):
+    
+    # ШАГ 1
+    with st.spinner("Анализ Шага 1..."):
+        step1 = evaluate_transaction("[C-]#[O+]", (0, 1)) # SMILES для угарного газа CO с тройной связью
+        
+    st.subheader("ШАГ 1: Формирование ядра (C + O ➔ C≡O)")
+    st.info("В вакууме встречаются Углерод и Кислород. Чтобы закрыть все свободные порты (минимизировать джиттер), они формируют монолитную тройную связь. Решетка одобряет это колоссальным профитом.")
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Связь (Bond Order)", f"{step1['bo']}")
+    col2.metric("V_net (Высвобожденный вакуум)", f"{step1['v_net']:.2f} Å³")
+    col3.metric("Энергия Транзакции 1", f"{step1['total']:.1f} kJ/mol")
 
-# ШАГ 2: Угарный газ + Кислород = Углекислый газ
-print("ШАГ 2: Реструктуризация (CO + O -> CO2)")
-print("  Матрица распаковывает тройную связь для приема второго кислорода.")
-step2 = evaluate_transaction("O=C=O", (0, 1)) # Берем одну из связей C=O
-print(f"  -> BO: {step2['bo']}, V_net: {step2['v_net']:.2f} Å³")
-print(f"  -> HW Профит: {step2['hw']:.1f} кДж, Налог Сжатия: {step2['tax']:.1f} кДж")
-print(f"  => Энергия Транзакции 2: {step2['total']:.1f} kJ/mol\n")
+    st.divider()
 
-# ИТОГ
-total_atomization = step1['total'] + step2['total']
-print(f"=== ПОЛНАЯ ЭНЕРГИЯ АТОМИЗАЦИИ (ΣK): {total_atomization:.1f} kJ/mol ===")
-print("  (Экспериментальное значение CO2: ~1608 kJ/mol)\n")
+    # ШАГ 2
+    with st.spinner("Анализ Шага 2..."):
+        step2 = evaluate_transaction("O=C=O", (0, 1))
+        
+    st.subheader("ШАГ 2: Реструктуризация (CO + O ➔ CO₂)")
+    st.warning("Третий атом (Кислород) пытается пристыковаться. Матрице приходится 'распаковать' монолитную тройную связь до двух двойных. Включается **Налог на Сжатие** за линейную sp-деформацию узла.")
+    
+    col4, col5, col6 = st.columns(3)
+    col4.metric("Связь (Bond Order)", f"{step2['bo']}")
+    col5.metric("Налог Сжатия (Tension Tax)", f"-{step2['tax']:.1f} kJ/mol")
+    col6.metric("Энергия Транзакции 2", f"{step2['total']:.1f} kJ/mol")
+    
+    st.divider()
+
+    # ИТОГ
+    total_atomization = step1['total'] + step2['total']
+    st.success(f"### 🎯 ПОЛНАЯ ЭНЕРГИЯ АТОМИЗАЦИИ (ΣK): **{total_atomization:.1f} kJ/mol**")
+    st.markdown("*Для сравнения: Экспериментальная энергия атомизации CO₂ в реальном мире составляет **~1608 kJ/mol**.*")

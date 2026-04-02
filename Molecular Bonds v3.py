@@ -9,10 +9,10 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: V18.0 TOPOLOGICAL DECOMPILER (TENSION vs CASHBACK)
+# SIMUREALITY: V19.0 SMART ROUTING (SINKS, CLASHES, CARBENES)
 # =====================================================================
 
-st.set_page_config(page_title="V18.0 Matrix Core", layout="wide", page_icon="🧬")
+st.set_page_config(page_title="V19.0 Smart Matrix Routing", layout="wide", page_icon="🧠")
 
 # ХАРДКОД КОНСТАНТЫ СИМУЛЯЦИИ
 GAMMA_SYS = 1.0418               # Системный Налог (Lattice Impedance)
@@ -37,7 +37,7 @@ def calculate_asymmetric_overlap(d, r1, r2):
     h2 = r2 - d2
     return ((math.pi * h1**2 / 3) * (3 * r1 - h1)) + ((math.pi * h2**2 / 3) * (3 * r2 - h2))
 
-def analyze_v18(row):
+def analyze_v19(row):
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
     pt = Chem.GetPeriodicTable()
@@ -55,38 +55,61 @@ def analyze_v18(row):
         r_cov2 = pt.GetRcovalent(a2.GetAtomicNum())
         interface_type = bond.GetBondTypeAsDouble()
         
-        # --- БЛОК V18.0: АППАРАТНОЕ НАТЯЖЕНИЕ VS РЕЗОНАНСНЫЙ КЭШБЕК ---
+        # --- БЛОК V19.0: УМНАЯ МАРШРУТИЗАЦИЯ ---
         def parse_node_topology(atom, exclude_idx):
             t_pen = 0.0
             r_cash = 0.0
             atomic_num = atom.GetAtomicNum()
+            hyb = atom.GetHybridization()
             
             if atomic_num == 1: return 0.0, 0.0
 
-            hyb = atom.GetHybridization()
-            
-            # ПРАВИЛО 1: УГЛЕРОДНОЕ СЖАТИЕ (Vinylic/Alkynyl Tension)
+            # ПРОВЕРКА НА КАРБЕНОВЫЙ ПЕРЕХОД
+            if atom.GetNumRadicalElectrons() > 0:
+                t_pen += 70.0 
+
+            # ПРАВИЛО 1: УГЛЕРОД И ГРАВИТАЦИОННЫЕ СТОКИ
             if atomic_num == 6:
                 if hyb == Chem.rdchem.HybridizationType.SP:
                     t_pen += 140.0
                 elif hyb == Chem.rdchem.HybridizationType.SP2:
-                    t_pen += 45.0
+                    has_sink = False
+                    for n in atom.GetNeighbors():
+                        if n.GetIdx() == exclude_idx: continue
+                        if n.GetAtomicNum() == 8 and mol_h.GetBondBetweenAtoms(atom.GetIdx(), n.GetIdx()).GetBondTypeAsDouble() == 2.0:
+                            has_sink = True
+                            break
+                    if not has_sink:
+                        t_pen += 45.0 
+                
                 elif hyb == Chem.rdchem.HybridizationType.SP3:
                     for n in atom.GetNeighbors():
                         if n.GetIdx() == exclude_idx: continue
-                        n_hyb = n.GetHybridization()
-                        if n_hyb in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP] or n.GetIsAromatic():
+                        if n.GetHybridization() in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP] or n.GetIsAromatic():
                             r_cash += 50.0 
                             break
 
-            # ПРАВИЛО 2: РАЗРЯДКА ГЕТЕРОАТОМОВ (Lone Pair Relief)
+            # ПРАВИЛО 2: КОНФЛИКТ СВОБОДНЫХ ПОРТОВ 
             elif atomic_num in [7, 8]:
-                if hyb in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]:
-                    r_cash += 225.0
-                else:
-                    r_cash += 20.0
+                has_clash = False
+                for n in atom.GetNeighbors():
+                    if n.GetIdx() == exclude_idx: continue
+                    if n.GetAtomicNum() in [7, 8, 9, 17, 35, 53]:
+                        has_clash = True
+                        break
 
-            # ПРАВИЛО 3: ГАЛОГЕНЫ И СТЕРИКА
+                if hyb in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]:
+                    if has_clash:
+                        r_cash += 225.0 
+                    else:
+                        r_cash += 50.0  
+                else:
+                    if has_clash:
+                        r_cash += 120.0 
+                    else:
+                        r_cash += 20.0  
+
+            # ПРАВИЛО 3: ГАЛОГЕНЫ
             elif atomic_num == 9:  t_pen += 85.0
             elif atomic_num == 17: t_pen += 12.0
             elif atomic_num == 35: r_cash += 30.0
@@ -132,15 +155,13 @@ def load_base_data(file_path):
 def compile_unit_test(df_tier, comp_coeff, relax_coeff):
     start = time.time()
     
-    df_tier[['d_actual', 'v_net', 'r1', 'r2', 'interface_type', 'tension_penalty', 'resonance_cashback', 'valid']] = df_tier.apply(analyze_v18, axis=1)
+    df_tier[['d_actual', 'v_net', 'r1', 'r2', 'interface_type', 'tension_penalty', 'resonance_cashback', 'valid']] = df_tier.apply(analyze_v19, axis=1)
     df_tier = df_tier.dropna(subset=['valid']).copy()
     
     if len(df_tier) == 0: return df_tier, time.time() - start
         
-    # ОНТОЛОГИЯ V18: Системный налог Матрицы применен к базовой геометрии!
     base_hw = ((df_tier['interface_type'] * STATIC_BASE_LOCK) + (VOLUME_BONUS * df_tier['v_net'])) * GAMMA_SYS
     
-    # Нормализуем ползунки (значение 50 = множитель 1.0)
     mult_comp = comp_coeff / 50.0 if comp_coeff > 0 else 0
     mult_relax = relax_coeff / 50.0 if relax_coeff > 0 else 0
     
@@ -148,7 +169,6 @@ def compile_unit_test(df_tier, comp_coeff, relax_coeff):
     df_tier['Penalty'] = df_tier['tension_penalty'] * mult_comp
     df_tier['Cashback'] = df_tier['resonance_cashback'] * mult_relax
     
-    # СИНТЕЗ УРАВНЕНИЯ МАТРИЦЫ
     df_tier['Grid_BDE_Final'] = df_tier['Hardware_BDE'] + df_tier['Penalty'] - df_tier['Cashback']
     
     df_tier['Abs_Error'] = np.abs(df_tier['Grid_BDE_Final'] - df_tier['Actual_BDE_kJ'])
@@ -159,7 +179,7 @@ def compile_unit_test(df_tier, comp_coeff, relax_coeff):
     return df_tier, time.time() - start
 
 # --- UI ---
-st.title("🧬 V18.0: Топологический Декомпилятор Матрицы")
+st.title("🧠 V19.0: Умная Маршрутизация Матрицы")
 st.markdown("Уравнение: `BDE = (Аппаратная Геометрия * Налог 1.0418) + Штраф за Сжатие - Кэшбек Релаксации`")
 
 FILE_NAME = "bde-db2.csv.gz"
@@ -204,7 +224,7 @@ if df_base is not None:
                 
                 fig = px.scatter(df_result, x="Actual_BDE_kJ", y="Grid_BDE_Final", color="bond_clean", 
                                  hover_data=["v_net", "Penalty", "Cashback"],
-                                 opacity=0.7, title=f"V18.0 Grid Physics vs Data")
+                                 opacity=0.7, title=f"V19.0 Grid Physics vs Data")
                 min_val = min(df_result['Actual_BDE_kJ'].min(), df_result['Grid_BDE_Final'].min())
                 max_val = max(df_result['Actual_BDE_kJ'].max(), df_result['Grid_BDE_Final'].max())
                 fig.add_shape(type="line", x0=min_val, y0=min_val, x1=max_val, y1=max_val, line=dict(color="red", dash="dash"))

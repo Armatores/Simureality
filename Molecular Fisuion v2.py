@@ -6,10 +6,10 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: AUTO-PATHFINDER V4 (RELEASE CANDIDATE)
+# SIMUREALITY: AUTO-PATHFINDER V5 (FINAL CORE)
 # =====================================================================
 
-st.set_page_config(page_title="Assembler V4: 40 Molecules", layout="wide", page_icon="🌌")
+st.set_page_config(page_title="Assembler V5: Final Core", layout="wide", page_icon="💎")
 
 # --- ФУНДАМЕНТАЛЬНЫЕ КОНСТАНТЫ РЕШЕТКИ ---
 GAMMA_SYS = 1.0418               
@@ -20,8 +20,8 @@ K_THETA = 2.0
 VACUUM_GATE = 3.325              
 BUFFER_RADIUS = VACUUM_GATE / 2  
 C_LP = 42.5                      
+R_REF = 0.71                     # Эталонный радиус сжатия портов (Фтор)
 
-# БАЗА НА 40 МАКРО-УЗЛОВ (Экспериментальная Энергия Атомизации, кДж/моль)
 TARGET_MOLECULES = {
     "C": ("Метан (CH4)", 1660.0),
     "O": ("Вода (H2O)", 926.0),
@@ -43,7 +43,6 @@ TARGET_MOLECULES = {
     "N=[N+]=[O-]": ("Закись азота (N2O)", 1045.0),
     "C1CC1": ("Циклопропан (C3H6)", 3400.0), 
     "C1=CC=CC=C1": ("Бензол (C6H6)", 5535.0),
-    # --- НОВЫЕ 20 УЗЛОВ ---
     "Cl": ("Хлороводород (HCl)", 431.0),
     "BrBr": ("Бром (Br2)", 193.0),
     "II": ("Иод (I2)", 151.0),
@@ -125,7 +124,6 @@ def auto_assemble_molecule(smiles):
         
         v_total_buf = calculate_asymmetric_overlap(d_actual, BUFFER_RADIUS, BUFFER_RADIUS)
         
-        # Водородный Патч: Голый протон не вытесняет вакуум
         exc1 = 0.0 if z1 == 1 else calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS)
         exc2 = 0.0 if z2 == 1 else calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS)
         
@@ -135,22 +133,28 @@ def auto_assemble_molecule(smiles):
         tax_sys = raw_hw * (GAMMA_SYS - 1.0)
         total_hw += (raw_hw - tax_sys)
 
-        # Закон Обратных Квадратов для Джиттера
+        # Закон Поверхностной Плотности Джиттера
         lp1, lp2 = get_lone_pairs(z1), get_lone_pairs(z2)
-        if d_actual > 0:
-            total_repulsion += (C_LP * (lp1 * lp2)) / (d_actual ** 2)
+        if lp1 > 0 and lp2 > 0:
+            # Плотность портов падает квадратично с ростом радиуса относительно Фтора
+            density1 = lp1 / ((r_cov1 / R_REF) ** 2)
+            density2 = lp2 / ((r_cov2 / R_REF) ** 2)
+            total_repulsion += C_LP * (density1 * density2)
 
     total_tension = get_angular_tension(mol_h, conf)
-    final_cashback = (Z0 / 2.0) 
+    
+    # Субсидия Изоляции не применяется к чистым протонам (H2)
+    heavy_atoms = mol_h.GetNumHeavyAtoms()
+    final_cashback = (Z0 / 2.0) if heavy_atoms > 0 else 0.0
 
     sigma_k = total_hw - total_tension - total_repulsion + final_cashback
     return sigma_k
 
 # --- UI ---
-st.title("🌌 Auto-Assembler V4.0: Матрица на 40 Графов")
-st.markdown("Внедрен Водородный патч (отсутствие ядра вытеснения) и Закон Обратных Квадратов для эфирного джиттера ($1/d^2$).")
+st.title("💎 Auto-Assembler V5.0: Абсолютный Баланс")
+st.markdown("Интегрирована поверхностная плотность портов (Surface Jitter) и исключение Голого Протона для водорода.")
 
-if st.button("🚀 Скомпилировать Расширенную Базу"):
+if st.button("🚀 Финальный Тест (40 Графов)"):
     results = []
     progress_bar = st.progress(0)
     
@@ -176,4 +180,4 @@ if st.button("🚀 Скомпилировать Расширенную Базу"
     }), height=600, use_container_width=True)
     
     mean_acc = df_res['Точность (%)'].mean()
-    st.success(f"**Средняя точность на 40 узлах: {mean_acc:.2f}%**")
+    st.success(f"**Средняя точность ядра V5: {mean_acc:.2f}%**")

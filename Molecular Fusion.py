@@ -1,15 +1,11 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
 import math
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: TOPOLOGICAL ASSEMBLER (WEB ENGINE)
+# SIMUREALITY: DYNAMIC STATE MACHINE (V24 CORE)
 # =====================================================================
-
-st.set_page_config(page_title="Топологический Ассемблер", layout="wide", page_icon="🏗️")
 
 GAMMA_SYS = 1.0418               
 VACUUM_GATE = 3.325              
@@ -26,84 +22,85 @@ def calculate_asymmetric_overlap(d, r1, r2):
     h2 = r2 - d2
     return ((math.pi * h1**2 / 3) * (3 * r1 - h1)) + ((math.pi * h2**2 / 3) * (3 * r2 - h2))
 
-def get_topology_modifiers(mol_h, a1, a2, bo):
-    tax = 0.0
-    subsidy = 0.0
-    z1, z2 = a1.GetAtomicNum(), a2.GetAtomicNum()
+def parse_node_topology(mol_h, atom, exclude_idx):
+    t_pen, r_cash = 0.0, 0.0
+    atomic_num, hyb = atom.GetAtomicNum(), atom.GetHybridization()
+    if atomic_num == 1: return 0.0, 0.0
+
+    if atomic_num == 6:
+        if hyb == Chem.rdchem.HybridizationType.SP: t_pen += 140.0
+        elif hyb == Chem.rdchem.HybridizationType.SP2:
+            has_O_sink = any(mol_h.GetBondBetweenAtoms(atom.GetIdx(), n.GetIdx()).GetBondTypeAsDouble() == 2.0 and n.GetAtomicNum() == 8 for n in atom.GetNeighbors() if n.GetIdx() != exclude_idx)
+            if has_O_sink: r_cash += 40.0 
+            else: t_pen += 45.0  
+
+    elif atomic_num in [7, 8]:
+        if hyb in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]: r_cash += 50.0  
+        
+    return t_pen, r_cash
+
+def parse_edge_topology(mol_h, a1, a2, bo):
+    e_pen, e_cash = 0.0, 0.0
     hyb1, hyb2 = a1.GetHybridization(), a2.GetHybridization()
+    if bo == 1.0 and (hyb1 in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]) and (hyb2 in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]):
+        e_cash -= 40.0 
+    return e_pen, e_cash
 
-    if bo > 1.0:
-        if hyb1 == Chem.rdchem.HybridizationType.SP or hyb2 == Chem.rdchem.HybridizationType.SP:
-            tax += 140.0
-        elif hyb1 == Chem.rdchem.HybridizationType.SP2 or hyb2 == Chem.rdchem.HybridizationType.SP2:
-            if z1 == 8 or z2 == 8: subsidy += 40.0
-            else: tax += 45.0
+def evaluate_transaction(smiles, target_bond_indices):
+    """Оценивает энергию конкретной транзакции (связи) в заданном состоянии графа"""
+    mol = Chem.MolFromSmiles(smiles)
+    mol_h = Chem.AddHs(mol)
+    AllChem.EmbedMolecule(mol_h, randomSeed=42)
+    AllChem.MMFFOptimizeMolecule(mol_h)
+    conf = mol_h.GetConformer()
+    pt = Chem.GetPeriodicTable()
 
-    if bo == 1.0:
-        if z1 in [7,8] and z2 in [7,8]:
-            tax += 100.0
+    idx1, idx2 = target_bond_indices
+    a1, a2 = mol_h.GetAtomWithIdx(idx1), mol_h.GetAtomWithIdx(idx2)
+    bond = mol_h.GetBondBetweenAtoms(idx1, idx2)
+    bo = bond.GetBondTypeAsDouble()
 
-    return tax, subsidy
+    pos1, pos2 = np.array(conf.GetAtomPosition(idx1)), np.array(conf.GetAtomPosition(idx2))
+    d_actual = np.linalg.norm(pos1 - pos2)
+    
+    r_cov1, r_cov2 = pt.GetRcovalent(a1.GetAtomicNum()), pt.GetRcovalent(a2.GetAtomicNum())
+    v_total_buf = calculate_asymmetric_overlap(d_actual, BUFFER_RADIUS, BUFFER_RADIUS)
+    v_net = max(0.0, v_total_buf - calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS) - calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS))
 
-st.title("🏗️ Топологический Ассемблер (Stellar Forge)")
-st.markdown("Симулятор пошаговой сборки макро-узлов на ГЦК-решетке. Расчет полной энтальпии образования.")
+    tp1, rc1 = parse_node_topology(mol_h, a1, idx2)
+    tp2, rc2 = parse_node_topology(mol_h, a2, idx1)
+    ep, ec = parse_edge_topology(mol_h, a1, a2, bo)
 
-smiles_input = st.text_input("SMILES Целевого Графа:", "O=C=O")
+    hw_profit = ((bo * STATIC_BASE_LOCK) + (VOLUME_BONUS * v_net)) * GAMMA_SYS
+    tension_penalty = tp1 + tp2 + ep
+    resonance_cashback = max(0.0, rc1 + rc2 + ec)
+    
+    transaction_energy = hw_profit + tension_penalty - resonance_cashback
+    
+    return {
+        "bo": bo, "v_net": v_net, "hw": hw_profit, "tax": tension_penalty, 
+        "cash": resonance_cashback, "total": transaction_energy
+    }
 
-if st.button("Инициировать Сборку"):
-    try:
-        with st.spinner("Рендеринг 3D-матрицы и расчет вакуумного профита..."):
-            mol = Chem.MolFromSmiles(smiles_input)
-            mol_h = Chem.AddHs(mol)
-            AllChem.EmbedMolecule(mol_h, randomSeed=42)
-            AllChem.MMFFOptimizeMolecule(mol_h)
-            conf = mol_h.GetConformer()
-            pt = Chem.GetPeriodicTable()
+print("\n🌐 СИМУЛЯЦИЯ ПОЭТАПНОЙ СБОРКИ: УГЛЕКИСЛЫЙ ГАЗ (CO2)\n")
 
-            log_data = []
-            total_cohesive_energy = 0.0
+# ШАГ 1: Углерод + Кислород = Угарный газ
+print("ШАГ 1: Формирование ядра (C + O -> CO)")
+print("  Матрица максимизирует порты, формируя тройную связь.")
+step1 = evaluate_transaction("[C-]#[O+]", (0, 1)) # Индексы C и O
+print(f"  -> BO: {step1['bo']}, V_net: {step1['v_net']:.2f} Å³")
+print(f"  -> HW Профит: {step1['hw']:.1f} кДж, Налог Сжатия: {step1['tax']:.1f} кДж")
+print(f"  => Энергия Транзакции 1: {step1['total']:.1f} kJ/mol\n")
 
-            for bond in mol_h.GetBonds():
-                a1 = bond.GetBeginAtom()
-                a2 = bond.GetEndAtom()
-                z1, z2 = a1.GetAtomicNum(), a2.GetAtomicNum()
-                bo = bond.GetBondTypeAsDouble()
+# ШАГ 2: Угарный газ + Кислород = Углекислый газ
+print("ШАГ 2: Реструктуризация (CO + O -> CO2)")
+print("  Матрица распаковывает тройную связь для приема второго кислорода.")
+step2 = evaluate_transaction("O=C=O", (0, 1)) # Берем одну из связей C=O
+print(f"  -> BO: {step2['bo']}, V_net: {step2['v_net']:.2f} Å³")
+print(f"  -> HW Профит: {step2['hw']:.1f} кДж, Налог Сжатия: {step2['tax']:.1f} кДж")
+print(f"  => Энергия Транзакции 2: {step2['total']:.1f} kJ/mol\n")
 
-                r_cov1 = pt.GetRcovalent(z1)
-                r_cov2 = pt.GetRcovalent(z2)
-                pos1 = np.array(conf.GetAtomPosition(a1.GetIdx()))
-                pos2 = np.array(conf.GetAtomPosition(a2.GetIdx()))
-                d_actual = np.linalg.norm(pos1 - pos2)
-
-                v_total_buf = calculate_asymmetric_overlap(d_actual, BUFFER_RADIUS, BUFFER_RADIUS)
-                v_exc_1 = calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS)
-                v_exc_2 = calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS)
-                v_net = max(0.0, v_total_buf - v_exc_1 - v_exc_2)
-
-                hardware_profit = ((bo * STATIC_BASE_LOCK) + (VOLUME_BONUS * v_net)) * GAMMA_SYS
-                tax, subsidy = get_topology_modifiers(mol_h, a1, a2, bo)
-                
-                transaction_energy = hardware_profit - tax + subsidy
-                total_cohesive_energy += transaction_energy
-
-                log_data.append({
-                    "Интерфейс": f"{a1.GetSymbol()}-{a2.GetSymbol()}",
-                    "bo": bo,
-                    "V_net (Å³)": f"{v_net:.2f}",
-                    "HW Профит (кДж)": f"+{hardware_profit:.1f}",
-                    "Налог Сжатия": f"-{tax:.1f}" if tax > 0 else "0",
-                    "Субсидия Стока": f"+{subsidy:.1f}" if subsidy > 0 else "0",
-                    "Итог (кДж)": f"{transaction_energy:.1f}"
-                })
-
-            st.success("Синтез успешно скомпилирован.")
-            
-            col1, col2 = st.columns(2)
-            col1.metric(label="Энергия Атомизации (ΣK)", value=f"{total_cohesive_energy:.1f} kJ/mol")
-            col2.metric(label="Количество Транзакций", value=mol_h.GetNumBonds())
-
-            df_log = pd.DataFrame(log_data)
-            st.dataframe(df_log, use_container_width=True)
-
-    except Exception as e:
-        st.error(f"Ошибка компиляции графа: {e}")
+# ИТОГ
+total_atomization = step1['total'] + step2['total']
+print(f"=== ПОЛНАЯ ЭНЕРГИЯ АТОМИЗАЦИИ (ΣK): {total_atomization:.1f} kJ/mol ===")
+print("  (Экспериментальное значение CO2: ~1608 kJ/mol)\n")

@@ -6,10 +6,10 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: AUTO-PATHFINDER V3 (LONE PAIR MATRIX INCLUDED)
+# SIMUREALITY: AUTO-PATHFINDER V4 (RELEASE CANDIDATE)
 # =====================================================================
 
-st.set_page_config(page_title="Assembler V3: Jitter Tax", layout="wide", page_icon="⚡")
+st.set_page_config(page_title="Assembler V4: 40 Molecules", layout="wide", page_icon="🌌")
 
 # --- ФУНДАМЕНТАЛЬНЫЕ КОНСТАНТЫ РЕШЕТКИ ---
 GAMMA_SYS = 1.0418               
@@ -19,8 +19,9 @@ VOLUME_BONUS = 12.75
 K_THETA = 2.0                    
 VACUUM_GATE = 3.325              
 BUFFER_RADIUS = VACUUM_GATE / 2  
-C_LP = 42.5                      # Константа Эфирного Джиттера (кДж за 1 конфликтную пару)
+C_LP = 42.5                      
 
+# БАЗА НА 40 МАКРО-УЗЛОВ (Экспериментальная Энергия Атомизации, кДж/моль)
 TARGET_MOLECULES = {
     "C": ("Метан (CH4)", 1660.0),
     "O": ("Вода (H2O)", 926.0),
@@ -41,15 +42,35 @@ TARGET_MOLECULES = {
     "C=O": ("Формальдегид (CH2O)", 1503.0),
     "N=[N+]=[O-]": ("Закись азота (N2O)", 1045.0),
     "C1CC1": ("Циклопропан (C3H6)", 3400.0), 
-    "C1=CC=CC=C1": ("Бензол (C6H6)", 5535.0)  
+    "C1=CC=CC=C1": ("Бензол (C6H6)", 5535.0),
+    # --- НОВЫЕ 20 УЗЛОВ ---
+    "Cl": ("Хлороводород (HCl)", 431.0),
+    "BrBr": ("Бром (Br2)", 193.0),
+    "II": ("Иод (I2)", 151.0),
+    "FC(F)(F)F": ("Тетрафторметан (CF4)", 1950.0),
+    "S": ("Сероводород (H2S)", 730.0),
+    "P": ("Фосфин (PH3)", 960.0),
+    "S=C=S": ("Сероуглерод (CS2)", 1150.0),
+    "CCO": ("Этанол (C2H5OH)", 3220.0),
+    "COC": ("Диметиловый эфир", 3180.0),
+    "CCC": ("Пропан (C3H8)", 4000.0),
+    "C=CC": ("Пропен (C3H6)", 3430.0),
+    "C#CC": ("Пропин (C3H4)", 2820.0),
+    "CC(=O)C": ("Ацетон (C3H6O)", 3900.0),
+    "C1CCCC1": ("Циклопентан (C5H10)", 5600.0),
+    "CC1=CC=CC=C1": ("Толуол (C7H8)", 6700.0),
+    "CNC": ("Диметиламин", 2800.0),
+    "CS": ("Метантиол (CH3SH)", 1880.0),
+    "[N]=O": ("Оксид азота(II) (NO)", 630.0),
+    "[O-][N+]=O": ("Диоксид азота (NO2)", 934.0),
+    "C(Cl)(Cl)(Cl)Cl": ("Тетрахлорметан", 1300.0)
 }
 
 def get_lone_pairs(atomic_num):
-    """Определяет количество открытых портов (Lone Pairs) по номеру узла"""
-    if atomic_num in [9, 17, 35, 53]: return 3  # Галогены
-    if atomic_num in [8, 16, 34]: return 2      # Халькогены
-    if atomic_num in [7, 15]: return 1          # Пниктогены
-    return 0                                    # Углерод, Водород и т.д.
+    if atomic_num in [9, 17, 35, 53]: return 3  
+    if atomic_num in [8, 16, 34]: return 2      
+    if atomic_num in [7, 15]: return 1          
+    return 0                                    
 
 def calculate_asymmetric_overlap(d, r1, r2):
     if d >= r1 + r2 or d <= 0: return 0.0
@@ -93,42 +114,43 @@ def auto_assemble_molecule(smiles):
     total_hw = 0.0
     total_repulsion = 0.0
 
-    # 1. Сканируем интерфейсы
     for bond in mol_h.GetBonds():
         a1, a2 = bond.GetBeginAtom(), bond.GetEndAtom()
+        z1, z2 = a1.GetAtomicNum(), a2.GetAtomicNum()
         bo = bond.GetBondTypeAsDouble()
+        
         pos1, pos2 = np.array(conf.GetAtomPosition(a1.GetIdx())), np.array(conf.GetAtomPosition(a2.GetIdx()))
         d_actual = np.linalg.norm(pos1 - pos2)
+        r_cov1, r_cov2 = pt.GetRcovalent(z1), pt.GetRcovalent(z2)
         
-        r_cov1, r_cov2 = pt.GetRcovalent(a1.GetAtomicNum()), pt.GetRcovalent(a2.GetAtomicNum())
         v_total_buf = calculate_asymmetric_overlap(d_actual, BUFFER_RADIUS, BUFFER_RADIUS)
-        v_net = max(0.0, v_total_buf - calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS) - calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS))
         
-        # Хардверный профит и системный налог
+        # Водородный Патч: Голый протон не вытесняет вакуум
+        exc1 = 0.0 if z1 == 1 else calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS)
+        exc2 = 0.0 if z2 == 1 else calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS)
+        
+        v_net = max(0.0, v_total_buf - exc1 - exc2)
+        
         raw_hw = (bo * STATIC_BASE_LOCK) + (VOLUME_BONUS * v_net)
         tax_sys = raw_hw * (GAMMA_SYS - 1.0)
         total_hw += (raw_hw - tax_sys)
 
-        # РАСЧЕТ ЭФИРНОГО ДЖИТТЕРА (Port Repulsion)
-        lp1 = get_lone_pairs(a1.GetAtomicNum())
-        lp2 = get_lone_pairs(a2.GetAtomicNum())
-        total_repulsion += C_LP * (lp1 * lp2)
+        # Закон Обратных Квадратов для Джиттера
+        lp1, lp2 = get_lone_pairs(z1), get_lone_pairs(z2)
+        if d_actual > 0:
+            total_repulsion += (C_LP * (lp1 * lp2)) / (d_actual ** 2)
 
-    # 2. Глобальный налог на деформацию (Angular Tension)
     total_tension = get_angular_tension(mol_h, conf)
-
-    # 3. Субсидия Изоляции
     final_cashback = (Z0 / 2.0) 
 
-    # 4. Итоговый баланс: Профит - Деформация - Джиттер + Изоляция
     sigma_k = total_hw - total_tension - total_repulsion + final_cashback
     return sigma_k
 
 # --- UI ---
-st.title("⚡ Auto-Assembler V3.0: Lone Pair Matrix")
-st.markdown("Внедрен алгоритм `Port Repulsion Tax` для расчета эфирного джиттера открытых портов (свободных электронных пар).")
+st.title("🌌 Auto-Assembler V4.0: Матрица на 40 Графов")
+st.markdown("Внедрен Водородный патч (отсутствие ядра вытеснения) и Закон Обратных Квадратов для эфирного джиттера ($1/d^2$).")
 
-if st.button("🚀 Компилировать 20 Графов"):
+if st.button("🚀 Скомпилировать Расширенную Базу"):
     results = []
     progress_bar = st.progress(0)
     
@@ -151,7 +173,7 @@ if st.button("🚀 Компилировать 20 Графов"):
         "ΣK_pred": "{:.1f}", 
         "ΣK_exp": "{:.1f}", 
         "Точность (%)": "{:.2f}%"
-    }), use_container_width=True)
+    }), height=600, use_container_width=True)
     
     mean_acc = df_res['Точность (%)'].mean()
-    st.success(f"**Средняя точность: {mean_acc:.2f}%**")
+    st.success(f"**Средняя точность на 40 узлах: {mean_acc:.2f}%**")

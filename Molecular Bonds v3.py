@@ -9,17 +9,16 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: V19.0 SMART ROUTING (SINKS, CLASHES, CARBENES)
+# SIMUREALITY: V20.0 PRECISION MICRO-ROUTING
 # =====================================================================
 
-st.set_page_config(page_title="V19.0 Smart Matrix Routing", layout="wide", page_icon="🧠")
+st.set_page_config(page_title="V20.0 Matrix Precision", layout="wide", page_icon="🎯")
 
-# ХАРДКОД КОНСТАНТЫ СИМУЛЯЦИИ
-GAMMA_SYS = 1.0418               # Системный Налог (Lattice Impedance)
+GAMMA_SYS = 1.0418               
 VACUUM_GATE = 3.325              
-BUFFER_RADIUS = VACUUM_GATE / 2  # 1.6625 Å
-STATIC_BASE_LOCK = 286.5         # Цена Shared Pointer
-VOLUME_BONUS = 12.75             # Энергия за 1 Å³ чистого V_net
+BUFFER_RADIUS = VACUUM_GATE / 2  
+STATIC_BASE_LOCK = 286.5         
+VOLUME_BONUS = 12.75             
 
 def get_graph_complexity(smiles):
     try:
@@ -37,7 +36,7 @@ def calculate_asymmetric_overlap(d, r1, r2):
     h2 = r2 - d2
     return ((math.pi * h1**2 / 3) * (3 * r1 - h1)) + ((math.pi * h2**2 / 3) * (3 * r2 - h2))
 
-def analyze_v19(row):
+def analyze_v20(row):
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
     pt = Chem.GetPeriodicTable()
@@ -55,7 +54,7 @@ def analyze_v19(row):
         r_cov2 = pt.GetRcovalent(a2.GetAtomicNum())
         interface_type = bond.GetBondTypeAsDouble()
         
-        # --- БЛОК V19.0: УМНАЯ МАРШРУТИЗАЦИЯ ---
+        # --- БЛОК V20.0: MICRO-ROUTING (ТОЧНАЯ КАЛИБРОВКА ПОГРЕШНОСТЕЙ) ---
         def parse_node_topology(atom, exclude_idx):
             t_pen = 0.0
             r_cash = 0.0
@@ -64,23 +63,37 @@ def analyze_v19(row):
             
             if atomic_num == 1: return 0.0, 0.0
 
-            # ПРОВЕРКА НА КАРБЕНОВЫЙ ПЕРЕХОД
+            # ПРОВЕРКА НА КАРБЕН (С учетом Галогенной стабилизации)
             if atom.GetNumRadicalElectrons() > 0:
-                t_pen += 70.0 
+                c_pen = 70.0 
+                for n in atom.GetNeighbors():
+                    if n.GetIdx() == exclude_idx: continue
+                    # Если рядом донор портов, он стабилизирует карбен
+                    if n.GetAtomicNum() in [7, 8, 9, 17, 35, 53]:
+                        c_pen -= 50.0
+                        break
+                t_pen += max(0, c_pen)
 
-            # ПРАВИЛО 1: УГЛЕРОД И ГРАВИТАЦИОННЫЕ СТОКИ
+            # ПРАВИЛО 1: УГЛЕРОД И ГРАВИТАЦИОННЫЕ СТОКИ (O vs N)
             if atomic_num == 6:
                 if hyb == Chem.rdchem.HybridizationType.SP:
                     t_pen += 140.0
                 elif hyb == Chem.rdchem.HybridizationType.SP2:
-                    has_sink = False
+                    has_O_sink = False
+                    has_N_sink = False
                     for n in atom.GetNeighbors():
                         if n.GetIdx() == exclude_idx: continue
-                        if n.GetAtomicNum() == 8 and mol_h.GetBondBetweenAtoms(atom.GetIdx(), n.GetIdx()).GetBondTypeAsDouble() == 2.0:
-                            has_sink = True
-                            break
-                    if not has_sink:
-                        t_pen += 45.0 
+                        bo = mol_h.GetBondBetweenAtoms(atom.GetIdx(), n.GetIdx()).GetBondTypeAsDouble()
+                        if bo == 2.0:
+                            if n.GetAtomicNum() == 8: has_O_sink = True
+                            if n.GetAtomicNum() == 7: has_N_sink = True
+                    
+                    if has_O_sink:
+                        r_cash += 40.0 # O-сток дает скидку
+                    elif has_N_sink:
+                        pass           # N-сток отменяет штраф
+                    else:
+                        t_pen += 45.0  # Обычный алкен (штраф)
                 
                 elif hyb == Chem.rdchem.HybridizationType.SP3:
                     for n in atom.GetNeighbors():
@@ -89,25 +102,36 @@ def analyze_v19(row):
                             r_cash += 50.0 
                             break
 
-            # ПРАВИЛО 2: КОНФЛИКТ СВОБОДНЫХ ПОРТОВ 
+            # ПРАВИЛО 2: КОНФЛИКТ СВОБОДНЫХ ПОРТОВ (Прямой vs Смежный)
             elif atomic_num in [7, 8]:
-                has_clash = False
-                for n in atom.GetNeighbors():
-                    if n.GetIdx() == exclude_idx: continue
-                    if n.GetAtomicNum() in [7, 8, 9, 17, 35, 53]:
-                        has_clash = True
-                        break
-
-                if hyb in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]:
-                    if has_clash:
-                        r_cash += 225.0 
-                    else:
-                        r_cash += 50.0  
+                exclude_atom = mol_h.GetAtomWithIdx(exclude_idx)
+                
+                # А: Разрыв ПРЯМОГО конфликта (например, N-O)
+                if exclude_atom.GetAtomicNum() in [7, 8, 9, 17, 35, 53]:
+                    if hyb not in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]:
+                        r_cash += 50.0  # 50 + 50 = 100 кДж на ликвидацию связи
+                # Б: Разрыв СМЕЖНОГО узла
                 else:
-                    if has_clash:
-                        r_cash += 120.0 
+                    has_clash_adjacent = False
+                    clash_z = 0
+                    for n in atom.GetNeighbors():
+                        if n.GetIdx() == exclude_idx: continue
+                        if n.GetAtomicNum() in [7, 8, 9, 17, 35, 53]:
+                            has_clash_adjacent = True
+                            clash_z = max(clash_z, n.GetAtomicNum())
+                            break
+
+                    if hyb in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]:
+                        if has_clash_adjacent:
+                            if clash_z == 8: r_cash += 225.0 # N=O (Максимальный взрыв)
+                            else: r_cash += 185.0            # N=N (Чуть слабее)
+                        else:
+                            r_cash += 50.0  
                     else:
-                        r_cash += 20.0  
+                        if has_clash_adjacent:
+                            r_cash += 70.0 # Частичная релаксация смежного узла
+                        else:
+                            r_cash += 20.0  
 
             # ПРАВИЛО 3: ГАЛОГЕНЫ
             elif atomic_num == 9:  t_pen += 85.0
@@ -155,7 +179,7 @@ def load_base_data(file_path):
 def compile_unit_test(df_tier, comp_coeff, relax_coeff):
     start = time.time()
     
-    df_tier[['d_actual', 'v_net', 'r1', 'r2', 'interface_type', 'tension_penalty', 'resonance_cashback', 'valid']] = df_tier.apply(analyze_v19, axis=1)
+    df_tier[['d_actual', 'v_net', 'r1', 'r2', 'interface_type', 'tension_penalty', 'resonance_cashback', 'valid']] = df_tier.apply(analyze_v20, axis=1)
     df_tier = df_tier.dropna(subset=['valid']).copy()
     
     if len(df_tier) == 0: return df_tier, time.time() - start
@@ -179,12 +203,12 @@ def compile_unit_test(df_tier, comp_coeff, relax_coeff):
     return df_tier, time.time() - start
 
 # --- UI ---
-st.title("🧠 V19.0: Умная Маршрутизация Матрицы")
-st.markdown("Уравнение: `BDE = (Аппаратная Геометрия * Налог 1.0418) + Штраф за Сжатие - Кэшбек Релаксации`")
+st.title("🎯 V20.0: Ядро Прецизионной Маршрутизации")
+st.markdown("Микро-патчи для Edge Cases: Распознавание прямых конфликтов, гравитационных стоков (С=O) и галоген-стабилизированных карбенов.")
 
 FILE_NAME = "bde-db2.csv.gz"
 
-with st.spinner("Синхронизация..."):
+with st.spinner("Инициализация Базы Данных..."):
     df_base = load_base_data(FILE_NAME)
 
 if df_base is not None:
@@ -194,9 +218,9 @@ if df_base is not None:
     with col_ui1:
         target_bonds = st.slider("Сложность графа", 1, max_bonds, 1, step=1)
     with col_ui2:
-        comp_coeff = st.slider("Множитель Сжатия (Tension Penalty)", 0.0, 100.0, 50.0, step=5.0)
+        comp_coeff = st.slider("Множитель Сжатия", 0.0, 100.0, 50.0, step=5.0)
     with col_ui3:
-        relax_coeff = st.slider("Множитель Релаксации (Resonance Cashback)", 0.0, 100.0, 50.0, step=5.0)
+        relax_coeff = st.slider("Множитель Релаксации", 0.0, 100.0, 50.0, step=5.0)
     
     df_filtered = df_base[df_base['Graph_Complexity'] == target_bonds].copy()
     
@@ -204,7 +228,7 @@ if df_base is not None:
         if len(df_filtered) == 0:
             st.warning("Отсутствуют данные.")
         else:
-            with st.spinner("Парсинг ГЦК-узлов и расчет термодинамики..."):
+            with st.spinner("Запуск прецизионного анализа..."):
                 df_result, calc_time = compile_unit_test(df_filtered, comp_coeff, relax_coeff)
                 
             if len(df_result) > 0:
@@ -224,14 +248,14 @@ if df_base is not None:
                 
                 fig = px.scatter(df_result, x="Actual_BDE_kJ", y="Grid_BDE_Final", color="bond_clean", 
                                  hover_data=["v_net", "Penalty", "Cashback"],
-                                 opacity=0.7, title=f"V19.0 Grid Physics vs Data")
+                                 opacity=0.7, title=f"V20.0 Точность до кДж")
                 min_val = min(df_result['Actual_BDE_kJ'].min(), df_result['Grid_BDE_Final'].min())
                 max_val = max(df_result['Actual_BDE_kJ'].max(), df_result['Grid_BDE_Final'].max())
                 fig.add_shape(type="line", x0=min_val, y0=min_val, x1=max_val, y1=max_val, line=dict(color="red", dash="dash"))
                 fig.update_layout(template="plotly_dark")
                 st.plotly_chart(fig, use_container_width=True)
                 
-                st.markdown("### 🔍 Журнал Транзакций (Декомпилятор)")
+                st.markdown("### 🔍 Журнал Транзакций (Micro-Routing)")
                 display_cols = ['molecule', 'bond_clean', 'v_net', 'Hardware_BDE', 'Penalty', 'Cashback', 'Actual_BDE_kJ', 'Grid_BDE_Final', 'Abs_Error']
                 st.dataframe(df_result.sort_values(by='Abs_Error', ascending=False)[display_cols].style.format({
                     "v_net": "{:.2f} Å³",

@@ -6,11 +6,12 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: AUTO-PATHFINDER (20 MOLECULES BATCH)
+# SIMUREALITY: AUTO-PATHFINDER V3 (LONE PAIR MATRIX INCLUDED)
 # =====================================================================
 
-st.set_page_config(page_title="Auto-Assembler: 20 Molecules", layout="wide", page_icon="🧬")
+st.set_page_config(page_title="Assembler V3: Jitter Tax", layout="wide", page_icon="⚡")
 
+# --- ФУНДАМЕНТАЛЬНЫЕ КОНСТАНТЫ РЕШЕТКИ ---
 GAMMA_SYS = 1.0418               
 Z0 = 377.0                       
 STATIC_BASE_LOCK = 286.5         
@@ -18,8 +19,8 @@ VOLUME_BONUS = 12.75
 K_THETA = 2.0                    
 VACUUM_GATE = 3.325              
 BUFFER_RADIUS = VACUUM_GATE / 2  
+C_LP = 42.5                      # Константа Эфирного Джиттера (кДж за 1 конфликтную пару)
 
-# ЭКСПЕРИМЕНТАЛЬНЫЕ ЭНЕРГИИ АТОМИЗАЦИИ (кДж/моль)
 TARGET_MOLECULES = {
     "C": ("Метан (CH4)", 1660.0),
     "O": ("Вода (H2O)", 926.0),
@@ -39,9 +40,16 @@ TARGET_MOLECULES = {
     "F": ("Фтороводород (HF)", 568.0),
     "C=O": ("Формальдегид (CH2O)", 1503.0),
     "N=[N+]=[O-]": ("Закись азота (N2O)", 1045.0),
-    "C1CC1": ("Циклопропан (C3H6)", 3400.0), # Проверка налога на дикое сжатие (60 градусов)
-    "C1=CC=CC=C1": ("Бензол (C6H6)", 5535.0)  # Резонансная макро-система
+    "C1CC1": ("Циклопропан (C3H6)", 3400.0), 
+    "C1=CC=CC=C1": ("Бензол (C6H6)", 5535.0)  
 }
+
+def get_lone_pairs(atomic_num):
+    """Определяет количество открытых портов (Lone Pairs) по номеру узла"""
+    if atomic_num in [9, 17, 35, 53]: return 3  # Галогены
+    if atomic_num in [8, 16, 34]: return 2      # Халькогены
+    if atomic_num in [7, 15]: return 1          # Пниктогены
+    return 0                                    # Углерод, Водород и т.д.
 
 def calculate_asymmetric_overlap(d, r1, r2):
     if d >= r1 + r2 or d <= 0: return 0.0
@@ -69,8 +77,6 @@ def get_angular_tension(mol_h, conf):
                     angle = math.degrees(math.acos(val))
                     if angle > max_angle: max_angle = angle
             
-            # Для напряженных колец (циклопропан) угол будет меньше 109.5
-            # Поэтому берем абсолютное отклонение от 109.47
             deformation = abs(max_angle - 109.47)
             total_tension += K_THETA * deformation
     return total_tension
@@ -85,7 +91,9 @@ def auto_assemble_molecule(smiles):
     pt = Chem.GetPeriodicTable()
 
     total_hw = 0.0
-    # 1. Собираем все интерфейсы (Связи)
+    total_repulsion = 0.0
+
+    # 1. Сканируем интерфейсы
     for bond in mol_h.GetBonds():
         a1, a2 = bond.GetBeginAtom(), bond.GetEndAtom()
         bo = bond.GetBondTypeAsDouble()
@@ -96,25 +104,31 @@ def auto_assemble_molecule(smiles):
         v_total_buf = calculate_asymmetric_overlap(d_actual, BUFFER_RADIUS, BUFFER_RADIUS)
         v_net = max(0.0, v_total_buf - calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS) - calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS))
         
+        # Хардверный профит и системный налог
         raw_hw = (bo * STATIC_BASE_LOCK) + (VOLUME_BONUS * v_net)
         tax_sys = raw_hw * (GAMMA_SYS - 1.0)
         total_hw += (raw_hw - tax_sys)
 
-    # 2. Начисляем глобальный налог на деформацию всей решетки
+        # РАСЧЕТ ЭФИРНОГО ДЖИТТЕРА (Port Repulsion)
+        lp1 = get_lone_pairs(a1.GetAtomicNum())
+        lp2 = get_lone_pairs(a2.GetAtomicNum())
+        total_repulsion += C_LP * (lp1 * lp2)
+
+    # 2. Глобальный налог на деформацию (Angular Tension)
     total_tension = get_angular_tension(mol_h, conf)
 
-    # 3. Единоразовая субсидия за формирование Изолированной Молекулы в вакууме
-    # Когда граф полностью закрыт, N_ext = 0
+    # 3. Субсидия Изоляции
     final_cashback = (Z0 / 2.0) 
 
-    sigma_k = total_hw - total_tension + final_cashback
+    # 4. Итоговый баланс: Профит - Деформация - Джиттер + Изоляция
+    sigma_k = total_hw - total_tension - total_repulsion + final_cashback
     return sigma_k
 
 # --- UI ---
-st.title("🧬 Auto-Assembler: 20 Эталонных Графов")
-st.markdown("Генерализованный алгоритм. Субсидия изоляции ($188.5$ кДж) теперь применяется строго один раз на весь кластер.")
+st.title("⚡ Auto-Assembler V3.0: Lone Pair Matrix")
+st.markdown("Внедрен алгоритм `Port Repulsion Tax` для расчета эфирного джиттера открытых портов (свободных электронных пар).")
 
-if st.button("🚀 Запустить Пакетную Компиляцию"):
+if st.button("🚀 Компилировать 20 Графов"):
     results = []
     progress_bar = st.progress(0)
     
@@ -126,18 +140,18 @@ if st.button("🚀 Запустить Пакетную Компиляцию"):
             results.append({
                 "SMILES": smiles,
                 "Молекула": name,
-                "ΣK_pred (Simureality)": pred_energy,
-                "ΣK_exp (Справочник)": exp_energy,
+                "ΣK_pred": pred_energy,
+                "ΣK_exp": exp_energy,
                 "Точность (%)": accuracy
             })
         progress_bar.progress((idx + 1) / len(items))
         
     df_res = pd.DataFrame(results)
     st.dataframe(df_res.style.format({
-        "ΣK_pred (Simureality)": "{:.1f}", 
-        "ΣK_exp (Справочник)": "{:.1f}", 
+        "ΣK_pred": "{:.1f}", 
+        "ΣK_exp": "{:.1f}", 
         "Точность (%)": "{:.2f}%"
     }), use_container_width=True)
     
     mean_acc = df_res['Точность (%)'].mean()
-    st.success(f"**Средняя точность по 20 макро-узлам: {mean_acc:.2f}%**")
+    st.success(f"**Средняя точность: {mean_acc:.2f}%**")

@@ -180,7 +180,6 @@ if st.button("🚀 Начать пакетную компиляцию (50 мак
         t_deg = "Бессмертна (>6000K)"
         final_stat = "Архив Матрицы (Железный Пик)"
         
-        # Сканирование градиента до точки распада
         for t in range(100, 6100, 100):
             e_t, stat_t = evaluate_lifecycle_tick(smiles, t)
             if "PANIC" in stat_t or "РАСПАД" in stat_t:
@@ -203,14 +202,21 @@ if st.button("🚀 Начать пакетную компиляцию (50 мак
     
     df_results = pd.DataFrame(results)
     
-    # Визуализация таблицы
+    def color_matrix_status(row):
+        stat = str(row['Статус Матрицы'])
+        if 'Хрупкая' in stat:
+            return ['background-color: #ffe6e6'] * len(row)
+        elif 'Архив' in stat:
+            return ['background-color: #e6ffe6'] * len(row)
+        else:
+            return [''] * len(row)
+            
     st.dataframe(
-        df_results.style.apply(lambda x: ['background: #ffe6e6' if 'Хрупкая' in val else ('background: #e6ffe6' if 'Архив' in val else '') for val in x['Статус Матрицы']], axis=1),
+        df_results.style.apply(color_matrix_status, axis=1),
         use_container_width=True,
         height=600
     )
     
-    # Экспорт данных (если понадобится выгрузить на десктоп позже)
     csv_data = df_results.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="💾 Скачать полный лог (CSV)",

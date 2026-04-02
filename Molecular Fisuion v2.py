@@ -6,12 +6,11 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: AUTO-PATHFINDER V5 (FINAL CORE)
+# SIMUREALITY: AUTO-PATHFINDER V6 (TERMINATOR ONTOLOGY)
 # =====================================================================
 
-st.set_page_config(page_title="Assembler V5: Final Core", layout="wide", page_icon="💎")
+st.set_page_config(page_title="Assembler V6: Terminator Rule", layout="wide", page_icon="🛑")
 
-# --- ФУНДАМЕНТАЛЬНЫЕ КОНСТАНТЫ РЕШЕТКИ ---
 GAMMA_SYS = 1.0418               
 Z0 = 377.0                       
 STATIC_BASE_LOCK = 286.5         
@@ -19,8 +18,7 @@ VOLUME_BONUS = 12.75
 K_THETA = 2.0                    
 VACUUM_GATE = 3.325              
 BUFFER_RADIUS = VACUUM_GATE / 2  
-C_LP = 42.5                      
-R_REF = 0.71                     # Эталонный радиус сжатия портов (Фтор)
+C_LP = 12.5                      # Базовый штраф за коллизию ОДНОЙ пары портов
 
 TARGET_MOLECULES = {
     "C": ("Метан (CH4)", 1660.0),
@@ -38,14 +36,14 @@ TARGET_MOLECULES = {
     "[HH]": ("Водород (H2)", 436.0),
     "FF": ("Фтор (F2)", 158.0),
     "ClCl": ("Хлор (Cl2)", 242.0),
+    "BrBr": ("Бром (Br2)", 193.0),
+    "II": ("Иод (I2)", 151.0),
     "F": ("Фтороводород (HF)", 568.0),
     "C=O": ("Формальдегид (CH2O)", 1503.0),
     "N=[N+]=[O-]": ("Закись азота (N2O)", 1045.0),
     "C1CC1": ("Циклопропан (C3H6)", 3400.0), 
     "C1=CC=CC=C1": ("Бензол (C6H6)", 5535.0),
     "Cl": ("Хлороводород (HCl)", 431.0),
-    "BrBr": ("Бром (Br2)", 193.0),
-    "II": ("Иод (I2)", 151.0),
     "FC(F)(F)F": ("Тетрафторметан (CF4)", 1950.0),
     "S": ("Сероводород (H2S)", 730.0),
     "P": ("Фосфин (PH3)", 960.0),
@@ -96,9 +94,7 @@ def get_angular_tension(mol_h, conf):
                     val = max(-1.0, min(1.0, np.dot(v1, v2) / (n1 * n2)))
                     angle = math.degrees(math.acos(val))
                     if angle > max_angle: max_angle = angle
-            
-            deformation = abs(max_angle - 109.47)
-            total_tension += K_THETA * deformation
+            total_tension += K_THETA * abs(max_angle - 109.47)
     return total_tension
 
 def auto_assemble_molecule(smiles):
@@ -123,27 +119,27 @@ def auto_assemble_molecule(smiles):
         r_cov1, r_cov2 = pt.GetRcovalent(z1), pt.GetRcovalent(z2)
         
         v_total_buf = calculate_asymmetric_overlap(d_actual, BUFFER_RADIUS, BUFFER_RADIUS)
-        
         exc1 = 0.0 if z1 == 1 else calculate_asymmetric_overlap(d_actual, r_cov1, BUFFER_RADIUS)
         exc2 = 0.0 if z2 == 1 else calculate_asymmetric_overlap(d_actual, r_cov2, BUFFER_RADIUS)
-        
         v_net = max(0.0, v_total_buf - exc1 - exc2)
         
-        raw_hw = (bo * STATIC_BASE_LOCK) + (VOLUME_BONUS * v_net)
+        # ОНТОЛОГИЯ ТЕРМИНАТОРОВ: Если оба узла - галогены (1 порт), Базовый Замок не выдается
+        is_term1 = z1 in [9, 17, 35, 53]
+        is_term2 = z2 in [9, 17, 35, 53]
+        base_lock = 0.0 if (is_term1 and is_term2) else STATIC_BASE_LOCK
+        
+        raw_hw = (bo * base_lock) + (VOLUME_BONUS * v_net)
         tax_sys = raw_hw * (GAMMA_SYS - 1.0)
         total_hw += (raw_hw - tax_sys)
 
-        # Закон Поверхностной Плотности Джиттера
-        lp1, lp2 = get_lone_pairs(z1), get_lone_pairs(z2)
-        if lp1 > 0 and lp2 > 0:
-            # Плотность портов падает квадратично с ростом радиуса относительно Фтора
-            density1 = lp1 / ((r_cov1 / R_REF) ** 2)
-            density2 = lp2 / ((r_cov2 / R_REF) ** 2)
-            total_repulsion += C_LP * (density1 * density2)
+        # ГЕОМЕТРИЧЕСКИЙ CUTOFF ДЖИТТЕРА: Начисляется только если порты протыкают друг друга
+        if d_actual < BUFFER_RADIUS:
+            lp1, lp2 = get_lone_pairs(z1), get_lone_pairs(z2)
+            total_repulsion += C_LP * (lp1 * lp2)
 
     total_tension = get_angular_tension(mol_h, conf)
     
-    # Субсидия Изоляции не применяется к чистым протонам (H2)
+    # Водород не получает субсидию изоляции (у него нет внутренних оболочек для маршрутизации)
     heavy_atoms = mol_h.GetNumHeavyAtoms()
     final_cashback = (Z0 / 2.0) if heavy_atoms > 0 else 0.0
 
@@ -151,10 +147,10 @@ def auto_assemble_molecule(smiles):
     return sigma_k
 
 # --- UI ---
-st.title("💎 Auto-Assembler V5.0: Абсолютный Баланс")
-st.markdown("Интегрирована поверхностная плотность портов (Surface Jitter) и исключение Голого Протона для водорода.")
+st.title("🛑 Auto-Assembler V6.0: Terminator Ontology")
+st.markdown("Внедрено Правило Терминаторов для Галогенов и геометрический Cutoff барьер ($1.6625$ Å) для эфирного джиттера.")
 
-if st.button("🚀 Финальный Тест (40 Графов)"):
+if st.button("🚀 Компилировать Матрицу"):
     results = []
     progress_bar = st.progress(0)
     
@@ -178,6 +174,3 @@ if st.button("🚀 Финальный Тест (40 Графов)"):
         "ΣK_exp": "{:.1f}", 
         "Точность (%)": "{:.2f}%"
     }), height=600, use_container_width=True)
-    
-    mean_acc = df_res['Точность (%)'].mean()
-    st.success(f"**Средняя точность ядра V5: {mean_acc:.2f}%**")

@@ -9,10 +9,10 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: V23.0 MACRO-NETWORK ROUTING 
+# SIMUREALITY: V24.0 MACRO-SYNTHESIS (EVACUATION & SP3 CLASHES)
 # =====================================================================
 
-st.set_page_config(page_title="V23.0 Macro Networks", layout="wide", page_icon="🌐")
+st.set_page_config(page_title="V24.0 Macro-Synthesis", layout="wide", page_icon="🧩")
 
 GAMMA_SYS = 1.0418               
 VACUUM_GATE = 3.325              
@@ -55,7 +55,7 @@ def parse_node_topology(mol_h, atom, exclude_idx):
 
     if atomic_num == 6:
         if hyb == Chem.rdchem.HybridizationType.SP:
-            t_pen += 140.0
+            t_pen += 140.0 # ПРЕДЕЛ СЖАТИЯ
         elif hyb == Chem.rdchem.HybridizationType.SP2:
             has_O_sink = False
             has_sp_neighbor = False
@@ -65,7 +65,7 @@ def parse_node_topology(mol_h, atom, exclude_idx):
                 if bo == 2.0 and n.GetAtomicNum() == 8: has_O_sink = True
                 if n.GetHybridization() == Chem.rdchem.HybridizationType.SP: has_sp_neighbor = True
             
-            if has_sp_neighbor: r_cash += 25.0  # Allenic C-H Fix
+            if has_sp_neighbor: r_cash += 25.0  
             elif has_O_sink: r_cash += 40.0 
             else: t_pen += 45.0  
             
@@ -84,7 +84,6 @@ def parse_node_topology(mol_h, atom, exclude_idx):
     elif atomic_num in [7, 8]:
         exclude_atom = mol_h.GetAtomWithIdx(exclude_idx)
         
-        # Детектор Карбоксильного/Цианатного радикала (Acyloxy Penalty)
         is_acyl_like = False
         for n in atom.GetNeighbors():
             if n.GetIdx() == exclude_idx: continue
@@ -96,9 +95,8 @@ def parse_node_topology(mol_h, atom, exclude_idx):
                         is_acyl_like = True
 
         if exclude_atom.GetAtomicNum() not in [7, 8, 9, 17, 35, 53]:
-            # Разрыв водорода или углерода
             if is_acyl_like and exclude_atom.GetAtomicNum() == 1:
-                t_pen += 50.0 # Штраф за создание нестабильного O=C-O* радикала
+                t_pen += 50.0 
             else:
                 has_clash_adjacent = False
                 for n in atom.GetNeighbors():
@@ -108,10 +106,9 @@ def parse_node_topology(mol_h, atom, exclude_idx):
                         break
 
                 if hyb in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]:
-                    # Proxy Clash Fix: Отрыв H не решает главную проблему N=O!
                     if has_clash_adjacent:
                         if atomic_num == 8: r_cash += 90.0  
-                        else: r_cash += 60.0 # NN=O больше не получает 185 кДж!
+                        else: r_cash += 60.0 
                     else: r_cash += 50.0  
                 else:
                     if has_clash_adjacent:
@@ -136,12 +133,39 @@ def parse_edge_topology(mol_h, a1, a2, bo):
         sp2_1 = hyb1 in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]
         sp2_2 = hyb2 in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]
         
-        if sp2_1 and sp2_2:
+        # 1. Топологическая Эвакуация (Газовый релиз NO, CO и т.д.)
+        if (z1 == 6 and z2 in [7, 8]) or (z2 == 6 and z1 in [7, 8]):
+            hetero_atom = a2 if z1 == 6 else a1
+            c_atom = a1 if z1 == 6 else a2
+            heavy_neighbors = [n for n in hetero_atom.GetNeighbors() if n.GetAtomicNum() > 1]
+            if len(heavy_neighbors) == 2:
+                other = heavy_neighbors[0] if heavy_neighbors[1].GetIdx() == c_atom.GetIdx() else heavy_neighbors[1]
+                bo_other = mol_h.GetBondBetweenAtoms(hetero_atom.GetIdx(), other.GetIdx()).GetBondTypeAsDouble()
+                if bo_other > 1.0:
+                    e_cash += 100.0 # Колоссальный кэшбек за выброс стабильного газа
+                    
+        # 2. Оксимовый Мост (C=N-O)
+        is_oxime = False
+        if z1 in [7, 8] and z2 in [7, 8]:
+            for atom in [a1, a2]:
+                if atom.GetAtomicNum() == 7 and atom.GetHybridization() == Chem.rdchem.HybridizationType.SP2:
+                    for n in atom.GetNeighbors():
+                        if mol_h.GetBondBetweenAtoms(atom.GetIdx(), n.GetIdx()).GetBondTypeAsDouble() == 2.0 and n.GetAtomicNum() == 6:
+                            is_oxime = True
+                            break
+
+        if is_oxime:
+            e_pen += 40.0 # Штраф сопряжения вместо скидки за конфликт
+            
+        elif sp2_1 and sp2_2:
             if z1 == 6 or z2 == 6:
                 other_z = z2 if z1 == 6 else z1
-                if other_z == 8: e_pen += 80.0     
-                elif other_z == 7: e_pen += 60.0   
-                else: e_pen += 20.0                
+                c_atom = a1 if z1 == 6 else a2
+                # Лимит Сжатия: если углерод уже SP, не накидываем лишний штраф моста
+                if c_atom.GetHybridization() != Chem.rdchem.HybridizationType.SP:
+                    if other_z == 8: e_pen += 80.0     
+                    elif other_z == 7: e_pen += 60.0   
+                    else: e_pen += 20.0                
                 e_cash -= 40.0 
             else:
                 e_cash += 180.0                    
@@ -151,13 +175,17 @@ def parse_edge_topology(mol_h, a1, a2, bo):
             def count_clash(atom, exclude):
                 return sum(1 for n in atom.GetNeighbors() if n.GetIdx() != exclude and n.GetAtomicNum() in [7,8,9,17,35,53])
             
-            # Лимит двойного конфликта (ONO Fix)
-            if count_clash(a1, a2.GetIdx()) > 0 or count_clash(a2, a1.GetIdx()) > 0:
-                e_cash += 40.0 # Снижено со 140 до 40 кДж
+            clash_count = count_clash(a1, a2.GetIdx()) + count_clash(a2, a1.GetIdx())
+            if clash_count > 0:
+                # 3. Возврат 140 кДж для извивающихся SP3-цепей (O-O-O, N-O-N)
+                if not (sp2_1 or sp2_2):
+                    e_cash += 140.0 
+                else:
+                    e_cash += 40.0 
                 
     return e_pen, e_cash
 
-def analyze_v23(row):
+def analyze_v24(row):
     smiles = str(row['molecule'])
     bond_idx = int(row['bond_index'])
     pt = Chem.GetPeriodicTable()
@@ -213,7 +241,7 @@ def load_base_data(file_path):
 def compile_unit_test(df_tier, comp_coeff, relax_coeff):
     start = time.time()
     
-    df_tier[['d_actual', 'v_net', 'r1', 'r2', 'interface_type', 'tension_penalty', 'resonance_cashback', 'valid']] = df_tier.apply(analyze_v23, axis=1)
+    df_tier[['d_actual', 'v_net', 'r1', 'r2', 'interface_type', 'tension_penalty', 'resonance_cashback', 'valid']] = df_tier.apply(analyze_v24, axis=1)
     df_tier = df_tier.dropna(subset=['valid']).copy()
     
     if len(df_tier) == 0: return df_tier, time.time() - start
@@ -237,8 +265,8 @@ def compile_unit_test(df_tier, comp_coeff, relax_coeff):
     return df_tier, time.time() - start
 
 # --- UI ---
-st.title("🌐 V23.0: Macro-Network Sinks & Impedance")
-st.markdown("Ползунки контролируют затухание сетевого резонанса на 3-атомных цепочках.")
+st.title("🧩 V24.0: Macro-Synthesis & Network Elasticity")
+st.markdown("Ползунок релаксации по умолчанию откалиброван на **55.0** (множитель x1.1) для учета кумулятивной упругости 3D-сети при N $\\ge$ 2.")
 
 FILE_NAME = "bde-db2.csv.gz"
 
@@ -254,15 +282,16 @@ if df_base is not None:
     with col_ui2:
         comp_coeff = st.slider("Множитель Сжатия (Penalty)", 0.0, 100.0, 50.0, step=5.0)
     with col_ui3:
-        relax_coeff = st.slider("Множитель Релаксации (Cashback)", 0.0, 100.0, 50.0, step=5.0)
+        # Установлено дефолтное значение 55.0 согласно твоим тестам
+        relax_coeff = st.slider("Множитель Релаксации (Cashback)", 0.0, 100.0, 55.0, step=5.0)
     
     df_filtered = df_base[df_base['Graph_Complexity'] == target_bonds].copy()
     
-    if st.button(f"🚀 Скомпилировать Топологию (N={target_bonds})"):
+    if st.button(f"🚀 Скомпилировать Сеть (N={target_bonds})"):
         if len(df_filtered) == 0:
             st.warning("Отсутствуют данные.")
         else:
-            with st.spinner("Применяем патчи ациловых радикалов и лимиты резонанса..."):
+            with st.spinner("Применяем патчи Газового Релиза и SP3-конфликтов..."):
                 df_result, calc_time = compile_unit_test(df_filtered, comp_coeff, relax_coeff)
                 
             if len(df_result) > 0:
@@ -282,7 +311,7 @@ if df_base is not None:
                 
                 fig = px.scatter(df_result, x="Actual_BDE_kJ", y="Grid_BDE_Final", color="bond_clean", 
                                  hover_data=["v_net", "Penalty", "Cashback"],
-                                 opacity=0.7, title=f"V23.0 Сетевой Импеданс (N={target_bonds})")
+                                 opacity=0.7, title=f"V24.0 Macro-Synthesis (N={target_bonds})")
                 min_val = min(df_result['Actual_BDE_kJ'].min(), df_result['Grid_BDE_Final'].min())
                 max_val = max(df_result['Actual_BDE_kJ'].max(), df_result['Grid_BDE_Final'].max())
                 fig.add_shape(type="line", x0=min_val, y0=min_val, x1=max_val, y1=max_val, line=dict(color="red", dash="dash"))

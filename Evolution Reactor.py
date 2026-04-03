@@ -2,17 +2,17 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import math
+import os
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # =====================================================================
-# SIMUREALITY: V29.0 BATCH COMPILER (STREAMLIT UI)
-# Термодинамический стресс-тест для 50 узлов
+# V30.1: LIFECYCLE BATCH COMPILER (GZIP DB ENGINE)
 # =====================================================================
 
-st.set_page_config(page_title="V29.0 Batch Compiler", layout="wide", page_icon="🧬")
+st.set_page_config(page_title="V30.1 Lifecycle Compiler", layout="wide", page_icon="🗄️")
 
-# --- СИСТЕМНЫЕ КОНСТАНТЫ МАТРИЦЫ ---
+# --- КОНСТАНТЫ ---
 GAMMA_SYS = 1.0418               
 STATIC_BASE_LOCK = 286.5         
 VOLUME_BONUS = 12.75
@@ -21,29 +21,29 @@ BUFFER_RADIUS = VACUUM_GATE / 2
 C_LP_CLASH = 30.0                
 Z0 = 377.0                       
 K_THETA = 2.0
+FILE_NAME = "bde-db2.csv.gz"
 
-# 50 ИНФОРМАЦИОННЫХ СИСТЕМ
-TARGET_MOLECULES = {
-    "[HH]": "Водород (H2)", "O=O": "Кислород (O2)", "N#N": "Азот (N2)",
-    "FF": "Фтор (F2)", "ClCl": "Хлор (Cl2)", "BrBr": "Бром (Br2)", "II": "Иод (I2)",
-    "O=C=O": "Углекислый газ (CO2)", "[C-]#[O+]": "Угарный газ (CO)",
-    "C": "Метан (CH4)", "CC": "Этан (C2H6)", "CCC": "Пропан (C3H8)", 
-    "CCCC": "Бутан (C4H10)", "CCCCC": "Пентан (C5H12)", "CC(C)C": "Изобутан",
-    "C=C": "Этилен (C2H4)", "C=CC": "Пропен (C3H6)", "C#C": "Ацетилен (C2H2)",
-    "O": "Вода (H2O)", "CO": "Метанол (CH3OH)", "CCO": "Этанол (C2H5OH)", 
-    "CCCO": "Пропанол", "COC": "Диметиловый эфир",
-    "C=O": "Формальдегид (CH2O)", "CC=O": "Ацетальдегид", "CC(=O)C": "Ацетон",
-    "O=CO": "Муравьиная кислота", "CC(=O)O": "Уксусная кислота",
-    "N": "Аммиак (NH3)", "CN": "Метиламин", "CNC": "Диметиламин", 
-    "C#N": "Синильная кислота (HCN)", "N=[N+]=[O-]": "Закись азота (N2O)",
-    "S": "Сероводород (H2S)", "CS": "Метантиол", "S=C=S": "Сероуглерод (CS2)",
-    "F": "Фтороводород (HF)", "Cl": "Хлороводород (HCl)", "Br": "Бромоводород (HBr)",
-    "CCl": "Хлорметан", "C(Cl)(Cl)(Cl)Cl": "Тетрахлорметан (CCl4)", "FC(F)(F)F": "Тетрафторметан (CF4)",
-    "C1CC1": "Циклопропан (C3H6)", "C1CCC1": "Циклобутан (C4H8)", 
-    "C1CCCC1": "Циклопентан (C5H10)", "C1CCCCC1": "Циклогексан (C6H12)",
-    "C1=CC=CC=C1": "Бензол (C6H6)", "CC1=CC=CC=C1": "Толуол", 
-    "Oc1ccccc1": "Фенол", "Nc1ccccc1": "Анилин", "c1ccncc1": "Пиридин"
-}
+def get_graph_complexity(smiles):
+    try:
+        mol = Chem.MolFromSmiles(str(smiles))
+        return mol.GetNumBonds() if mol else -1
+    except:
+        return -1
+
+@st.cache_data(show_spinner=False)
+def load_and_prepare_db(file_path):
+    if not os.path.exists(file_path): return None
+    
+    # Парсинг аналогично V20.0
+    df = pd.read_csv(file_path, compression='gzip')
+    df['Actual_BDE_kJ'] = pd.to_numeric(df['bde'], errors='coerce') * 4.184
+    df_valid = df.dropna(subset=['Actual_BDE_kJ']).copy()
+    
+    # Для стресс-теста нужны только уникальные макро-графы
+    unique_mols = df_valid[['molecule']].drop_duplicates()
+    unique_mols['Graph_Complexity'] = unique_mols['molecule'].apply(get_graph_complexity)
+    
+    return unique_mols[unique_mols['Graph_Complexity'] > 0]
 
 def get_lone_pairs(atomic_num):
     if atomic_num in [9, 17, 35, 53]: return 3
@@ -151,76 +151,72 @@ def evaluate_lifecycle_tick(smiles, T_sys):
     if sigma_k <= 0: return 0.0, "🔥 РАСПАД"
     return sigma_k, "✅ СТАБИЛЬНО"
 
-# --- UI RENDERING ---
-st.title("🧬 V29.0: Global Batch Compiler")
-st.markdown("Потоковый анализ 50 топологических узлов. Расчет базового профита (0 K) и точки распада ($T_{deg}$) через деградацию TCP-связей и рассинхронизацию масс (Clock Drift).")
+# --- UI ---
+st.title("🗄️ V30.1: GZIP Database Lifecycle Engine")
 
-if st.button("🚀 Начать пакетную компиляцию (50 макро-графов)", type="primary"):
-    progress_bar = st.progress(0)
-    status_text = st.empty()
+with st.spinner("Чтение и распаковка bde-db2.csv.gz..."):
+    df_base = load_and_prepare_db(FILE_NAME)
+
+if df_base is not None:
+    max_bonds = int(df_base['Graph_Complexity'].max())
+    st.success(f"✅ База загружена. Уникальных макро-графов: {len(df_base)}")
     
-    results = []
-    total_items = len(TARGET_MOLECULES)
+    col_ui1, col_ui2 = st.columns(2)
+    with col_ui1:
+        target_bonds = st.slider("Сложность графа (Кол-во связей)", 1, max_bonds, 2, step=1)
+    with col_ui2:
+        batch_size = st.slider("Размер батча (случайная выборка)", 5, 200, 20, step=5)
+        
+    df_filtered = df_base[df_base['Graph_Complexity'] == target_bonds].copy()
     
-    for idx, (smiles, name) in enumerate(TARGET_MOLECULES.items()):
-        status_text.text(f"Компиляция: {name} ({idx+1}/{total_items})")
-        
-        e_0k, stat_0k = evaluate_lifecycle_tick(smiles, 0)
-        
-        if "Error" in stat_0k:
-            results.append({
-                "Информационная Система": name,
-                "ΣK (0 K) кДж": "ERROR",
-                "T_deg (Пиролиз)": "ERROR",
-                "Статус Матрицы": "Сбой 3D-матрицы RDKit"
-            })
-            progress_bar.progress((idx + 1) / total_items)
-            continue
-            
-        t_deg = "Бессмертна (>6000K)"
-        final_stat = "Архив Матрицы (Железный Пик)"
-        
-        for t in range(100, 6100, 100):
-            e_t, stat_t = evaluate_lifecycle_tick(smiles, t)
-            if "PANIC" in stat_t or "РАСПАД" in stat_t:
-                t_deg = f"{t} K"
-                if t < 1500: final_stat = "Хрупкая (DDoS / Clock Drift)"
-                elif t < 3500: final_stat = "Органика (Сгорает при перегрузке)"
-                else: final_stat = "Термостойкий каркас"
-                break
-                
-        results.append({
-            "Информационная Система": name,
-            "ΣK (0 K) кДж": f"{e_0k:.1f}",
-            "T_deg (Пиролиз)": t_deg,
-            "Статус Матрицы": final_stat
-        })
-        
-        progress_bar.progress((idx + 1) / total_items)
-        
-    status_text.text("✅ Компиляция успешно завершена.")
-    
-    df_results = pd.DataFrame(results)
-    
-    def color_matrix_status(row):
-        stat = str(row['Статус Матрицы'])
-        if 'Хрупкая' in stat:
-            return ['background-color: #ffe6e6'] * len(row)
-        elif 'Архив' in stat:
-            return ['background-color: #e6ffe6'] * len(row)
+    if st.button(f"🚀 Запустить стресс-тест для {min(batch_size, len(df_filtered))} узлов", type="primary"):
+        if len(df_filtered) == 0:
+            st.warning("Нет молекул с такой сложностью.")
         else:
-            return [''] * len(row)
+            # Случайная выборка из отфильтрованного пула
+            sample_df = df_filtered.sample(n=min(batch_size, len(df_filtered)))
+            target_smiles = sample_df['molecule'].tolist()
             
-    st.dataframe(
-        df_results.style.apply(color_matrix_status, axis=1),
-        use_container_width=True,
-        height=600
-    )
-    
-    csv_data = df_results.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="💾 Скачать полный лог (CSV)",
-        data=csv_data,
-        file_name="v29_batch_results.csv",
-        mime="text/csv"
-    )
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            results = []
+            total_items = len(target_smiles)
+            
+            for idx, smiles in enumerate(target_smiles):
+                status_text.text(f"Компиляция: {smiles} ({idx+1}/{total_items})")
+                e_0k, stat_0k = evaluate_lifecycle_tick(smiles, 0)
+                
+                if "Error" in stat_0k:
+                    results.append({"SMILES": smiles, "ΣK (0 K) кДж": "ERROR", "T_deg (Пиролиз)": "ERROR", "Статус": "Сбой 3D-матрицы"})
+                    progress_bar.progress((idx + 1) / total_items)
+                    continue
+                    
+                t_deg = "Бессмертна (>6000K)"
+                final_stat = "Архив (Железный Пик)"
+                
+                # Шаг 200 K для скорости
+                for t in range(100, 6100, 200):
+                    e_t, stat_t = evaluate_lifecycle_tick(smiles, t)
+                    if "PANIC" in stat_t or "РАСПАД" in stat_t:
+                        t_deg = f"{t} K"
+                        if t < 1500: final_stat = "Хрупкая (DDoS / Drift)"
+                        elif t < 3500: final_stat = "Органика (Сгорает)"
+                        else: final_stat = "Термостойкий каркас"
+                        break
+                        
+                results.append({"SMILES": smiles, "ΣK (0 K) кДж": f"{e_0k:.1f}", "T_deg (Пиролиз)": t_deg, "Статус": final_stat})
+                progress_bar.progress((idx + 1) / total_items)
+                
+            status_text.text("✅ Вычислительный цикл завершен.")
+            df_results = pd.DataFrame(results)
+            
+            def color_matrix_status(row):
+                stat = str(row['Статус'])
+                if 'Хрупкая' in stat: return ['background-color: #ffe6e6'] * len(row)
+                elif 'Архив' in stat: return ['background-color: #e6ffe6'] * len(row)
+                else: return [''] * len(row)
+                    
+            st.dataframe(df_results.style.apply(color_matrix_status, axis=1), use_container_width=True, height=600)
+            
+            csv_data = df_results.to_csv(index=False).encode('utf-8')
+            st.download_button(label="💾 Скачать выборку (CSV)", data=csv_data, file_

@@ -219,4 +219,6 @@ if df_base is not None:
             st.dataframe(df_results.style.apply(color_matrix_status, axis=1), use_container_width=True, height=600)
             
             csv_data = df_results.to_csv(index=False).encode('utf-8')
-            st.download_button(label="💾 Скачать выборку (CSV)", data=csv_data, file_
+            st.download_button(label="💾 Скачать выборку (CSV)", data=csv_data, file_name="v30_1_lifecycle_sample.csv", mime="text/csv")
+else:
+    st.error(f"Файл {FILE_NAME} не найден в директории.")

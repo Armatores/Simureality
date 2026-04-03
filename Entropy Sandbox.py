@@ -7,11 +7,14 @@ from rdkit import Chem
 from rdkit.Chem import Descriptors
 
 # =====================================================================
-# SIMUREALITY V32.1: MACRO-STATE CLUSTER ENGINE (PACKING PATCH)
-# Трехуровневая эмуляция с учетом 2D/3D геометрической упаковки
+# SIMUREALITY V32.2: MACRO-STATE CLUSTER ENGINE (DYNAMIC PACKING)
 # =====================================================================
 
-st.set_page_config(page_title="V32.1 Cluster Engine", layout="wide", page_icon="🧊")
+st.set_page_config(page_title="V32.2 Cluster Engine", layout="wide", page_icon="🧊")
+
+# --- КОНСТАНТЫ МАТРИЦЫ ---
+GAMMA_SYS = 1.0418               
+VOLUME_BONUS = 12.75
 
 TARGET_MOLECULES = {
     "O": "Вода (H2O)", 
@@ -59,18 +62,16 @@ def calculate_virtual_cluster_caches(smiles):
     # КЭШ 2: ОБЪЕМНЫЙ ЯКОРЬ
     volume_cache = (heavy_atoms * 15.0) + (h_atoms * 5.0) + (rings * 20.0)
     
-    # --- БЛОК ПАТЧА V32.1: ГЕОМЕТРИЧЕСКАЯ УПАКОВКА (PACKING BONUS) ---
+    # --- ДИНАМИЧЕСКАЯ УПАКОВКА (БЕЗ ХАРДКОДА) ---
     packing_bonus = 0.0
     
-    # 2D Упаковка (pi-стекинг для плоских ароматических колец)
     if is_aromatic:
-        packing_bonus += (heavy_atoms * 22.0)
+        # 2D pi-стекинг: привязан к системному объему и налогу Матрицы
+        packing_bonus += heavy_atoms * VOLUME_BONUS * GAMMA_SYS
+    elif polar_hydrogens == 0 and lone_pairs >= 4 and heavy_atoms > 1:
+        # 3D симметрия (сферы/тетраэдры): привязана к количеству портов и объему
+        packing_bonus += lone_pairs * VOLUME_BONUS * GAMMA_SYS * 0.8
         
-    # 3D Упаковка (Симметричные тетраэдры/сферы без P2P-конфликтов)
-    if symmetry_bonus == 0 and lone_pairs >= 12 and heavy_atoms == 5:
-        packing_bonus += 140.0
-        
-    # Защита базовых газов от ложной кристаллизации
     if heavy_atoms <= 1 and lone_pairs == 0:
         packing_bonus = 0.0
         
@@ -95,7 +96,6 @@ def simulate_macro_states(smiles, p_sys):
     
     p_factor = 1.0 + (math.log10(p_sys) * 0.08) if p_sys > 0 else 1.0
     
-    # Внедрение Packing Bonus в расчет плавления
     t_melt = (caches["p2p_crystal"] * 1.2) + (caches["volume"] * 1.0) + caches["packing"]
     t_boil = (caches["p2p_raw"] * 1.8) + (caches["volume"] * 2.8)
     
@@ -114,8 +114,8 @@ def simulate_macro_states(smiles, p_sys):
     }
 
 # --- UI ---
-st.title("🧊 V32.1: Macro-State Cluster Engine (Packing Patch)")
-st.markdown("Внедрен **Бонус Геометрической Упаковки** (2D $\\pi$-стекинг и 3D тетраэдрическая симметрия) для корректного расчета точки плавления тяжелых асимметричных жидкостей.")
+st.title("🧊 V32.2: Macro-State Cluster Engine")
+st.markdown("Бонус геометрической упаковки вычисляется динамически через фундаментальные константы решетки `VOLUME_BONUS` и `GAMMA_SYS`.")
 
 col_sys1, col_sys2 = st.columns([1, 2])
 with col_sys1:
@@ -136,7 +136,7 @@ with col_sys2:
             c_m1.metric("P2P Порты", metrics["lone_pairs"])
             c_m2.metric("Полярные H", metrics["polar_h"])
             c_m3.metric("Симметрия", f"{metrics['symmetry']*100:.0f}%")
-            c_m4.metric("Бонус Упаковки", f"+{packing:.0f}")
+            c_m4.metric("Бонус Упаковки", f"+{packing:.1f}")
             
             st.markdown("---")
             c1, c2, c3 = st.columns(3)

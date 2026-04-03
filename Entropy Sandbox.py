@@ -139,4 +139,53 @@ if run_single:
             
             st.markdown("### 🧬 Метрики Топологии (ASA & Тензоры):")
             c_m1, c_m2, c_m3, c_m4 = st.columns(4)
-            c_m1.metric("UDP Footprint (ASA)", f"{features['asa']:.1f} Å
+            c_m1.metric("UDP Footprint (ASA)", f"{features['asa']:.1f} Å²")
+            c_m2.metric("Сферичность / Диск", f"{features['sphericity']*100:.0f}% / {features['disk_ness']*100:.0f}%")
+            c_m3.metric("Spaghetti-Фактор", features['rot'])
+            c_m4.metric("P2P Сеть (D/A)", f"{features['donors']} / {features['acceptors']}")
+            
+            st.markdown("---")
+            c1, c2, c3 = st.columns(3)
+            tm_label = f"{phases['T_melt']} K (Сублимация)" if phases['Sublimes'] else f"{phases['T_melt']} K"
+            c1.metric("🧊 Плавление (ROM Cache)", tm_label)
+            c2.metric("💧 Кипение (RAM Cache)", f"{phases['T_boil']} K")
+            c3.metric("🔥 Пиролиз (Kernel Panic)", f"{phases['T_deg']} K")
+            
+            temps = [0, phases['T_melt'], phases['T_melt']+1, phases['T_boil'], phases['T_boil']+1, phases['T_deg']]
+            states = [10, 10, 40, 40, 80, 80]
+            labels = ["Кристалл (ROM)", "Кристалл (ROM)", "Жидкость (RAM)", "Жидкость (RAM)", "Газ (UDP)", "Газ (UDP)"]
+            
+            if phases['Sublimes']:
+                states = [10, 10, 80, 80, 80, 80]
+                labels = ["Кристалл (ROM)", "Кристалл (ROM)", "Газ (Сублимация)", "Газ", "Газ", "Газ"]
+            elif phases['T_melt'] >= phases['T_boil']:
+                temps = [0, phases['T_boil'], phases['T_boil']+1, phases['T_melt'], phases['T_melt']+1, phases['T_deg']]
+            
+            df_plot = pd.DataFrame({"Температура (K)": temps, "Энтропия Среды": states, "Состояние Кэша": labels})
+            fig = px.area(df_plot, x="Температура (K)", y="Энтропия Среды", color="Состояние Кэша",
+                          color_discrete_map={"Кристалл (ROM)": "#00d2ff", "Жидкость (RAM)": "#3a7bd5", "Газ (UDP)": "#f6d365", "Газ (Сублимация)": "#f6d365"})
+            fig.add_vline(x=phases['T_deg'], line_dash="dash", line_color="#FF4500", annotation_text="Полный Распад (Fire)")
+            fig.update_layout(template="plotly_dark", hovermode="x unified")
+            st.plotly_chart(fig, use_container_width=True)
+
+if run_batch:
+    with st.spinner("Трансляция геометрии в Кельвины через Импедансный Мост..."):
+        results_list = []
+        for sm, name in TARGET_MOLECULES.items():
+            feats = extract_hardware_features(sm)
+            if feats:
+                ph = calculate_phase_transitions(feats)
+                results_list.append({
+                    "Система": name.split(" - ")[0],
+                    "T_melt (K)": ph["T_melt"],
+                    "T_boil (K)": ph["T_boil"],
+                    "Сферичность (%)": round(feats["sphericity"] * 100, 1),
+                    "Footprint (Å²)": round(feats["asa"], 1)
+                })
+        
+        df_batch = pd.DataFrame(results_list)
+        st.success("✅ Универсальная калибровка завершена!")
+        st.dataframe(df_batch, use_container_width=True)
+        
+        csv_data = df_batch.to_csv(index=False).encode('utf-8')
+        st.download_button("💾 Скачать Batch", data=csv_data, file_name="v33_2_impedance.csv", mime="text/csv", type="primary")

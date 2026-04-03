@@ -2,11 +2,12 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import math
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 
 # =====================================================================
-# SIMUREALITY V31.0: THERMODYNAMIC SANDBOX
+# V31.0: THERMODYNAMIC SANDBOX (HOTFIX)
 # Эмуляция макроскопических фазовых переходов на основе ГЦК-параметров
 # =====================================================================
 
@@ -58,18 +59,16 @@ def analyze_system_metabolism(smiles):
                 polar_hydrogens += 1
 
     # 2. РАСЧЕТ МЕЖСЕТЕВОЙ СИНХРОНИЗАЦИИ (Phase Affinity)
-    # Насколько молекулам "выгодно" держаться вместе в макро-решетке
     vdw_volume = heavy_atoms * 15.0 + h_atoms * 5.0
     network_ping = (lone_pairs * polar_hydrogens * 1.5) + (lone_pairs * 0.2)
     
     sync_cash = (vdw_volume * 0.8) + (network_ping * SYNC_BASE_MULTIPLIER)
     
-    # 3. ЭМПИРИЧЕСКАЯ КАЛИБРОВКА $T_{deg}$ (Упрощенная логика из V30 для скорости)
-    # В реальном движке здесь полный прогон Pointer Snap
+    # 3. ЭМПИРИЧЕСКАЯ КАЛИБРОВКА T_deg
     clock_drift = 0
     if h_atoms > 0 and heavy_atoms > 0: clock_drift = h_atoms * 250
     t_deg_base = 4500 + (heavy_atoms * 100) - clock_drift + (lone_pairs * 50)
-    if "O=C=O" in smiles: t_deg_base = 6000 # Железный пик
+    if "O=C=O" in smiles: t_deg_base = 6000 
     if smiles == "[HH]": t_deg_base = 6000
     
     return {
@@ -90,7 +89,6 @@ def run_environment_simulation(smiles, p_sys):
     t_melt = sync * 0.6 * p_factor
     t_boil = sync * 1.8 * p_factor
     
-    # Корректировки для сверхлегких симметричных газов (Метан, H2)
     if sync < 100: 
         t_melt = sync * 0.4 * p_factor
         t_boil = sync * 1.1 * p_factor
@@ -124,7 +122,6 @@ with col_sys2:
             c2.metric("💧 Точка Кипения (Жидкость -> Газ)", f"{t_boil} K", help="Разрыв межсетевых TCP-соединений")
             c3.metric("🔥 Точка Пиролиза (Газ -> Плазма)", f"{t_deg} K", help="Внутренний крах молекулы (Pointer Snap)")
             
-            # Генерация датасета для визуализации фаз
             temps = list(range(0, int(t_deg) + 1000, 50))
             phases = []
             energy_states = []

@@ -34,3 +34,7 @@ Mg,3.21,hcp,2,3,Soft,923,Too reactive
 B,1.70,hex,3,50,Dwarf,2300,Lattice Contractor
 C,1.54,dia,4,5,Dwarf,3800,Lattice Contractor (Carbide)
 Si,5.43,dia,4,5,Dwarf,1687,Semiconductor base
+element,a_angstrom,structure,role,vec,cost_index
+P_ground,3.30,hcp,Base,5.0,5
+P_active,2.75,hcp,Base,5.0,5
+Pd,3.89,fcc,Noble,10.0,1500

@@ -51,7 +51,7 @@ MOLECULES = {
     "Lithium (Intercalation)": {
         "bond": 2.67, "target_site": 3.040, "ref": "BCC Li distance",
         "desc": "Solid-state battery anodes. Target: 3.040 Å."
-    }
+    },
     "C-N Cross-Coupling": {
         "bond": 1.47, "target_site": 2.750, "ref": "Pd (Palladium)",
         "desc": "Standard: Palladium. Target: 2.750 Å. Topo-Spoofing target."

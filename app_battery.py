@@ -1,138 +1,88 @@
-import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
+import math
 
-# =====================================================================
-# SIMUREALITY V34.0: SOLID-STATE GRID ENGINE (ENERGY STORAGE)
-# Battery as an Asynchronous Data Migration Process
-# =====================================================================
+# ==============================================================================
+# SIMUREALITY V36.0: HARMONIC RESONANCE ENGINE (PURE GEOMETRY)
+# Zero Chemistry. Zero Curve-Fitting. Only Vacuum Wave Harmonics.
+# ==============================================================================
 
-st.set_page_config(page_title="V34.0 Battery Engine", layout="wide", page_icon="🔋")
+# --- 1. АБСОЛЮТНЫЕ КОНСТАНТЫ МАТРИЦЫ (БЕЗ ПОДГОНОК) ---
+BOHR_CIRCUMFERENCE = 2 * math.pi * 0.529177
+VACUUM_GATE = round(BOHR_CIRCUMFERENCE, 3)  # 3.325 Å (Базовый такт Вселенной)
 
-# --- БАЗА АППАРАТНЫХ КОМПОНЕНТОВ ---
-
-# ПАКЕТЫ ДАННЫХ (Ионы)
-# size_angstrom: размер пакета. valence: множитель профита (заряд). drag: сопротивление роутинга
-CARRIERS = {
-    "Li+ (Литий)": {"size_angstrom": 0.76, "valence": 1, "mass": 6.9, "drag": 1.0, "color": "#00d2ff"},
-    "Na+ (Натрий)": {"size_angstrom": 1.02, "valence": 1, "mass": 23.0, "drag": 1.8, "color": "#f6d365"},
-    "Mg2+ (Магний)": {"size_angstrom": 0.72, "valence": 2, "mass": 24.3, "drag": 3.5, "color": "#ff4444"},
-    "K+ (Калий)": {"size_angstrom": 1.38, "valence": 1, "mass": 39.1, "drag": 2.5, "color": "#a18cd1"}
+# Идеальные гармоники роутинга (Проекции Пикселя в 3D пространстве)
+HARMONICS = {
+    "H0 (Native Base 3.325 Å)": VACUUM_GATE,
+    "H_BCC (BCC Diag 2.879 Å)": VACUUM_GATE * (np.sqrt(3) / 2.0), 
+    "H_FCC (FCC Diag 2.351 Å)": VACUUM_GATE * (np.sqrt(2) / 2.0)  
 }
 
-# RAM-БУФЕРЫ (Аноды)
-# base_slots: Теоретическая емкость (mAh/g). voxel_expansion: % разбухания решетки при записи
-# dendrite_risk: Вероятность утечки памяти (Memory Leak / КЗ)
-ANODES = {
-    "Графит (Graphite)": {"base_slots": 372, "voxel_expansion": 10.0, "dendrite_risk": 0.2, "debt_cost": 20},
-    "Кремний (Silicon)": {"base_slots": 3579, "voxel_expansion": 300.0, "dendrite_risk": 0.1, "debt_cost": 85},
-    "Чистый Металл (Lithium/Sodium)": {"base_slots": 3860, "voxel_expansion": 0.0, "dendrite_risk": 0.99, "debt_cost": 5},
-    "Титанат (LTO)": {"base_slots": 175, "voxel_expansion": 0.2, "dendrite_risk": 0.01, "debt_cost": 150} # Сверхстабильный, но дорогой долг
-}
+# --- 2. СЫРЫЕ АППАРАТНЫЕ ДАННЫЕ (Удален весь мусор и костыли) ---
+raw_data = [
+    {"id": "LCO (iPhone Cathode)", "a": 2.816, "b": 2.816, "c": 14.05, "calc_method": "Layer_A"},
+    {"id": "NMC811 (Tesla Cathode)", "a": 2.874, "b": 2.874, "c": 14.21, "calc_method": "Layer_A"},
+    {"id": "LFP (BYD Cathode)", "a": 10.33, "b": 6.01, "c": 4.69, "calc_method": "Olivine_B_Half"},
+    {"id": "Spinel LMO", "a": 8.24, "b": 8.24, "c": 8.24, "calc_method": "Spinel_Hop"},
+    {"id": "Lithium Metal (Anode)", "a": 3.51, "b": 3.51, "c": 3.51, "calc_method": "NN_BCC"},
+    {"id": "Chevrel Mo6S8", "a": 6.50, "b": 6.50, "c": 6.50, "calc_method": "NN_FCC_Ion"}
+]
 
-# ROM-АРХИВЫ (Катоды)
-# hardware_lock_profit: Насколько Матрице "нравится" укладывать сюда ион (определяет Вольтаж)
-# slot_weight: Масса контроллера (снижает плотность энергии)
-CATHODES = {
-    "LCO (LiCoO2) - 2D Слои": {"lock_profit": 420, "slot_weight": 98, "life_cycles": 1000},
-    "LFP (LiFePO4) - 1D Тоннели": {"lock_profit": 350, "slot_weight": 158, "life_cycles": 4000}, # Жесткая 3D решетка
-    "NMC (Никель-Марганец-Кобальт)": {"lock_profit": 380, "slot_weight": 97, "life_cycles": 2000},
-    "Сера (Sulfur S8) - Жидкий Кэш": {"lock_profit": 230, "slot_weight": 32, "life_cycles": 200} # Огромная емкость, но структура распадается
-}
-
-def compile_battery_grid(carrier, anode, cathode):
-    c_data = CARRIERS[carrier]
-    a_data = ANODES[anode]
-    k_data = CATHODES[cathode]
+# --- 3. ЧЕСТНЫЙ МАТЕМАТИЧЕСКИЙ ДВИЖОК ---
+def extract_hop_distance(row):
+    # Только строгая 3D кристаллография (Никаких a/2.5!)
+    method = row['calc_method']
+    a, b, c = row['a'], row['b'], row['c']
     
-    # 1. СОВМЕСТИМОСТЬ ПАКЕТА (Voxel Clipping)
-    # Если пакет (Натрий/Калий) слишком большой для стандартных 2D-слоев графита - транзакция отменяется
-    if c_data["size_angstrom"] > 0.9 and anode == "Графит (Graphite)":
-        return None, "💥 FATAL ERROR: Размер пакета данных (Иона) превышает пропускную способность шины Графита. Требуется другой Анод (Hard Carbon)."
+    if method == 'Layer_A': return a
+    elif method == 'Olivine_B_Half': return b / 2.0
+    elif method == 'Spinel_Hop': return a * np.sqrt(2) / 4.0 # Точный 3D-прыжок в Шпинели (от 8a к 16c)
+    elif method == 'NN_BCC': return a * np.sqrt(3) / 2.0     # От центра к углу куба
+    elif method == 'NN_FCC_Ion': return a / 2.0
+    return 0.0
+
+def evaluate_resonance(hop):
+    # Матрица ищет ближайшую РАЗРЕШЕННУЮ частоту (как радиоприемник)
+    best_name = None
+    best_diff = float('inf')
+    best_target = 0
+    
+    for name, val in HARMONICS.items():
+        diff = abs(hop - val)
+        if diff < best_diff:
+            best_diff = diff
+            best_name = name
+            best_target = val
+            
+    pct = (best_diff / best_target) * 100
+    
+    # Жесткий грейд. Идеальный резонанс не прощает ошибок.
+    if pct <= 1.5: status = "🏆 PERFECT RESONANCE (Super-Ionic)"
+    elif pct <= 4.5: status = "✅ SYNCED (Low Drag)"
+    elif pct <= 8.0: status = "⚠️ LOSSY (Thermal Noise / Jitter)"
+    else: status = "❌ KERNEL PANIC (Stuck)"
         
-    # 2. РАСЧЕТ НАПРЯЖЕНИЯ (Difference in Computational Debt)
-    # Вольтаж = Профит фиксации в Катоде МИНУС Вычислительный долг хранения в Аноде МИНУС Сетевое сопротивление иона
-    raw_voltage = (k_data["lock_profit"] * c_data["valence"] - a_data["debt_cost"] - (c_data["drag"] * 15)) / 100.0
-    voltage = max(0.5, round(raw_voltage, 2))
-    
-    # 3. ЕМКОСТЬ И ПЛОТНОСТЬ ЭНЕРГИИ (Wh/kg)
-    # Адаптируем емкость под размер пакета (магний несет х2 профита, но тяжелый)
-    cathode_capacity = (26800 * c_data["valence"]) / k_data["slot_weight"]
-    cell_capacity = 1 / ((1 / a_data["base_slots"]) + (1 / cathode_capacity))
-    energy_density = round(cell_capacity * voltage, 0)
-    
-    # 4. ДЕГРАДАЦИЯ (Bad Sectors Creation)
-    # Зависит от разбухания Анода (Voxel Strain) и нестабильности Катода
-    strain_factor = a_data["voxel_expansion"] / 100.0
-    dendrite_penalty = a_data["dendrite_risk"] * 500
-    real_life_cycles = int(k_data["life_cycles"] / (1 + strain_factor) - dendrite_penalty)
-    if carrier == "Mg2+ (Магний)": real_life_cycles = int(real_life_cycles * 0.5) # Магний "застревает" в решетке
-    
-    real_life_cycles = max(50, real_life_cycles)
-    
-    # 5. БЕЗОПАСНОСТЬ (Memory Leak Risk)
-    safety_score = 100 - (a_data["dendrite_risk"] * 100) - (strain_factor * 10)
-    safety_score = max(0, min(100, safety_score))
-    
-    return {
-        "Voltage (V)": voltage,
-        "Energy Density (Wh/kg)": energy_density,
-        "Cycle Life": real_life_cycles,
-        "Safety Score": safety_score,
-        "Expansion": a_data["voxel_expansion"]
-    }, "✅ Успешная компиляция"
+    return best_name, pct, status
 
-# --- UI ---
-st.title("🔋 V34.0: Grid Energy Compiler")
-st.markdown("Здесь батарея — это **Асинхронный Процесс Миграции Данных**. Напряжение (V) — это Вычислительный Долг, а деградация — появление `Bad Sectors` из-за растяжения 3D-решетки.")
+# --- 4. КОМПИЛЯЦИЯ БЕЗ ПОДГОНОК ---
+results = []
+for idx, row in pd.DataFrame(raw_data).iterrows():
+    hop = extract_hop_distance(row)
+    if hop == 0.0: continue
+        
+    harm_name, err_pct, status = evaluate_resonance(hop)
+    
+    results.append({
+        "Material": row['id'],
+        "Calculated Hop (Å)": round(hop, 3),
+        "Locked Harmonic": harm_name,
+        "Deviation (%)": round(err_pct, 2),
+        "Grid Status": status
+    })
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    sel_carrier = st.selectbox("📦 Пакет Данных (Carrier Ion):", list(CARRIERS.keys()))
-with col2:
-    sel_anode = st.selectbox("📝 RAM-Буфер (Anode):", list(ANODES.keys()))
-with col3:
-    sel_cathode = st.selectbox("🗄️ ROM-Архив (Cathode):", list(CATHODES.keys()))
+res_df = pd.DataFrame(results)
 
-st.divider()
-
-metrics, status = compile_battery_grid(sel_carrier, sel_anode, sel_cathode)
-
-if not metrics:
-    st.error(status)
-else:
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("⚡ Вычислительный Долг (Напряжение)", f"{metrics['Voltage (V)']} V", help="Разница профита между Катодом и Анодом.")
-    c2.metric("🔋 Плотность данных (Energy Density)", f"{metrics['Energy Density (Wh/kg)']} Wh/kg", help="Сколько профита помещается в 1 кг аппаратной массы.")
-    c3.metric("🔄 Срок службы (До Bad Sectors)", f"{metrics['Cycle Life']} циклов", help="Разрушение решетки из-за Voxel Strain (расширения).")
-    
-    safety_color = "normal" if metrics['Safety Score'] > 80 else ("inverse" if metrics['Safety Score'] < 40 else "off")
-    c4.metric("🛡️ Защита от утечек (Безопасность)", f"{metrics['Safety Score']}%", delta="Риск Дендритов" if metrics['Safety Score'] < 40 else "Стабильно", delta_color=safety_color)
-    
-    # Визуализация Деградации
-    st.markdown("### 📉 График появления Bad Sectors (Деградация Решетки)")
-    cycles = np.linspace(0, metrics['Cycle Life'] * 1.5, 100)
-    # Нелинейное падение емкости (ускоряется к концу из-за накопления микротрещин)
-    capacity_drop = 100 - (100 * (cycles / metrics['Cycle Life']) ** (1.5 + (metrics['Expansion']/100)))
-    capacity_drop = np.clip(capacity_drop, 0, 100)
-    
-    df_plot = pd.DataFrame({"Циклы (I/O Operations)": cycles, "Состояние Здоровья (SOH %)": capacity_drop})
-    
-    fig = px.line(df_plot, x="Циклы (I/O Operations)", y="Состояние Здоровья (SOH %)", 
-                  color_discrete_sequence=[CARRIERS[sel_carrier]["color"]])
-    fig.add_hline(y=80, line_dash="dash", line_color="red", annotation_text="EoL (Замена Батареи)")
-    fig.update_layout(template="plotly_dark", yaxis_range=[0, 105])
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Системный лог
-    st.markdown("### 🧠 Лог Архитектора:")
-    if "Кремний" in sel_anode:
-        st.warning("⚠️ **КРИТИЧЕСКИЙ VOXEL STRAIN:** Вы выбрали Кремний. Емкость колоссальная, но при загрузке Лития решетка разбухает на 300%. Voxel-сетка трескается, вызывая лавинообразное появление битых секторов. Срок службы критически низок.")
-    if "Чистый Металл" in sel_anode:
-        st.error("🔥 **КРИТИЧЕСКАЯ УТЕЧКА ПАМЯТИ (ДЕНДРИТЫ):** Чистый металл идеален по объему (0% расширения), но Garbage Collector Матрицы не успевает ровно укладывать ионы. Образуются `висячие указатели` (дендриты). Риск КЗ (kernel panic) максимален!")
-    if "Титанат" in sel_anode:
-        st.success("🛡️ **НУЛЕВОЙ STRAIN:** Титанат (LTO) вообще не меняет объем при записи (Zero-Strain). Батарея почти бессмертна, но тяжелая матрица забирает часть профита (Напряжение ниже).")
-    if "Mg2+" in sel_carrier:
-        st.warning("⚠️ **CPU LAG (Высокая поляризация):** Ион Магния несет заряд 2+ (Двойной профит!). Но он настолько плотный, что 'цепляется' за электроны решетки Катода, вызывая жесточайший лаг (drag). Он физически застревает в ROM-архиве, убивая циклы.")
+print("\n==========================================================================")
+print(" SIMUREALITY V36.0: PURE VACUUM HARMONICS AUDIT (ZERO CURVE-FITTING)")
+print("==========================================================================\n")
+print(res_df.to_string(index=False))

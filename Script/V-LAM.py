@@ -156,7 +156,7 @@ def analyze_vlam_10():
     
     matches = 0
     total = len(molecules_db)
-    tolerance = 0.04
+    tolerance = 0.01
     
     for name, a1, a2, e_real in molecules_db:
         z1 = get_z_eff(a1); z2 = get_z_eff(a2)

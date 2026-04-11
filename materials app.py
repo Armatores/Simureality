@@ -242,7 +242,7 @@ with tab2:
 
         # Show Table
         st.dataframe(
-            res_df[["Element", "Name", "Display_Score", "Mechanism", "Vol", "Yield"]].style.applymap(color_score, subset=["Display_Score"]),
+            res_df[["Element", "Name", "Display_Score", "Mechanism", "Vol", "Yield"]].style.map(color_score, subset=["Display_Score"]),
             use_container_width=True,
             height=600
         )

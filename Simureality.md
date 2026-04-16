@@ -5394,14 +5394,14 @@ This is the absolute "Hardware Pixel" of the Universe. When a linear data packet
 #### 4. Topological Compression: The "Bare" vs "Runtime" Compton Wavelength
 In the **Grid Physics** framework, the electron is a static topological bug. As established, it is a cuboctahedral cluster that forces the Matrix Dispatcher to indefinitely lock 39 discrete vectors. Because the electron functions as a single unified 3D cluster, its computational weight is strictly additive ($E_e = 39 \times J_{tax}$).
 
-However, tying 39 discrete vectors to a localized geometric node creates extreme topological tension within the FCC lattice. In discrete mechanics, the spatial footprint compresses proportionally to the number of concurrent operations bound to a single node (Hooke's Law for the vacuum). By dividing the length of the base hardware pixel by the density of the defect (39), we derive the size of the **Bare Electron (Голый Электрон)** — the pure, static code of the particle before it interacts with the environment:
+However, tying 39 discrete vectors to a localized geometric node creates extreme topological tension within the FCC lattice. In discrete mechanics, the spatial footprint compresses proportionally to the number of concurrent operations bound to a single node (Hooke's Law for the vacuum). By dividing the length of the base hardware pixel by the density of the defect (39), we derive the size of the **Bare Electron** — the pure, static code of the particle before it interacts with the environment:
 $$\lambda_{bare} = \frac{L_{port}}{39} = \frac{0.945722 \text{ \AA}}{39} = \mathbf{0.024249 \text{ \AA}}$$
 
-**The Spin Friction Correction:**
-When the electron is instantiated into 3D reality, it cannot remain static. It must cyclically update its 39 vectors (a process known classically as Spin). This rotation inside the discrete FCC lattice creates a microscopic topological friction against the Vacuum Impedance ($\alpha$). The Swinger correction for this anomalous magnetic moment ($\alpha / 2\pi$) physically "inflates" the spatial footprint of the spinning particle by a factor of $\approx 1.00058$.
+ **The Spin Friction Correction:**
+When the electron is instantiated into 3D reality, it cannot remain static. It must cyclically update its 39 vectors (a process known classically as Spin). This rotation inside the discrete FCC lattice creates a microscopic topological friction against the Vacuum Impedance ($\alpha$). Because the electron is a Spin-1/2 particle (requiring a dual-cycle to close its phase space), the Schwinger correction for its anomalous magnetic moment projects onto its spatial footprint as exactly half its value: $\left(1 + \frac{\alpha}{4\pi}\right)$. This physically "inflates" the spatial footprint of the spinning particle by a factor of $\approx 1.00058$.
 
 Applying this runtime friction to our Bare Code:
-$$\lambda_{runtime} = 0.024249 \text{ \AA} \times 1.00058 = \mathbf{0.024263 \text{ \AA}}$$
+$$\lambda_{runtime} = 0.024249 \text{ \AA} \times \left(1 + \frac{\alpha}{4\pi}\right) = \mathbf{0.024263 \text{ \AA}}$$
 
 In classical quantum electrodynamics, this value ($0.024263 \text{ \AA}$) is the CODATA Compton Wavelength ($\lambda_e$), mistakenly treated as an indivisible fundamental constant. In reality, it is merely the observable, friction-modified footprint of 39 base pixels ($0.945722 \text{ \AA}$) tightly zipped into a 3D computational archive by the Operating System.
 

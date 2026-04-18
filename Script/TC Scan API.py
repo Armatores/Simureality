@@ -4,7 +4,7 @@
 # 2. Потом запускаем поиск (во второй ячейке)
 from mp_api.client import MPRester
 
-API_KEY = "Enter API key"  # <--- Вставь сюда свой ключ
+API_KEY = vsSos00vWECFjMX3M7SijYx8blsF0L2M
 
 # Наш таргет: Длина окружности орбиты Бора
 TARGET = 3.3249 

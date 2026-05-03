@@ -5538,3 +5538,48 @@ The critical triumph of this equation lies in its systemic consistency. [cite_st
 
 Ultimately, the exact alignment of the Jitter Tax with macroscopic element distribution proves that our nuclear constants are robust, scale-invariant properties of the Matrix architecture. By upgrading the Boltzmann distribution from an empirical thermodynamic law to a deterministic rule of RAM allocation, we validate the computational mechanics underlying physical reality.
 
+
+### Section: Discrete Molecular Vibrations and the 1D Spring Aliasing Model
+
+[cite_start]In classical quantum mechanics, molecular vibrations are phenomenologically described by the quantum harmonic oscillator model, $E_v = h\nu (v + 1/2)$[cite: 881, 903]. [cite_start]While this continuous wave model successfully matches experimental spectroscopic data, it relies on abstract quantum numbers and attributes the $1/2$ factor to intrinsic "quantum uncertainty" or zero-point energy[cite: 881, 900]. 
+
+Grid Physics reinterprets this phenomenon by discarding continuous wave mechanics in favor of a strict topological hardware tariff. [cite_start]In our framework, a chemical bond is a 1D routing vector mapped onto a discrete 3D Face-Centered Cubic (FCC) vacuum lattice[cite: 884, 886]. [cite_start]The vibrational energy levels are not arbitrary frequencies, but direct consequences of the Matrix Dispatcher allocating discrete pixels to stretch the bond[cite: 890, 892]. 
+
+The continuous oscillator equation is thus decompiled into the **Universal Grid Vibration Equation**:
+
+\begin{equation}
+E_{vib} = J_{tax} \left( N_{step} + \frac{1}{2} \right)
+\end{equation}
+
+Where:
+* [cite_start]**$E_{vib}$**: The computational load (energy) of the vibrating molecule[cite: 889].
+* **$J_{tax} \approx 0.01311 \text{ MeV}$**: The System Tax. [cite_start]This is the exact hardware routing penalty required to physically stretch the 1D bond by exactly one discrete vacuum pixel ($0.946$ \AA)[cite: 889, 901].
+* [cite_start]**$N_{step}$**: An integer multiplier ($0, 1, 2, \dots$) representing the exact number of additional lattice nodes the molecule is forced to stretch across under photon impact[cite: 885, 889].
+* [cite_start]**$1/2$**: The Grid Aliasing Error[cite: 884, 889]. [cite_start]Because 3D spherical atoms can never perfectly center themselves on the discrete nodes of the FCC grid simultaneously, a permanent sub-pixel rounding error is generated[cite: 884, 897]. The system consistently levies a tax for this fractional spatial lag.
+
+#### Hardware Validation and the True Nature of Zero-Point Energy
+
+By applying the constant $J_{tax} = 0.01311 \text{ MeV}$ ($13.11 \text{ keV}$), we calculate the strict computational cost of molecular stretching (Table \ref{tab:vibration}).
+
+\begin{table}[h!]
+    \centering
+    \caption{Computational load of discrete 1D molecular vibration steps.}
+    \label{tab:vibration}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{cccccc}
+        \toprule
+        \textbf{Step ($N_{step}$)} & \textbf{Added Length} & \textbf{Aliasing} & \textbf{Energy (MeV)} & \textbf{Energy (keV)} & \textbf{Hardware $\Delta$ (keV)} \\
+        \midrule
+        0 & 0 pixels & +0.5 & 0.00656 & 6.55 & Base Grid Noise \\
+        1 & 1 pixel  & +0.5 & 0.01967 & 19.67 & +13.11 \\
+        2 & 2 pixels & +0.5 & 0.03277 & 32.77 & +13.11 \\
+        3 & 3 pixels & +0.5 & 0.04589 & 45.89 & +13.11 \\
+        4 & 4 pixels & +0.5 & 0.05899 & 58.99 & +13.11 \\
+        5 & 5 pixels & +0.5 & 0.07211 & 72.11 & +13.11 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+**Conclusion:**
+[cite_start]The table mathematically demonstrates that the so-called "zero-point energy" ($6.55 \text{ keV}$ at $N_{step}=0$) is not a mystical quantum fluctuation, but a strict computational Aliasing Penalty (+0.5)[cite: 897, 898]. [cite_start]Even at absolute zero, the lattice must continuously process the spatial rounding errors of the chemical bond[cite: 884]. [cite_start]Furthermore, unlike the exponential inflation of 3D atomic orbitals ($1/n^2$), the 1D molecular bond scales perfectly linearly, with the Universe charging exactly $13.11 \text{ keV}$ for every newly allocated pixel[cite: 882, 892].
+

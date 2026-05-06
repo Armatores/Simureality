@@ -98,7 +98,6 @@ class SimurealityMacroCore:
             max_bonds = -1
             min_dist = float('inf')
             
-            # ИСПРАВЛЕНИЕ 1: Сортировка кандидатов для детерминизма ГЦК структуры
             sorted_candidates = sorted(list(candidates), key=lambda c: (c[0], c[1], c[2]))
             for cand in sorted_candidates:
                 bonds = sum(1 for n in self.get_fcc_neighbors(cand) if n in occupied)
@@ -136,7 +135,6 @@ class SimurealityMacroCore:
             if n_alphas > 25: 
                 tension_penalty *= 0.65       
                 surface_ports *= 1.15         
-            # ИСПРАВЛЕНИЕ 2: Математическое округление портов вместо int()
             surface_ports = round(surface_ports)
 
         magic_profit = 0
@@ -172,7 +170,6 @@ class SimurealityMacroCore:
             if unpaired > 0:
                 jitter += JITTER_COST * 10
                 
-            # ИСПРАВЛЕНИЕ 3: Кулоновский протонный барьер
             if rem_Z > 0:
                 jitter += rem_Z * 1.2
                 
@@ -191,44 +188,28 @@ st.caption("Subatomic Lattice Structural Compiler Engine")
 core = SimurealityMacroCore()
 ame_df = load_ame_masses("mass.txt")
 
-# --- CENTRAL TELEMETRY COMPUTATION LAYER ---
-if not am_df.empty if 'ame_df' in locals() and not ame_df.empty else False:
-    pass
-else:
-    # Имитация фонового парсинга для построения глобальной карты точности
-    pass
-
-# Вычисляем матричные показатели эффективности по всей базе данных
-if not ame_df.empty:
-    results_heavy = []
+# --- DATA VERIFICATION LAYER ---
+if ame_df is not None and not list(ame_df.index) == []:
     all_abs_errors = []
-    all_raw_masses = []
-    
-    for (z, n), row in am_df.iterrows() if 'ame_df' in locals() and not am_df.empty else []:
-        pass
-        
-    # Считаем реальный массив для вычисления System Efficiency
-    sim_masses = []
     exp_masses = []
+    
     for (z, n), row in ame_df.iterrows():
         sm = core.compile_mass(z, n)
         em = row['Mass_MeV']
-        sim_masses.append(sm)
         exp_masses.append(em)
         all_abs_errors.append(abs(sm - em))
     
-    # Расчет системной телеметрии матрицы
-    avg_mass = np.mean(exp_masses)
-    mean_lag = np.mean(all_abs_errors)
-    max_debt = np.max(all_abs_errors)
+    avg_mass = np.mean(exp_masses) if exp_masses else 1.0
+    mean_lag = np.mean(all_abs_errors) if all_abs_errors else 0.0
+    max_debt = np.max(all_abs_errors) if all_abs_errors else 0.0
     system_efficiency = (1.0 - (mean_lag / avg_mass)) * 100.0
 else:
-    # Пресеты по умолчанию, если mass.txt не подгружен
+    st.warning("⚠️ Experimental hardware file `mass.txt` not loaded or empty. Operating in Pure Prediction Mode.")
     system_efficiency = 99.9278
     mean_lag = 68.341
     max_debt = 176.801
 
-# --- ВЫВОД КАРТОЧЕК СТАТИСТИКИ (SYSTEM EFFICIENCY) ---
+# --- TELEMETRY CARDS PANEL ---
 st.subheader("🌐 Global Matrix Diagnostic Telemetry")
 m_col1, m_col2, m_col3 = st.columns(3)
 with m_col1:
@@ -240,7 +221,6 @@ with m_col3:
 
 st.markdown("---")
 
-# Режимы работы интерфейса
 st.sidebar.header("Configuration Units")
 mode = st.sidebar.radio("Compute Target Mode", ["Single Nuclide Dispatch", "Bulk Matrix Verification"])
 
@@ -257,7 +237,7 @@ if mode == "Single Nuclide Dispatch":
     sim_mass = core.compile_mass(z_input, n_input)
     st.metric(label="Simulated Crystal Layer Mass (MeV)", value=f"{sim_mass:.4f}")
     
-    if not ame_df.empty and (z_input, n_input) in ame_df.index:
+    if ame_df is not None and not ame_df.empty and (z_input, n_input) in ame_df.index:
         exp_mass = ame_df.loc[(z_input, n_input), 'Mass_MeV']
         delta = sim_mass - exp_mass
         st.metric(label="AME Experimental Delta (MeV)", value=f"{delta:.4f}", delta=f"{delta:.4f}", delta_color="inverse")
@@ -266,7 +246,7 @@ if mode == "Single Nuclide Dispatch":
 
 else:
     st.header("Matrix Wide Error Profiler")
-    if ame_df.empty:
+    if ame_df is not None and ame_df.empty:
         st.error("Bulk matrix verification requires a validated `mass.txt` file.")
     else:
         results = []

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 # --- SIMUREALITY ONTOLOGICAL CONSTANTS ---
-GAMMA_SYS = 1.0418          # System Tax for 3D rendering (Desynchronization penalty)
+GAMMA_SYS = 1.0418          # System Tax for 3D rendering
 JITTER_COST = 0.0131        # Dynamic noise energy per unclosed open port (MeV)
 MAGIC_NUMBERS = [2, 8, 20, 28, 50, 82, 126, 184] # Ideal geometric FCC assemblies
 

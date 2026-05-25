@@ -81,3 +81,17 @@ In continuous Skyrmion theory, proving $f_{comp} = 1$ (e.g., for Lead-208) requi
 
 **The Grid Physics Perspective:** We can map this continuous topological stability directly onto discrete hardware constraints. Magic numbers represent perfect graph closures on a Face-Centered Cubic (FCC) lattice. At $Z=82$ and $N=126$, the number of uncompensated routing vectors drops to zero, inherently preventing the emission of topological jitter. Both models arrive at the same stability peaks—one via continuous geometry, the other via discrete computational routing constraints.
 """)
+
+st.markdown("---")
+
+# --- SOURCE CODE VIEWER ---
+with st.expander("💻 View Source Code (Grid Physics Deterministic Engine)"):
+    st.markdown("Unlike classical theoretical models, this tool relies on **zero empirical fitting parameters** or hidden black-box algorithms. The entire topology compilation is strictly deterministic. You can review the raw logic below:")
+    
+    # Streamlit can read its own file to display the code
+    try:
+        with open(__file__, "r", encoding="utf-8") as f:
+            source_code = f.read()
+        st.code(source_code, language="python")
+    except Exception as e:
+        st.error("Could not load source code automatically.")

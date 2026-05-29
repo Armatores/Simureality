@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V5: PHASE TRANSITION) ---
+# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V6: THE IRON THRESHOLD) ---
 MASS_P = 938.272
 MASS_N = 939.565
 E_ELECTRON = 0.511
@@ -34,11 +34,10 @@ ELEMENTS = {
     110: 'Ds', 111: 'Rg', 112: 'Cn', 113: 'Nh', 114: 'Fl', 115: 'Mc', 116: 'Lv', 117: 'Ts', 118: 'Og'
 }
 
-st.set_page_config(page_title="Grid Physics V5: Phase Transition", layout="wide")
+st.set_page_config(page_title="Grid Physics V6: The Iron Threshold", layout="wide")
 
 @st.cache_data
 def load_ame_masses(filename="mass.txt"):
-    """ПАРСЕР БЕЗ ФИЛЬТРОВ: Читает всю базу AME"""
     data = []
     try:
         with open(filename, 'r', encoding='utf-8') as f:
@@ -74,12 +73,9 @@ class LiquidDropCore:
         else: pair = 0
         return (Z * MASS_P) + (N * MASS_N) - (vol - surf - coul - asym + pair)
 
-class GridPhysicsV5Core:
-    """Ультимативный Движок V5: Алгоритмический фазовый переход формы."""
+class GridPhysicsV6Core:
     def __init__(self):
-        # Кэш хранит 2 варианта сборки: "spherical" и "linear"
-        self._cache_spherical = {0: (0, 0), 1: (0, 12)}
-        self._cache_linear = {0: (0, 0), 1: (0, 12)}
+        self._crystal_cache = {}
 
     def get_fcc_neighbors(self, node):
         x, y, z = node
@@ -88,10 +84,10 @@ class GridPhysicsV5Core:
                   (0,1,1), (0,1,-1), (0,-1,1), (0,-1,-1)]
         return [(x+dx, y+dy, z+dz) for dx, dy, dz in deltas]
 
-    def build_crystal(self, n_clusters, mode="spherical"):
-        """Собирает кристалл в выбранном режиме"""
-        cache = self._cache_spherical if mode == "spherical" else self._cache_linear
-        if n_clusters in cache: return cache[n_clusters]
+    def compile_3d_crystal(self, n_clusters):
+        """Фазовый переход на 14 кластерах (Железо-56)"""
+        if n_clusters in self._crystal_cache: 
+            return self._crystal_cache[n_clusters]
             
         occupied = set([(0, 0, 0)])
         for _ in range(1, n_clusters):
@@ -106,16 +102,19 @@ class GridPhysicsV5Core:
 
             best_pos, max_bonds, min_dist = None, -1, float('inf')
             
-            for cand in sorted(list(candidates)): # Сортировка для детерминированности
+            # --- THE IRON THRESHOLD: ПРЕДЕЛ ЖЕСТКОСТИ ГЦК ---
+            # До 14 кластеров (A=56) матрица удерживает идеальную сферу.
+            # После 14 кластеров (A>56) сфера рвется, матрица разрешает линейную/эллипсоидную деформацию.
+            force_spherical = (n_clusters <= 14)
+            
+            for cand in sorted(list(candidates)): 
                 bonds = sum(1 for n in self.get_fcc_neighbors(cand) if n in occupied)
                 
-                if mode == "spherical":
-                    # Режим Шара: Максимум связей, жесткая привязка к центру
+                if force_spherical:
                     dist_sq = (cand[0]-cm_x)**2 + (cand[1]-cm_y)**2 + (cand[2]-cm_z)**2
                     if bonds > max_bonds or (bonds == max_bonds and dist_sq < min_dist):
                         max_bonds, min_dist, best_pos = bonds, dist_sq, cand
                 else:
-                    # Режим Стержня (Linear): Только максимум связей, растет вытянуто
                     if bonds > max_bonds:
                         max_bonds, best_pos = bonds, cand
                         
@@ -124,16 +123,21 @@ class GridPhysicsV5Core:
         total_macro_links = sum(sum(1 for n in self.get_fcc_neighbors(node) if n in occupied) for node in occupied) // 2
         surface_ports = (n_clusters * 12) - (2 * total_macro_links)
         
-        cache[n_clusters] = (total_macro_links, surface_ports)
+        self._crystal_cache[n_clusters] = (total_macro_links, surface_ports)
         return total_macro_links, surface_ports
 
-    def calculate_topology(self, Z, N, mode):
-        """Считает массу для конкретной формы ядра"""
+    def compile_mass(self, Z, N):
+        if Z < 0 or N < 0: return float('inf')
+        if Z == 0 and N == 1: return MASS_N
+        if Z == 1 and N == 0: return MASS_P
+        
+        # 1. СБОРКА АЛЬФА-ЯДРА
         n_alphas = min(Z // 2, N // 2)
         binding_alphas = n_alphas * E_ALPHA
-        macro_links, surface_ports = self.build_crystal(n_alphas, mode)
+        macro_links, surface_ports = self.compile_3d_crystal(n_alphas)
         binding_macro = macro_links * E_MACRO_LINK
 
+        # 2. МАРШРУТИЗАЦИЯ ГАЛО (1/L)
         rem_Z = Z - (n_alphas * 2)
         rem_N = N - (n_alphas * 2)
         orphans_total = rem_Z + rem_N
@@ -144,43 +148,32 @@ class GridPhysicsV5Core:
             # СЛОЙ 1 (L=1): Прямые связи p-n
             pairs = min(rem_Z, rem_N)
             binding_halo += pairs * (E_LINK + E_PAIR)
+            
             leftover = orphans_total - (pairs * 2)
             
             if leftover > 0:
-                # СЛОЙ 2 (L=2): Нейтронная/Протонная шуба
+                # СЛОЙ 2 (L=2): Нейтронная Шуба
                 if surface_ports > 0:
                     L2_docked = min(leftover, surface_ports)
                     binding_halo += L2_docked * (E_LINK / 2.0)
                     leftover -= L2_docked
                 
-                # СЛОЙ 3 (L=3): Наращивание шубы
+                # СЛОЙ 3 (L=3): Перевес
                 if leftover > 0:
                     binding_halo += leftover * (E_LINK / 3.0)
 
-            # JITTER TAX: Открытые порты
+            # JITTER TAX
             open_ports = orphans_total * 12 if (n_alphas == 0 and pairs == 0) else orphans_total * 11
             jitter += open_ports * JITTER_COST
 
-            # OVERFLOW TAX: Правило емкости Гало
-            core_nucleons = n_alphas * 4
+            # OVERFLOW TAX: Аномальная экзотика (Литий-11)
+            core_nucleons = max(n_alphas * 4, 1) # База 1 для изотопов Водорода
             if orphans_total > core_nucleons:
                 overflow = orphans_total - core_nucleons
                 overflow_tax = overflow * orphans_total * E_ELECTRON
 
         total_be = binding_alphas + binding_macro + binding_halo - jitter - overflow_tax
-        calc_mass = (Z * MASS_P) + (N * MASS_N) - total_be
-        return calc_mass, mode
-
-    def compile_mass(self, Z, N):
-        if Z < 0 or N < 0: return float('inf')
-        if Z == 0 and N == 1: return MASS_N
-        if Z == 1 and N == 0: return MASS_P
-        
-        # МАГИЯ МАТРИЦЫ: Считаем обе формы и берем самую выгодную (минимальная масса = макс. стабильность)
-        mass_spherical, _ = self.calculate_topology(Z, N, "spherical")
-        mass_linear, _ = self.calculate_topology(Z, N, "linear")
-        
-        return min(mass_spherical, mass_linear)
+        return (Z * MASS_P) + (N * MASS_N) - total_be
 
 @st.cache_data
 def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
@@ -205,20 +198,21 @@ def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- RENDER UI ---
-st.title("Clash of Paradigms V5: The Final Architecture")
+st.title("Grid Physics V6: The Iron Threshold")
 st.markdown("""
-**Обновление V5.0 (Nuclear Shape Phase Transition):**
-Матрица динамически переключается между сферической и эллипсоидной (линейной) упаковкой ГЦК-решетки.
-Скрипт просчитывает обе топологии для каждого изотопа и выбирает состояние с наименьшей вычислительной стоимостью ($ \Sigma K \to \min $).
+**Обновление V6.0:**
+Внедрено строгое правило "Железного Плато" (из *Spectral Graph Analysis*).
+- Ядра до Железа-56 ($n \le 14$ альфа-кластеров) удерживают жесткую **сферическую** ГЦК-структуру.
+- Ядра после Железа-56 переходят в состояние "Geometry Overflow" и деформируются в стержни/эллипсоиды для сброса натяжения.
 """)
 
 df_masses = load_ame_masses("mass.txt")
-grid_engine = GridPhysicsV5Core()
+grid_engine = GridPhysicsV6Core()
 liquid_engine = LiquidDropCore()
 
 st.sidebar.header("Конфигурация ядра")
-target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=82, step=1)
-target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=126, step=1)
+target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=26, step=1)
+target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=30, step=1)
 
 symbol = ELEMENTS.get(target_Z, "Unknown")
 st.sidebar.markdown(f"### Выбранный узел: **{symbol}-{target_Z+target_N}**")
@@ -230,14 +224,12 @@ if not df_masses.empty and (target_Z, target_N) in df_masses.index:
     exp_mass = df_masses.loc[(target_Z, target_N), 'Mass_MeV']
     col1.metric(label="AME2020 Hardware Log", value=f"{exp_mass:.3f} MeV")
     
-    # Чтобы показать, какую форму выбрала матрица
-    mass_sph, _ = grid_engine.calculate_topology(target_Z, target_N, "spherical")
-    mass_lin, _ = grid_engine.calculate_topology(target_Z, target_N, "linear")
-    best_mass = min(mass_sph, mass_lin)
-    chosen_shape = "Сфера" if best_mass == mass_sph else "Эллипсоид/Стержень"
+    n_alph = min(target_Z//2, target_N//2)
+    shape_str = "Сфера" if n_alph <= 14 else "Вытянутая деформация"
     
-    grid_err = best_mass - exp_mass
-    col2.metric(label=f"Grid Physics V5 ({chosen_shape})", value=f"{best_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
+    grid_mass = grid_engine.compile_mass(target_Z, target_N)
+    grid_err = grid_mass - exp_mass
+    col2.metric(label=f"Grid Physics V6 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
     
     liquid_mass = liquid_engine.compile_mass(target_Z, target_N)
     liquid_err = liquid_mass - exp_mass
@@ -248,7 +240,7 @@ else:
 st.markdown("---")
 st.write("### Глобальная сравнительная матрица (Весь AME2020 + Синтетика)")
 if not df_masses.empty:
-    with st.spinner('Симуляция фазовых переходов на всем пуле AME2020...'):
+    with st.spinner('Сборка таблицы с учетом Железного Рубильника (Iron Threshold)...'):
         comp_df = generate_comparison_matrix(grid_engine, liquid_engine, df_masses)
         
         comp_df['Grid Abs Error'] = comp_df['Grid Debt/Error (MeV)'].abs()
@@ -265,6 +257,6 @@ if not df_masses.empty:
         sc2.metric(label="Liquid Drop Efficiency (5 fits)", value=f"{liquid_efficiency:.4f} %", delta=f"Mean Error: {liquid_mean:.3f} MeV", delta_color="off")
         
         csv = comp_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Скачать CSV (V5 Final Phase)", data=csv, file_name='GridPhysics_V5_Log.csv', mime='text/csv')
+        st.download_button(label="📥 Скачать CSV (V6 Iron Threshold)", data=csv, file_name='GridPhysics_V6_Log.csv', mime='text/csv')
         
         st.dataframe(comp_df.drop(columns=['Grid Abs Error', 'Liquid Abs Error']), use_container_width=True, height=400)

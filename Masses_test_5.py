@@ -2,10 +2,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V9: PERFECT SYNTHESIS) ---
+# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V11: PURE AB-INITIO) ---
 MASS_P = 938.272
 MASS_N = 939.565
-E_ELECTRON = 0.511
 E_ALPHA = 28.32       
 E_MACRO_LINK = 2.425   
 E_LINK = 2.36          
@@ -34,9 +33,8 @@ ELEMENTS = {
     110: 'Ds', 111: 'Rg', 112: 'Cn', 113: 'Nh', 114: 'Fl', 115: 'Mc', 116: 'Lv', 117: 'Ts', 118: 'Og'
 }
 
-st.set_page_config(page_title="Grid Physics V9: The Perfect Synthesis", layout="wide")
+st.set_page_config(page_title="Grid Physics V11: Cleansed Core", layout="wide")
 
-@st.cache_data
 def load_ame_masses(filename="mass.txt"):
     data = []
     try:
@@ -73,9 +71,9 @@ class LiquidDropCore:
         else: pair = 0
         return (Z * MASS_P) + (N * MASS_N) - (vol - surf - coul - asym + pair)
 
-class GridPhysicsV9Core:
+class GridPhysicsV11Core:
     def __init__(self):
-        # Кэш Платоновых тел (идеальная база для водорода-кислорода)
+        # Кэш идеальных Платоновых тел (Водород-Кислород)
         self._crystal_cache = {
             0: (0, 0),
             1: (0, 12),
@@ -108,10 +106,10 @@ class GridPhysicsV9Core:
 
             best_pos, max_bonds, min_dist = None, -1, float('inf')
             
-            # РУБИЛЬНИК ФОРМЫ (Железо-56)
+            # The Iron Threshold: Переход к регбийному мячу
             is_spherical = (n_clusters <= 14)
             
-            # ИСПРАВЛЕНИЕ: Убрана сортировка (sorted). Возвращен естественный рост.
+            # НИКАКОЙ СОРТИРОВКИ. Естественный симметричный рост кристаллов
             for cand in candidates: 
                 bonds = sum(1 for n in self.get_fcc_neighbors(cand) if n in occupied)
                 
@@ -120,11 +118,9 @@ class GridPhysicsV9Core:
                 dz = cand[2] - cm_z
                 
                 if is_spherical:
-                    # Уравнение идеальной сферы
-                    dist_sq = dx**2 + dy**2 + dz**2
+                    dist_sq = dx**2 + dy**2 + dz**2 # Идеальный Шар
                 else:
-                    # Уравнение Регбийного мяча (Prolate Spheroid)
-                    dist_sq = 1.5 * dx**2 + 1.5 * dy**2 + 1.0 * dz**2
+                    dist_sq = 1.5 * dx**2 + 1.5 * dy**2 + 1.0 * dz**2 # Вытянутый Сфероид
                 
                 if bonds > max_bonds or (bonds == max_bonds and dist_sq < min_dist):
                     max_bonds, min_dist, best_pos = bonds, dist_sq, cand
@@ -151,7 +147,7 @@ class GridPhysicsV9Core:
         rem_N = N - (n_alphas * 2)
         orphans_total = rem_Z + rem_N
         
-        binding_halo, jitter, overflow_tax = 0, 0, 0
+        binding_halo, jitter = 0, 0
 
         if orphans_total > 0:
             pairs = min(rem_Z, rem_N)
@@ -167,25 +163,20 @@ class GridPhysicsV9Core:
                 if leftover > 0:
                     binding_halo += leftover * (E_LINK / 3.0)
 
+            # ПРАВИЛЬНЫЙ JITTER TAX БЕЗ ПОДГОНОК
             open_ports = orphans_total * 12 if (n_alphas == 0 and pairs == 0) else orphans_total * 11
             jitter += open_ports * JITTER_COST
 
-            # OVERFLOW TAX: Идеальная работа микроуровня (H-2, Li-11)
-            core_nucleons = max(n_alphas * 4, 1) 
-            if orphans_total > core_nucleons:
-                overflow = orphans_total - core_nucleons
-                overflow_tax = overflow * orphans_total * E_ELECTRON
-
-        total_be = binding_alphas + binding_macro + binding_halo - jitter - overflow_tax
+        # OVERFLOW TAX УДАЛЕН НАВСЕГДА. ЧИСТАЯ ФИЗИКА.
+        total_be = binding_alphas + binding_macro + binding_halo - jitter
         return (Z * MASS_P) + (N * MASS_N) - total_be
 
-@st.cache_data
-def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
+def generate_comparison_matrix(grid_engine, liquid_engine, df_ame):
     results = []
     for (Z, N), row in df_ame.iterrows():
         exp_mass = row['Mass_MeV']
-        grid_mass = _grid_engine.compile_mass(Z, N)
-        liquid_mass = _liquid_engine.compile_mass(Z, N)
+        grid_mass = grid_engine.compile_mass(Z, N)
+        liquid_mass = liquid_engine.compile_mass(Z, N)
         
         grid_delta = grid_mass - exp_mass
         liquid_delta = liquid_mass - exp_mass
@@ -202,19 +193,19 @@ def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- RENDER UI ---
-st.title("Grid Physics V9: The Perfect Synthesis")
+st.title("Grid Physics V11: Cleansed Core (No Cheating)")
 st.markdown("""
-**Обновление V9.0:**
-Скрипт объединяет микро-точность Гало (Overflow Tax) с правильным сферическим ростом легких ядер и эллипсоидной деформацией (Регбийный мяч) для сверхтяжелых элементов. Ошибка "однобокой сборки" устранена.
+**Обновление V11.0:**
+Полный откат всех подгоночных коэффициентов (Overflow Tax удален). Возвращена идеальная симметрия для легких ядер (до Железа-56). Тяжелые ядра сохраняют геометрию эллипсоида.
 """)
 
 df_masses = load_ame_masses("mass.txt")
-grid_engine = GridPhysicsV9Core()
+grid_engine = GridPhysicsV11Core()
 liquid_engine = LiquidDropCore()
 
 st.sidebar.header("Конфигурация ядра")
 target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=1, step=1)
-target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=1, step=1)
+target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=2, step=1)
 
 symbol = ELEMENTS.get(target_Z, "Unknown")
 st.sidebar.markdown(f"### Выбранный узел: **{symbol}-{target_Z+target_N}**")
@@ -231,7 +222,7 @@ if not df_masses.empty and (target_Z, target_N) in df_masses.index:
     
     grid_mass = grid_engine.compile_mass(target_Z, target_N)
     grid_err = grid_mass - exp_mass
-    col2.metric(label=f"Grid Physics V9 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
+    col2.metric(label=f"Grid Physics V11 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
     
     liquid_mass = liquid_engine.compile_mass(target_Z, target_N)
     liquid_err = liquid_mass - exp_mass
@@ -240,9 +231,9 @@ else:
     col1.metric(label="AME2020 Hardware Log", value="Node Not Found")
 
 st.markdown("---")
-st.write("### Глобальная сравнительная матрица (Весь AME2020 + Синтетика)")
+st.write("### Глобальная сравнительная матрица (Реальный пересчет...)")
 if not df_masses.empty:
-    with st.spinner('Сборка таблицы: Рендеринг V9...'):
+    with st.spinner('Сборка таблицы в реальном времени. Без костылей...'):
         comp_df = generate_comparison_matrix(grid_engine, liquid_engine, df_masses)
         
         comp_df['Grid Abs Error'] = comp_df['Grid Debt/Error (MeV)'].abs()
@@ -259,6 +250,6 @@ if not df_masses.empty:
         sc2.metric(label="Liquid Drop Efficiency (5 fits)", value=f"{liquid_efficiency:.4f} %", delta=f"Mean Error: {liquid_mean:.3f} MeV", delta_color="off")
         
         csv = comp_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Скачать CSV (V9 Final)", data=csv, file_name='GridPhysics_V9_Log.csv', mime='text/csv')
+        st.download_button(label="📥 Скачать Чистый CSV (V11)", data=csv, file_name='GridPhysics_V11_Log.csv', mime='text/csv')
         
         st.dataframe(comp_df.drop(columns=['Grid Abs Error', 'Liquid Abs Error']), use_container_width=True, height=400)

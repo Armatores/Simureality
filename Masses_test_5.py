@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V8: PROLATE SPHEROID) ---
+# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V9: PERFECT SYNTHESIS) ---
 MASS_P = 938.272
 MASS_N = 939.565
 E_ELECTRON = 0.511
@@ -34,7 +34,7 @@ ELEMENTS = {
     110: 'Ds', 111: 'Rg', 112: 'Cn', 113: 'Nh', 114: 'Fl', 115: 'Mc', 116: 'Lv', 117: 'Ts', 118: 'Og'
 }
 
-st.set_page_config(page_title="Grid Physics V8: The Rugby Ball Spheroid", layout="wide")
+st.set_page_config(page_title="Grid Physics V9: The Perfect Synthesis", layout="wide")
 
 @st.cache_data
 def load_ame_masses(filename="mass.txt"):
@@ -73,9 +73,9 @@ class LiquidDropCore:
         else: pair = 0
         return (Z * MASS_P) + (N * MASS_N) - (vol - surf - coul - asym + pair)
 
-class GridPhysicsV8Core:
+class GridPhysicsV9Core:
     def __init__(self):
-        # ВОССТАНОВЛЕН КЭШ ПРЕДЕЛЬНОЙ ЖЕСТКОСТИ (Платоновы тела для начала таблицы)
+        # Кэш Платоновых тел (идеальная база для водорода-кислорода)
         self._crystal_cache = {
             0: (0, 0),
             1: (0, 12),
@@ -108,10 +108,11 @@ class GridPhysicsV8Core:
 
             best_pos, max_bonds, min_dist = None, -1, float('inf')
             
-            # --- THE IRON THRESHOLD: ПЕРЕХОД К РЕГБИЙНОМУ МЯЧУ ---
+            # РУБИЛЬНИК ФОРМЫ (Железо-56)
             is_spherical = (n_clusters <= 14)
             
-            for cand in sorted(list(candidates)): 
+            # ИСПРАВЛЕНИЕ: Убрана сортировка (sorted). Возвращен естественный рост.
+            for cand in candidates: 
                 bonds = sum(1 for n in self.get_fcc_neighbors(cand) if n in occupied)
                 
                 dx = cand[0] - cm_x
@@ -119,12 +120,10 @@ class GridPhysicsV8Core:
                 dz = cand[2] - cm_z
                 
                 if is_spherical:
-                    # Уравнение идеальной сферы (равномерное притяжение к центру)
+                    # Уравнение идеальной сферы
                     dist_sq = dx**2 + dy**2 + dz**2
                 else:
-                    # Уравнение вытянутого эллипсоида (Prolate Spheroid)
-                    # Штраф за ширину (X, Y) в 1.5 раза выше, чем за длину (Z).
-                    # Кристалл физически вытягивается вдоль оси Z, как регбийный мяч!
+                    # Уравнение Регбийного мяча (Prolate Spheroid)
                     dist_sq = 1.5 * dx**2 + 1.5 * dy**2 + 1.0 * dz**2
                 
                 if bonds > max_bonds or (bonds == max_bonds and dist_sq < min_dist):
@@ -171,7 +170,7 @@ class GridPhysicsV8Core:
             open_ports = orphans_total * 12 if (n_alphas == 0 and pairs == 0) else orphans_total * 11
             jitter += open_ports * JITTER_COST
 
-            # OVERFLOW TAX: Кулоновское расталкивание Гало (Литий-11)
+            # OVERFLOW TAX: Идеальная работа микроуровня (H-2, Li-11)
             core_nucleons = max(n_alphas * 4, 1) 
             if orphans_total > core_nucleons:
                 overflow = orphans_total - core_nucleons
@@ -203,21 +202,19 @@ def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- RENDER UI ---
-st.title("Grid Physics V8: The Rugby Ball Spheroid")
+st.title("Grid Physics V9: The Perfect Synthesis")
 st.markdown("""
-**Обновление V8.0 (Эллипсоидная Деформация Матрицы):**
-Синхронизация с открытием в *Physical Review Letters (2025)*. 
-Ядра после Железа-56 алгоритмически вытягиваются в эллипсоид (регбийный мяч) для идеального перекрытия портов. 
-Легкие ядра (до Железа) сохраняют идеальную сферическую симметрию ГЦК-решетки.
+**Обновление V9.0:**
+Скрипт объединяет микро-точность Гало (Overflow Tax) с правильным сферическим ростом легких ядер и эллипсоидной деформацией (Регбийный мяч) для сверхтяжелых элементов. Ошибка "однобокой сборки" устранена.
 """)
 
 df_masses = load_ame_masses("mass.txt")
-grid_engine = GridPhysicsV8Core()
+grid_engine = GridPhysicsV9Core()
 liquid_engine = LiquidDropCore()
 
 st.sidebar.header("Конфигурация ядра")
-target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=82, step=1)
-target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=126, step=1)
+target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=1, step=1)
+target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=1, step=1)
 
 symbol = ELEMENTS.get(target_Z, "Unknown")
 st.sidebar.markdown(f"### Выбранный узел: **{symbol}-{target_Z+target_N}**")
@@ -234,7 +231,7 @@ if not df_masses.empty and (target_Z, target_N) in df_masses.index:
     
     grid_mass = grid_engine.compile_mass(target_Z, target_N)
     grid_err = grid_mass - exp_mass
-    col2.metric(label=f"Grid Physics V8 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
+    col2.metric(label=f"Grid Physics V9 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
     
     liquid_mass = liquid_engine.compile_mass(target_Z, target_N)
     liquid_err = liquid_mass - exp_mass
@@ -245,7 +242,7 @@ else:
 st.markdown("---")
 st.write("### Глобальная сравнительная матрица (Весь AME2020 + Синтетика)")
 if not df_masses.empty:
-    with st.spinner('Сборка таблицы: Рендеринг эллипсоидных ГЦК-кристаллов...'):
+    with st.spinner('Сборка таблицы: Рендеринг V9...'):
         comp_df = generate_comparison_matrix(grid_engine, liquid_engine, df_masses)
         
         comp_df['Grid Abs Error'] = comp_df['Grid Debt/Error (MeV)'].abs()
@@ -262,6 +259,6 @@ if not df_masses.empty:
         sc2.metric(label="Liquid Drop Efficiency (5 fits)", value=f"{liquid_efficiency:.4f} %", delta=f"Mean Error: {liquid_mean:.3f} MeV", delta_color="off")
         
         csv = comp_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Скачать CSV (V8 Rugby Spheroid)", data=csv, file_name='GridPhysics_V8_Log.csv', mime='text/csv')
+        st.download_button(label="📥 Скачать CSV (V9 Final)", data=csv, file_name='GridPhysics_V9_Log.csv', mime='text/csv')
         
         st.dataframe(comp_df.drop(columns=['Grid Abs Error', 'Liquid Abs Error']), use_container_width=True, height=400)

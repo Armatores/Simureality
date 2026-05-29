@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 
 # --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (ВЕРСИЯ 1.0 - БЕЗ ЭМПИРИКИ) ---
+# Базируются исключительно на вакуумном импедансе и ГЦК-маршрутизации.
 MASS_P = 938.272
 MASS_N = 939.565
 E_ELECTRON = 0.511
@@ -63,10 +64,14 @@ def load_ame_masses(filename="mass.txt"):
 class LiquidDropCore:
     """Легаси-движок классической физики (Формула Вейцзеккера)"""
     def compile_mass(self, Z, N):
-        if Z <= 0 or N < 0: return float('inf')
+        if Z < 0 or N < 0: return float('inf')
         A = Z + N
         
-        # 5 эмпирических костылей
+        # КОСТЫЛЬ ДЛЯ ЛЕГАСИ-ФИЗИКИ: Капельная модель бессмысленна для A < 2
+        # Это предотвращает краш с бесконечностями (inf)
+        if A < 2:
+            return (Z * MASS_P) + (N * MASS_N)
+            
         vol = A_V * A
         surf = A_S * (A ** (2/3))
         coul = A_C * (Z * (Z - 1)) / (A ** (1/3))

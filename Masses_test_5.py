@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V4: LINEAR CORE + LAYERED HALO) ---
+# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V5: PHASE TRANSITION) ---
 MASS_P = 938.272
 MASS_N = 939.565
 E_ELECTRON = 0.511
@@ -34,11 +34,11 @@ ELEMENTS = {
     110: 'Ds', 111: 'Rg', 112: 'Cn', 113: 'Nh', 114: 'Fl', 115: 'Mc', 116: 'Lv', 117: 'Ts', 118: 'Og'
 }
 
-st.set_page_config(page_title="Grid Physics Compiler V4", layout="wide")
+st.set_page_config(page_title="Grid Physics V5: Phase Transition", layout="wide")
 
 @st.cache_data
 def load_ame_masses(filename="mass.txt"):
-    """ПАРСЕР БЕЗ ФИЛЬТРОВ: Читает всю базу AME (Включая # и *)"""
+    """ПАРСЕР БЕЗ ФИЛЬТРОВ: Читает всю базу AME"""
     data = []
     try:
         with open(filename, 'r', encoding='utf-8') as f:
@@ -47,10 +47,8 @@ def load_ame_masses(filename="mass.txt"):
                 try:
                     n_str, z_str, a_str = line[5:10].strip(), line[10:15].strip(), line[15:19].strip()
                     be_str = line[54:65].strip().replace('#', '').replace('*', '')
-                    
                     if not n_str or not z_str or not be_str: continue
                     N, Z, A = int(n_str), int(z_str), int(a_str)
-                    
                     total_be_MeV = (float(be_str) * A) / 1000.0
                     exp_nucleus_mass = (Z * MASS_P) + (N * MASS_N) - total_be_MeV
                     data.append({'Z': Z, 'N': N, 'Mass_MeV': exp_nucleus_mass})
@@ -63,28 +61,25 @@ def load_ame_masses(filename="mass.txt"):
     except Exception: return pd.DataFrame()
 
 class LiquidDropCore:
-    """Легаси движок Капельной модели"""
     def compile_mass(self, Z, N):
         if Z < 0 or N < 0: return float('inf')
         A = Z + N
         if A < 2: return (Z * MASS_P) + (N * MASS_N)
-            
         vol = A_V * A
         surf = A_S * (A ** (2/3))
         coul = A_C * (Z * (Z - 1)) / (A ** (1/3))
         asym = A_A * ((A - 2*Z)**2) / A
-        
         if Z % 2 == 0 and N % 2 == 0: pair = A_P / (A ** 0.5)
         elif Z % 2 != 0 and N % 2 != 0: pair = -A_P / (A ** 0.5)
         else: pair = 0
-            
-        binding_energy = vol - surf - coul - asym + pair
-        return (Z * MASS_P) + (N * MASS_N) - binding_energy
+        return (Z * MASS_P) + (N * MASS_N) - (vol - surf - coul - asym + pair)
 
-class GridPhysicsV4Core:
-    """Ультимативный 3D-движок. Топология Linear Core + Layered Halo + Overflow Tax."""
+class GridPhysicsV5Core:
+    """Ультимативный Движок V5: Алгоритмический фазовый переход формы."""
     def __init__(self):
-        self._crystal_cache = {0: (0, 0), 1: (0, 12)}
+        # Кэш хранит 2 варианта сборки: "spherical" и "linear"
+        self._cache_spherical = {0: (0, 0), 1: (0, 12)}
+        self._cache_linear = {0: (0, 0), 1: (0, 12)}
 
     def get_fcc_neighbors(self, node):
         x, y, z = node
@@ -93,9 +88,10 @@ class GridPhysicsV4Core:
                   (0,1,1), (0,1,-1), (0,-1,1), (0,-1,-1)]
         return [(x+dx, y+dy, z+dz) for dx, dy, dz in deltas]
 
-    def compile_3d_crystal(self, n_clusters):
-        """Возвращает (Макро-линки, Количество открытых портов на поверхности)"""
-        if n_clusters in self._crystal_cache: return self._crystal_cache[n_clusters]
+    def build_crystal(self, n_clusters, mode="spherical"):
+        """Собирает кристалл в выбранном режиме"""
+        cache = self._cache_spherical if mode == "spherical" else self._cache_linear
+        if n_clusters in cache: return cache[n_clusters]
             
         occupied = set([(0, 0, 0)])
         for _ in range(1, n_clusters):
@@ -104,79 +100,87 @@ class GridPhysicsV4Core:
                 for neighbor in self.get_fcc_neighbors(node):
                     if neighbor not in occupied: candidates.add(neighbor)
             
-            best_pos, max_bonds = None, -1
+            cm_x = sum(n[0] for n in occupied) / len(occupied)
+            cm_y = sum(n[1] for n in occupied) / len(occupied)
+            cm_z = sum(n[2] for n in occupied) / len(occupied)
+
+            best_pos, max_bonds, min_dist = None, -1, float('inf')
             
-            # V4 ПАТЧ: Жадный алгоритм больше не пытается строить шар (убрано dist_sq).
-            # Сортировка нужна исключительно для детерминированности (чтобы результат не прыгал).
-            for cand in sorted(list(candidates)):
+            for cand in sorted(list(candidates)): # Сортировка для детерминированности
                 bonds = sum(1 for n in self.get_fcc_neighbors(cand) if n in occupied)
-                if bonds > max_bonds:
-                    max_bonds = bonds
-                    best_pos = cand
+                
+                if mode == "spherical":
+                    # Режим Шара: Максимум связей, жесткая привязка к центру
+                    dist_sq = (cand[0]-cm_x)**2 + (cand[1]-cm_y)**2 + (cand[2]-cm_z)**2
+                    if bonds > max_bonds or (bonds == max_bonds and dist_sq < min_dist):
+                        max_bonds, min_dist, best_pos = bonds, dist_sq, cand
+                else:
+                    # Режим Стержня (Linear): Только максимум связей, растет вытянуто
+                    if bonds > max_bonds:
+                        max_bonds, best_pos = bonds, cand
+                        
             occupied.add(best_pos)
 
         total_macro_links = sum(sum(1 for n in self.get_fcc_neighbors(node) if n in occupied) for node in occupied) // 2
         surface_ports = (n_clusters * 12) - (2 * total_macro_links)
         
-        self._crystal_cache[n_clusters] = (total_macro_links, surface_ports)
+        cache[n_clusters] = (total_macro_links, surface_ports)
         return total_macro_links, surface_ports
 
-    def compile_mass(self, Z, N):
-        if Z < 0 or N < 0: return float('inf')
-        
-        # Хардверные заглушки для одиночных нуклонов
-        if Z == 0 and N == 1: return MASS_N
-        if Z == 1 and N == 0: return MASS_P
-        
-        # 1. СБОРКА АЛЬФА-ЯДРА
+    def calculate_topology(self, Z, N, mode):
+        """Считает массу для конкретной формы ядра"""
         n_alphas = min(Z // 2, N // 2)
         binding_alphas = n_alphas * E_ALPHA
-        macro_links, surface_ports = self.compile_3d_crystal(n_alphas)
+        macro_links, surface_ports = self.build_crystal(n_alphas, mode)
         binding_macro = macro_links * E_MACRO_LINK
 
-        # 2. МАРШРУТИЗАЦИЯ ГАЛО (1/L)
         rem_Z = Z - (n_alphas * 2)
         rem_N = N - (n_alphas * 2)
         orphans_total = rem_Z + rem_N
         
-        binding_halo = 0
-        jitter = 0
-        overflow_tax = 0
+        binding_halo, jitter, overflow_tax = 0, 0, 0
 
         if orphans_total > 0:
             # СЛОЙ 1 (L=1): Прямые связи p-n
             pairs = min(rem_Z, rem_N)
             binding_halo += pairs * (E_LINK + E_PAIR)
-            
             leftover = orphans_total - (pairs * 2)
             
             if leftover > 0:
-                # СЛОЙ 2 (L=2): Стыковка к портам поверхности Ядра (Нейтронная Шуба)
+                # СЛОЙ 2 (L=2): Нейтронная/Протонная шуба
                 if surface_ports > 0:
                     L2_docked = min(leftover, surface_ports)
                     binding_halo += L2_docked * (E_LINK / 2.0)
                     leftover -= L2_docked
                 
-                # СЛОЙ 3 (L=3): Второй этаж шубы (экстремальный перевес)
+                # СЛОЙ 3 (L=3): Наращивание шубы
                 if leftover > 0:
                     binding_halo += leftover * (E_LINK / 3.0)
 
-            # JITTER TAX: Открытые порты Гало, светящие в вакуум
-            if n_alphas == 0 and pairs == 0:
-                open_ports = orphans_total * 12
-            else:
-                open_ports = orphans_total * 11
+            # JITTER TAX: Открытые порты
+            open_ports = orphans_total * 12 if (n_alphas == 0 and pairs == 0) else orphans_total * 11
             jitter += open_ports * JITTER_COST
 
-            # --- V4 ПАТЧ: ПРАВИЛО ЕМКОСТИ ГАЛО (OVERFLOW TAX) ---
+            # OVERFLOW TAX: Правило емкости Гало
             core_nucleons = n_alphas * 4
             if orphans_total > core_nucleons:
                 overflow = orphans_total - core_nucleons
-                # Каждый "лишний" нуклон конфликтует со всеми остальными сиротами
                 overflow_tax = overflow * orphans_total * E_ELECTRON
 
         total_be = binding_alphas + binding_macro + binding_halo - jitter - overflow_tax
-        return (Z * MASS_P) + (N * MASS_N) - total_be
+        calc_mass = (Z * MASS_P) + (N * MASS_N) - total_be
+        return calc_mass, mode
+
+    def compile_mass(self, Z, N):
+        if Z < 0 or N < 0: return float('inf')
+        if Z == 0 and N == 1: return MASS_N
+        if Z == 1 and N == 0: return MASS_P
+        
+        # МАГИЯ МАТРИЦЫ: Считаем обе формы и берем самую выгодную (минимальная масса = макс. стабильность)
+        mass_spherical, _ = self.calculate_topology(Z, N, "spherical")
+        mass_linear, _ = self.calculate_topology(Z, N, "linear")
+        
+        return min(mass_spherical, mass_linear)
 
 @st.cache_data
 def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
@@ -201,15 +205,15 @@ def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- RENDER UI ---
-st.title("Clash of Paradigms V4: Grid Physics (Linear Core) vs. Liquid Drop")
+st.title("Clash of Paradigms V5: The Final Architecture")
 st.markdown("""
-**Обновление V4.0 (Linear Packing & Overflow Tax):**
-- Убрано принудительное "сферическое сжатие" ядра. Кристалл собирается детерминированно, максимизируя связи.
-- Введен налог на переполнение Гало (Overflow Tax) для экстремальных изотопов за линией сброса.
+**Обновление V5.0 (Nuclear Shape Phase Transition):**
+Матрица динамически переключается между сферической и эллипсоидной (линейной) упаковкой ГЦК-решетки.
+Скрипт просчитывает обе топологии для каждого изотопа и выбирает состояние с наименьшей вычислительной стоимостью ($ \Sigma K \to \min $).
 """)
 
 df_masses = load_ame_masses("mass.txt")
-grid_engine = GridPhysicsV4Core()
+grid_engine = GridPhysicsV5Core()
 liquid_engine = LiquidDropCore()
 
 st.sidebar.header("Конфигурация ядра")
@@ -226,9 +230,14 @@ if not df_masses.empty and (target_Z, target_N) in df_masses.index:
     exp_mass = df_masses.loc[(target_Z, target_N), 'Mass_MeV']
     col1.metric(label="AME2020 Hardware Log", value=f"{exp_mass:.3f} MeV")
     
-    grid_mass = grid_engine.compile_mass(target_Z, target_N)
-    grid_err = grid_mass - exp_mass
-    col2.metric(label="Grid Physics ΣK (V4)", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
+    # Чтобы показать, какую форму выбрала матрица
+    mass_sph, _ = grid_engine.calculate_topology(target_Z, target_N, "spherical")
+    mass_lin, _ = grid_engine.calculate_topology(target_Z, target_N, "linear")
+    best_mass = min(mass_sph, mass_lin)
+    chosen_shape = "Сфера" if best_mass == mass_sph else "Эллипсоид/Стержень"
+    
+    grid_err = best_mass - exp_mass
+    col2.metric(label=f"Grid Physics V5 ({chosen_shape})", value=f"{best_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
     
     liquid_mass = liquid_engine.compile_mass(target_Z, target_N)
     liquid_err = liquid_mass - exp_mass
@@ -239,7 +248,7 @@ else:
 st.markdown("---")
 st.write("### Глобальная сравнительная матрица (Весь AME2020 + Синтетика)")
 if not df_masses.empty:
-    with st.spinner('Анализ таблицы Менделеева (Linear Core Compilation)...'):
+    with st.spinner('Симуляция фазовых переходов на всем пуле AME2020...'):
         comp_df = generate_comparison_matrix(grid_engine, liquid_engine, df_masses)
         
         comp_df['Grid Abs Error'] = comp_df['Grid Debt/Error (MeV)'].abs()
@@ -256,6 +265,6 @@ if not df_masses.empty:
         sc2.metric(label="Liquid Drop Efficiency (5 fits)", value=f"{liquid_efficiency:.4f} %", delta=f"Mean Error: {liquid_mean:.3f} MeV", delta_color="off")
         
         csv = comp_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Скачать CSV (V4 Linear Core)", data=csv, file_name='GridPhysics_V4_Log.csv', mime='text/csv')
+        st.download_button(label="📥 Скачать CSV (V5 Final Phase)", data=csv, file_name='GridPhysics_V5_Log.csv', mime='text/csv')
         
         st.dataframe(comp_df.drop(columns=['Grid Abs Error', 'Liquid Abs Error']), use_container_width=True, height=400)

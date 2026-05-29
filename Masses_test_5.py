@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V6: THE IRON THRESHOLD) ---
+# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V7: UNIFIED MONOLITH) ---
 MASS_P = 938.272
 MASS_N = 939.565
 E_ELECTRON = 0.511
@@ -34,7 +34,7 @@ ELEMENTS = {
     110: 'Ds', 111: 'Rg', 112: 'Cn', 113: 'Nh', 114: 'Fl', 115: 'Mc', 116: 'Lv', 117: 'Ts', 118: 'Og'
 }
 
-st.set_page_config(page_title="Grid Physics V6: The Iron Threshold", layout="wide")
+st.set_page_config(page_title="Grid Physics V7: Unified Monolith", layout="wide")
 
 @st.cache_data
 def load_ame_masses(filename="mass.txt"):
@@ -73,9 +73,16 @@ class LiquidDropCore:
         else: pair = 0
         return (Z * MASS_P) + (N * MASS_N) - (vol - surf - coul - asym + pair)
 
-class GridPhysicsV6Core:
+class GridPhysicsV7Core:
     def __init__(self):
-        self._crystal_cache = {}
+        # ВОССТАНОВЛЕН КЭШ ПРЕДЕЛЬНОЙ ЖЕСТКОСТИ ИЗ V3 (Платоновы тела)
+        self._crystal_cache = {
+            0: (0, 0),
+            1: (0, 12),
+            2: (1, 22),
+            3: (3, 30),
+            4: (6, 36)
+        }
 
     def get_fcc_neighbors(self, node):
         x, y, z = node
@@ -85,7 +92,6 @@ class GridPhysicsV6Core:
         return [(x+dx, y+dy, z+dz) for dx, dy, dz in deltas]
 
     def compile_3d_crystal(self, n_clusters):
-        """Фазовый переход на 14 кластерах (Железо-56)"""
         if n_clusters in self._crystal_cache: 
             return self._crystal_cache[n_clusters]
             
@@ -102,12 +108,13 @@ class GridPhysicsV6Core:
 
             best_pos, max_bonds, min_dist = None, -1, float('inf')
             
-            # --- THE IRON THRESHOLD: ПРЕДЕЛ ЖЕСТКОСТИ ГЦК ---
-            # До 14 кластеров (A=56) матрица удерживает идеальную сферу.
-            # После 14 кластеров (A>56) сфера рвется, матрица разрешает линейную/эллипсоидную деформацию.
+            # РУБИЛЬНИК ФОРМЫ (Железо-56)
             force_spherical = (n_clusters <= 14)
             
-            for cand in sorted(list(candidates)): 
+            # Для сферы используем естественный сет (симметрия). Для стержня - сортировку.
+            iterable_candidates = candidates if force_spherical else sorted(list(candidates))
+            
+            for cand in iterable_candidates: 
                 bonds = sum(1 for n in self.get_fcc_neighbors(cand) if n in occupied)
                 
                 if force_spherical:
@@ -145,29 +152,23 @@ class GridPhysicsV6Core:
         binding_halo, jitter, overflow_tax = 0, 0, 0
 
         if orphans_total > 0:
-            # СЛОЙ 1 (L=1): Прямые связи p-n
             pairs = min(rem_Z, rem_N)
             binding_halo += pairs * (E_LINK + E_PAIR)
             
             leftover = orphans_total - (pairs * 2)
-            
             if leftover > 0:
-                # СЛОЙ 2 (L=2): Нейтронная Шуба
                 if surface_ports > 0:
                     L2_docked = min(leftover, surface_ports)
                     binding_halo += L2_docked * (E_LINK / 2.0)
                     leftover -= L2_docked
                 
-                # СЛОЙ 3 (L=3): Перевес
                 if leftover > 0:
                     binding_halo += leftover * (E_LINK / 3.0)
 
-            # JITTER TAX
             open_ports = orphans_total * 12 if (n_alphas == 0 and pairs == 0) else orphans_total * 11
             jitter += open_ports * JITTER_COST
 
-            # OVERFLOW TAX: Аномальная экзотика (Литий-11)
-            core_nucleons = max(n_alphas * 4, 1) # База 1 для изотопов Водорода
+            core_nucleons = max(n_alphas * 4, 1) 
             if orphans_total > core_nucleons:
                 overflow = orphans_total - core_nucleons
                 overflow_tax = overflow * orphans_total * E_ELECTRON
@@ -198,21 +199,20 @@ def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- RENDER UI ---
-st.title("Grid Physics V6: The Iron Threshold")
+st.title("Grid Physics V7: Unified Monolith")
 st.markdown("""
-**Обновление V6.0:**
-Внедрено строгое правило "Железного Плато" (из *Spectral Graph Analysis*).
-- Ядра до Железа-56 ($n \le 14$ альфа-кластеров) удерживают жесткую **сферическую** ГЦК-структуру.
-- Ядра после Железа-56 переходят в состояние "Geometry Overflow" и деформируются в стержни/эллипсоиды для сброса натяжения.
+**Обновление V7.0 (Restored Symmetry & Iron Threshold):**
+- Восстановлены базовые геометрические префабы Матрицы для легких ядер (до A=16).
+- Применен алгоритм Фазового перехода (Сфера -> Вытянутый кристалл) на границе Железа-56 (n=14 кластеров).
 """)
 
 df_masses = load_ame_masses("mass.txt")
-grid_engine = GridPhysicsV6Core()
+grid_engine = GridPhysicsV7Core()
 liquid_engine = LiquidDropCore()
 
 st.sidebar.header("Конфигурация ядра")
-target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=26, step=1)
-target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=30, step=1)
+target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=6, step=1)
+target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=6, step=1)
 
 symbol = ELEMENTS.get(target_Z, "Unknown")
 st.sidebar.markdown(f"### Выбранный узел: **{symbol}-{target_Z+target_N}**")
@@ -225,11 +225,11 @@ if not df_masses.empty and (target_Z, target_N) in df_masses.index:
     col1.metric(label="AME2020 Hardware Log", value=f"{exp_mass:.3f} MeV")
     
     n_alph = min(target_Z//2, target_N//2)
-    shape_str = "Сфера" if n_alph <= 14 else "Вытянутая деформация"
+    shape_str = "Сфера" if n_alph <= 14 else "Вытянутый кристалл"
     
     grid_mass = grid_engine.compile_mass(target_Z, target_N)
     grid_err = grid_mass - exp_mass
-    col2.metric(label=f"Grid Physics V6 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
+    col2.metric(label=f"Grid Physics V7 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
     
     liquid_mass = liquid_engine.compile_mass(target_Z, target_N)
     liquid_err = liquid_mass - exp_mass
@@ -240,7 +240,7 @@ else:
 st.markdown("---")
 st.write("### Глобальная сравнительная матрица (Весь AME2020 + Синтетика)")
 if not df_masses.empty:
-    with st.spinner('Сборка таблицы с учетом Железного Рубильника (Iron Threshold)...'):
+    with st.spinner('Сборка таблицы (Unified Threshold Mode)...'):
         comp_df = generate_comparison_matrix(grid_engine, liquid_engine, df_masses)
         
         comp_df['Grid Abs Error'] = comp_df['Grid Debt/Error (MeV)'].abs()
@@ -257,6 +257,6 @@ if not df_masses.empty:
         sc2.metric(label="Liquid Drop Efficiency (5 fits)", value=f"{liquid_efficiency:.4f} %", delta=f"Mean Error: {liquid_mean:.3f} MeV", delta_color="off")
         
         csv = comp_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Скачать CSV (V6 Iron Threshold)", data=csv, file_name='GridPhysics_V6_Log.csv', mime='text/csv')
+        st.download_button(label="📥 Скачать CSV (V7 Final)", data=csv, file_name='GridPhysics_V7_Log.csv', mime='text/csv')
         
         st.dataframe(comp_df.drop(columns=['Grid Abs Error', 'Liquid Abs Error']), use_container_width=True, height=400)

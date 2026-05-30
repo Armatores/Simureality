@@ -4,6 +4,11 @@ import numpy as np
 import plotly.express as px
 import os
 
+# ==============================================================================
+# GRID PHYSICS: GLOBAL RESONANCE SCANNER
+# Ab-Initio Topological Reverse-Engineering Suite
+# ==============================================================================
+
 # --- GRID PHYSICS HARDWARE CONSTANTS ---
 # Fundamental constants defining the discrete computational substrate
 MASS_P = 938.272       # Proton mass (MeV)
@@ -15,7 +20,7 @@ E_PAIR = 1.18          # Paired valence nucleons profit
 JITTER_COST = 0.01311  # Dynamic noise penalty per unclosed routing port
 LAMBDA_P = 1.3214      # Base L1-Cache lattice step (femtometers)
 
-# --- EMBEDDED DOCUMENTATION (README) ---
+# --- EMBEDDED DOCUMENTATION (THEORY) ---
 README_TEXT = """
 # 🌌 Grid Physics: Global Resonance Scanner
 
@@ -36,10 +41,10 @@ By processing thousands of isotopes, this engine mathematically decompiles nucle
 ---
 
 ## 🔑 The Core Discovery: The "Staircase of Shape Phases"
-The scanner calculates the physical length of every heavy isotope along its Z-axis using the fundamental L1-Cache lattice step of the Matrix ($\lambda_p \\approx 1.3214 \\text{ fm}$). 
+The scanner calculates the physical equivalent length of every heavy isotope along its Z-axis using the fundamental L1-Cache lattice step of the Matrix ($\\lambda_p \\approx 1.3214 \\text{ fm}$). 
 
 When mapping calculated nuclear length against the Mass Number ($A$), the application reveals a striking phenomenon:
-* **The Continuous Model Fails:** Nuclei do not stretch smoothly (e.g., 8.1, 8.2, 8.3 layers).
+* **The Continuous Model Fails:** Nuclei do not stretch smoothly (e.g., 8.1, 8.2, 8.3 layers) as continuous liquid models would predict.
 * **The Discrete Staircase:** Stable nuclei strictly cluster on **integer lattice layers** (e.g., exactly 8.0, 9.0, or 11.0 layers). This is the *Attractor State* where the nuclear core perfectly resonates with the macroscopic Vacuum Gate ($3.3249 \\text{ \\AA}$).
 * **Garbage Collection (Decay):** Isotopes that fall into fractional inter-layer spaces (e.g., 8.5 layers) generate severe computational noise (**Jitter Tax**). The Universe's operating system algorithmically flags these fractional nodes and executes a spontaneous decay protocol (Alpha/Beta/Fission) to trim the geometry back to an integer resonance.
 
@@ -55,7 +60,8 @@ The scanner uses zero empirical fitting coefficients (no Weizsäcker terms). It 
 *If an ideal greedy spherical assembly produces a mass that is "too light" compared to AME2020, the scanner identifies this as Geometry Overflow. It calculates the exact number of macroscopic bonds the Universe had to sever to stretch the nucleus into a stable, hollow resonant antenna.*
 """
 
-st.set_page_config(page_title="Grid Physics: Global Resonance Scanner", layout="wide")
+# Configure Streamlit Page
+st.set_page_config(page_title="Grid Physics: Global Scanner", layout="wide", page_icon="🌌")
 
 # --- DATABASE PARSERS ---
 @st.cache_data
@@ -118,6 +124,9 @@ def calculate_grid_metrics(row):
     Z, N, exp_mass = row['Z'], row['N'], row['Exp_Mass_MeV']
     n_alphas = min(Z // 2, N // 2)
     
+    if n_alphas < 1:
+        return pd.Series([0.0, 0.0, 1.0])
+    
     # 1. Simulate the Ideal Greedy Spherical Assembly (L1 Cache compression)
     occupied = set([(0, 0, 0)])
     for _ in range(1, n_alphas):
@@ -139,7 +148,7 @@ def calculate_grid_metrics(row):
 
     greedy_links = sum(sum(1 for n in get_fcc_neighbors(node) if n in occupied) for node in occupied) // 2
     
-    # Calculate mass of the theoretical rigid sphere
+    # Calculate mass of the theoretical continuous rigid sphere
     binding_alphas = n_alphas * E_ALPHA
     binding_macro = greedy_links * E_MACRO_LINK
     
@@ -150,96 +159,18 @@ def calculate_grid_metrics(row):
     sphere_mass = (Z * MASS_P) + (N * MASS_N) - (binding_alphas + binding_macro + binding_halo)
     
     # 2. TOPOLOGICAL DEBT & DEFORMATION EXTRAPOLATION
-    # If the theoretical rigid sphere is lighter than experimental mass, the Matrix 
-    # executes 'Geometry Overflow' handling, breaking links to hollow/elongate the core.
+    # If theoretical sphere is lighter than experimental mass, the Matrix 
+    # executes 'Geometry Overflow' handling, breaking links to elongate the core.
     topological_debt = exp_mass - sphere_mass 
     
     broken_links = 0
     calculated_layers = 0.0
     
+    # Geometric mapping constant (translating broken Euclidean bonds to longitudinal elongation)
+    GEOMETRIC_SCALAR = 0.08 
+    
     if topological_debt > 0:
         broken_links = topological_debt / E_MACRO_LINK
-        # Geometric strain translates to longitudinal stretching (prolate deformation)
         base_radius = (n_alphas)**(1/3) * 1.5 
-        calculated_layers = base_radius + (broken_links * 0.08) 
+        calculated_layers = base_radius + (broken_links * GEOMETRIC_SCALAR) 
     else:
-        # Pre-Iron elements maintain spherical integrity without critical tension
-        calculated_layers = (n_alphas)**(1/3) * 1.5
-        
-    return pd.Series([topological_debt, broken_links, calculated_layers])
-
-# --- UI RENDERING & DASHBOARDS ---
-st.title("🌌 Grid Physics: Global Resonance Scanner")
-
-with st.spinner("Compiling Matrix Databases (AME2020 & NUBASE2020)..."):
-    df_ame = load_ame2020()
-    df_nubase = load_nubase2020()
-
-if not df_ame.empty and not df_nubase.empty:
-    st.success("✅ Experimental databases successfully loaded and indexed.")
-    
-    df = pd.merge(df_ame, df_nubase, on=['Z', 'N'], how='inner')
-    df = df[df['A'] > 10] # Filter out ultralight noise
-    
-    with st.spinner("Executing Topological Reverse-Engineering Protocol..."):
-        scan_df = df.copy() 
-        scan_df[['Topo_Debt', 'Broken_Links', 'Grid_Layers']] = scan_df.apply(calculate_grid_metrics, axis=1)
-        
-        # Calculate Jitter (Distance from nearest stable integer lattice layer)
-        scan_df['Grid_Layers_Int'] = scan_df['Grid_Layers'].round()
-        scan_df['Jitter'] = abs(scan_df['Grid_Layers'] - scan_df['Grid_Layers_Int'])
-        
-        scan_df['Stability_Class'] = scan_df['Is_Stable'].apply(lambda x: "Stable Node" if x else "Radioactive (GC Target)")
-
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📈 Deformation Staircase", 
-        "🔥 Vacuum Noise (Jitter) Heatmap", 
-        "🗄️ System Log", 
-        "📖 Theory & Documentation",
-        "💻 Source Code"
-    ])
-
-    with tab1:
-        st.markdown("### The Staircase of Shape Phase Transitions")
-        st.markdown("Y-axis represents the calculated longitudinal length of the nucleus in **FCC Lattice Layers**. The data proves that heavy nuclei do not stretch continuously; they jump discretely to align with integer lattice resonance limits.")
-        
-        fig1 = px.scatter(scan_df, x='A', y='Grid_Layers', color='Jitter',
-                          hover_data=['Z', 'N', 'Half_Life_Raw'],
-                          color_continuous_scale=["#00FF00", "#FF0000"],
-                          labels={'Grid_Layers': 'Core Length (Lattice Layers)', 'A': 'Mass Number (A)'})
-        
-        for layer in range(3, 14):
-            fig1.add_hline(y=layer, line_dash="dash", line_color="rgba(255,255,255,0.2)")
-            
-        fig1.update_layout(height=600)
-        st.plotly_chart(fig1, use_container_width=True)
-
-    with tab2:
-        st.markdown("### Jitter Tax: Geometric Noise and Radioactivity")
-        st.markdown("**Green zones** indicate perfect geometric resonance with the integer vacuum grid (Stability). **Red zones** highlight nuclei trapped in fractional interlayer spaces, triggering deterministic Garbage Collection (Decay).")
-        
-        fig2 = px.scatter(scan_df, x='N', y='Z', color='Jitter', symbol='Stability_Class',
-                          hover_data=['A', 'Topo_Debt', 'Half_Life_Raw'],
-                          color_continuous_scale=["#00FF00", "#FF0000"])
-        fig2.update_layout(height=700)
-        st.plotly_chart(fig2, use_container_width=True)
-
-    with tab3:
-        st.markdown("### Raw Topological Reverse-Engineering Data")
-        st.dataframe(scan_df[['Z', 'N', 'A', 'Exp_Mass_MeV', 'Topo_Debt', 'Broken_Links', 'Grid_Layers', 'Jitter', 'Is_Stable']].sort_values('A'), use_container_width=True)
-
-    with tab4:
-        st.markdown(README_TEXT)
-        
-    with tab5:
-        st.markdown("### Transparent Algorithm Verification")
-        st.markdown("This application executes ab-initio analysis without hidden API calls. The full Python runtime is provided below.")
-        try:
-            with open(__file__, "r", encoding="utf-8") as f:
-                source_code = f.read()
-            st.code(source_code, language='python')
-        except Exception as e:
-            st.warning("Source code reflection is restricted in this specific hosting environment.")
-
-else:
-    st.warning("⚠️ Pending Databases: Please place `mass.txt` and `Nubase2020.txt` in the root directory.")

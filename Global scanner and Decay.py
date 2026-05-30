@@ -34,7 +34,7 @@ st.set_page_config(page_title="Grid Physics: Global Scanner V18", layout="wide",
 
 # --- НАДЕЖНЫЙ ПАРСЕР ТРЕХ БАЗ ДАННЫХ ---
 @st.cache_data
-def load_and_compile_matrix():
+def load_and_merge_databases():
     # 1. Зарядовые радиусы CR2013
     if not os.path.exists("charge_radii.csv"):
         st.error("Файл 'charge_radii.csv' не найден.")

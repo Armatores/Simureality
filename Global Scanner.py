@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import math
 
 # ==============================================================================
 # GRID PHYSICS: EMPIRICAL RESONANCE SCANNER (Occam's Razor Edition)
@@ -13,7 +12,7 @@ import math
 LAMBDA_P = 1.3214  # Base L1-Cache lattice step (femtometers)
 
 # --- EMBEDDED DOCUMENTATION (THEORY) ---
-README_TEXT = f"""
+README_TEXT = """
 # 🌌 Grid Physics: Empirical Resonance Scanner
 
 **A Data-Driven Proof of Space Quantization and Discrete Nuclear Geometry.**
@@ -22,15 +21,15 @@ README_TEXT = f"""
 
 ## 🔬 Overview
 Classical nuclear physics relies on the "Liquid Drop Model," assuming the atomic nucleus is a continuous, incompressible fluid that can stretch into any analog shape. 
-This analytical dashboard shatters that assumption without relying on complex simulations or fitting coefficients. We simply take **raw, published experimental data** (Charge Radii and Quadrupole Deformation) and measure it against the fundamental discrete lattice step of the universe ($\\lambda_p = {LAMBDA_P}$ fm).
+This analytical dashboard shatters that assumption without relying on complex simulations or fitting coefficients. We simply take **raw, published experimental data** (Charge Radii and Quadrupole Deformation) and measure it against the fundamental discrete lattice step of the universe (1.3214 fm).
 
 ---
 
 ## 🔑 The Methodology (Occam's Razor)
-1. **Raw Experimental Data:** We input the experimental Root-Mean-Square Charge Radius ($R_c$) and the Quadrupole Deformation parameter ($\\beta_2$) for heavy isotopes.
+1. **Raw Experimental Data:** We input the experimental Root-Mean-Square Charge Radius (Rc) and the Quadrupole Deformation parameter (Beta2) for heavy isotopes.
 2. **Physical Z-Axis Length:** Using standard continuous nuclear physics formulas, we calculate the absolute longitudinal length of the nucleus from pole to pole: 
-   $L_{fm} = 2 \\times R_c \\times (1 + \\sqrt{{5 / 4\\pi}} \\times \\beta_2)$
-3. **The Matrix Division:** We simply divide this true physical length by the theoretical Grid Physics constant: **$1.3214$ fm**.
+   L = 2 * Rc * (1 + sqrt(5 / 4pi) * Beta2)
+3. **The Matrix Division:** We simply divide this true physical length by the theoretical Grid Physics constant: **1.3214 fm**.
 
 ## 📊 The Result: The Staircase of Attractors
 If the continuous liquid drop model were true, the resulting length divided by a random constant would yield a chaotic cloud of floating-point numbers. 
@@ -109,7 +108,7 @@ def process_empirical_data(df):
 
 # --- UI RENDERING ---
 st.title("🌌 Grid Physics: Empirical Resonance Scanner")
-st.markdown("**Proving space quantization using pure experimental data and a single constant ($1.3214$ fm). Zero simulations. Zero fitting parameters.**")
+st.markdown("**Proving space quantization using pure experimental data and a single constant (1.3214 fm). Zero simulations. Zero fitting parameters.**")
 
 raw_df = load_empirical_data()
 df = process_empirical_data(raw_df)
@@ -123,7 +122,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 with tab1:
     st.markdown("### The Staircase of Shape Phase Transitions")
-    st.markdown("If the nucleus was a continuous 'liquid drop', this graph would be a smooth diagonal line. Instead, dividing actual experimental length by $1.3214$ fm reveals absolute integer quantization. The universe is a 3D computational lattice.")
+    st.markdown("If the nucleus was a continuous 'liquid drop', this graph would be a smooth diagonal line. Instead, dividing actual experimental length by 1.3214 fm reveals absolute integer quantization. The universe is a 3D computational lattice.")
     
     fig = px.scatter(df, x='A', y='Grid_Layers_Float', color='Jitter',
                       hover_data=['Isotope', 'Length_fm', 'Rc_fm', 'Beta2'],
@@ -139,7 +138,7 @@ with tab1:
 
 with tab2:
     st.markdown("### Processed Empirical Data Table")
-    st.markdown(f"**Constant used:** $\\lambda_p = {LAMBDA_P}$ fm")
+    st.markdown(f"**Constant used:** λ_p = {LAMBDA_P} fm")
     # Format the dataframe for display
     display_df = df[['Isotope', 'Z', 'A', 'Rc_fm', 'Beta2', 'Length_fm', 'Grid_Layers_Float', 'Grid_Layers_Int', 'Jitter', 'Status']].copy()
     display_df = display_df.round({'Rc_fm': 3, 'Beta2': 3, 'Length_fm': 3, 'Grid_Layers_Float': 3, 'Jitter': 3})
@@ -150,7 +149,7 @@ with tab3:
 
 with tab4:
     st.markdown("### Truth in Code")
-    st.markdown("No complex simulations, no Hamiltonians. Just experimental facts divided by $1.3214$ fm.")
+    st.markdown("No complex simulations, no Hamiltonians. Just experimental facts divided by 1.3214 fm.")
     try:
         with open(__file__, "r", encoding="utf-8") as f:
             st.code(f.read(), language='python')

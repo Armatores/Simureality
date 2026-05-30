@@ -174,3 +174,90 @@ def calculate_grid_metrics(row):
         base_radius = (n_alphas)**(1/3) * 1.5 
         calculated_layers = base_radius + (broken_links * GEOMETRIC_SCALAR) 
     else:
+        # Pre-Iron elements maintain spherical integrity
+        calculated_layers = (n_alphas)**(1/3) * 1.5
+        
+    return pd.Series([topological_debt, broken_links, calculated_layers])
+
+# --- UI RENDERING & DASHBOARDS ---
+st.title("🌌 Grid Physics: Global Resonance Scanner")
+st.markdown("**Empirical Validation of Information Physics: Discrete Topological Extrapolation of Nuclear Mass and Decay**")
+
+with st.spinner("Compiling Matrix Databases (AME2020 & NUBASE2020)..."):
+    df_ame = load_ame2020()
+    df_nubase = load_nubase2020()
+
+if not df_ame.empty and not df_nubase.empty:
+    st.success("✅ Experimental databases successfully loaded and indexed.")
+    
+    # Merge datasets on Protons (Z) and Neutrons (N)
+    df = pd.merge(df_ame, df_nubase, on=['Z', 'N'], how='inner')
+    df = df[df['A'] > 10] # Filter out ultralight noise
+    
+    with st.spinner("Executing Topological Reverse-Engineering Protocol (Calculations may take 10-30 seconds)..."):
+        scan_df = df.copy() 
+        scan_df[['Topo_Debt', 'Broken_Links', 'Grid_Layers']] = scan_df.apply(calculate_grid_metrics, axis=1)
+        
+        # Calculate Jitter (Distance from nearest stable integer lattice layer)
+        scan_df['Grid_Layers_Int'] = scan_df['Grid_Layers'].round()
+        scan_df['Jitter'] = abs(scan_df['Grid_Layers'] - scan_df['Grid_Layers_Int'])
+        
+        # Categorize stability for plotting
+        scan_df['Stability_Class'] = scan_df['Is_Stable'].apply(lambda x: "Stable Attractor Node" if x else "Radioactive (GC Target)")
+
+    # Build Interface Tabs
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📈 Deformation Staircase", 
+        "🔥 Vacuum Noise (Jitter) Heatmap", 
+        "🗄️ System Log", 
+        "📖 Theory & Documentation",
+        "💻 Source Code"
+    ])
+
+    with tab1:
+        st.markdown("### The Staircase of Shape Phase Transitions")
+        st.markdown("The Y-axis represents the calculated longitudinal length of the nucleus in **FCC Lattice Layers**. The data proves that heavy nuclei do not stretch continuously; they jump discretely to align with integer lattice resonance limits (Attractors).")
+        
+        fig1 = px.scatter(scan_df, x='A', y='Grid_Layers', color='Jitter',
+                          hover_data=['Z', 'N', 'Half_Life_Raw'],
+                          color_continuous_scale=["#00FF00", "#FF0000"],
+                          labels={'Grid_Layers': 'Core Length (FCC Layers)', 'A': 'Mass Number (A)', 'Jitter': 'Geometric Jitter'})
+        
+        # Draw Integer Resonance Guidelines
+        for layer in range(3, 14):
+            fig1.add_hline(y=layer, line_dash="dash", line_color="rgba(255,255,255,0.2)")
+            
+        fig1.update_layout(height=650, template="plotly_dark")
+        st.plotly_chart(fig1, use_container_width=True)
+
+    with tab2:
+        st.markdown("### Jitter Tax: Geometric Noise and Radioactivity")
+        st.markdown("**Green zones** indicate perfect geometric resonance with the integer vacuum grid (Stability). **Red zones** highlight nuclei trapped in fractional interlayer spaces, generating system noise and triggering deterministic Garbage Collection (Decay).")
+        
+        fig2 = px.scatter(scan_df, x='N', y='Z', color='Jitter', symbol='Stability_Class',
+                          hover_data=['A', 'Topo_Debt', 'Half_Life_Raw'],
+                          color_continuous_scale=["#00FF00", "#FF0000"],
+                          labels={'N': 'Neutrons (N)', 'Z': 'Protons (Z)', 'Jitter': 'Jitter Tax'})
+        fig2.update_layout(height=700, template="plotly_dark")
+        st.plotly_chart(fig2, use_container_width=True)
+
+    with tab3:
+        st.markdown("### Raw Topological Reverse-Engineering Data")
+        st.dataframe(scan_df[['Z', 'N', 'A', 'Exp_Mass_MeV', 'Topo_Debt', 'Broken_Links', 'Grid_Layers', 'Jitter', 'Is_Stable']].sort_values('A'), use_container_width=True)
+
+    with tab4:
+        st.markdown(README_TEXT)
+        
+    with tab5:
+        st.markdown("### Transparent Algorithm Verification")
+        st.markdown("This application executes *ab-initio* analysis without hidden API calls or proprietary libraries. The full Python runtime logic is exposed below.")
+        try:
+            # Introspection: The script reads and displays its own source code
+            with open(__file__, "r", encoding="utf-8") as f:
+                source_code = f.read()
+            st.code(source_code, language='python')
+        except Exception as e:
+            st.warning("Source code reflection is restricted in this specific deployment environment.")
+
+else:
+    st.warning("⚠️ **Pending Databases:** Please place `mass.txt` (AME2020) and `Nubase2020.txt` in the root directory alongside this script.")

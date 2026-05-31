@@ -80,9 +80,12 @@ else:
         Modern physics has hit a dead end trying to describe the world with a set of probabilities and infinite fields. 
         **Grid Physics** offers a radical ontological shift: The Universe is a discrete computational substrate (Face-Centered Cubic lattice) governed by a single hardware law — **the drive towards minimal computational complexity ($\Sigma K \\to \min$)**.
 
-        ### 1. The Atom as an IT Process, Not a Collection of Spheres
-        Forget about protons and neutrons as independent, solid entities. An atomic nucleus is a **single dynamic 3D-graph compilation process**. 
-        Mass is not an innate property of matter; it is **Topological Debt ($\Delta K$)** — the amount of processor resources (RAM and CPU) the Matrix must spend to route data through a distorted lattice node.
+        ### 1. The Dual Nature of Time: 3D Micro-Time vs. 1D Macro-Time
+        Forget about protons and neutrons as independent, solid spheres. At the fundamental hardware level, reality is constructed entirely from **three-dimensional numbers** (Trinaries). Because the Matrix's processor (the Trisistor) updates these data structures across all three spatial axes (X, Y, Z) simultaneously, **time inside a particle is strictly three-dimensional** — an update vector $(t_x, t_y, t_z)$. 
+        
+        What we perceive as standard, linear one-dimensional "time" is merely the macroscopic rendering track — the straight coordinate axis along which the global system moves as a whole, frame by frame. 
+        
+        Therefore, an atomic nucleus is a dynamic 3D-graph compilation process. **Mass** is not an innate property of matter; it is **Topological Debt ($\Delta K$)** — the amount of processor resources the Matrix must spend to successfully route these 3D-time vectors through a distorted lattice node to keep it synchronized with the 1D macro-timeline.
 
         ### 2. Data Deduplication (Mass Defect)
         Why does a nucleus weigh less than the sum of its parts? In IT, this is called **Data Deduplication**. When nodes merge, they collapse shared I/O ports. The Matrix no longer needs to compute their internal boundaries. Computational complexity drops, and the freed resources are released into the physical world as "Binding Energy".

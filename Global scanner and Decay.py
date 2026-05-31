@@ -96,11 +96,14 @@ else:
         To compensate for this local lag, the System Dispatcher *slows down the clock rate* in that region. 
         > **Gravity** is the operating system's attempt to move heavy, "lagging" processes closer together (defragmentation) to optimize the cache. This is exactly why time flows slower near massive objects.
 
-        ### 4. Radioactivity as Kernel Panic (Uncompensated Lag)
-        If nuclear deformation becomes too severe, the internal 3D-time vectors ($t_x, t_y, t_z$) begin to diverge. 
-        When the topological debt reaches critical mass (around 55 MeV), the desynchronization angle hits **180° (complete anti-phase)**. 
-        A Race Condition occurs that cannot be compensated by gravitational time dilation. 
-        > **Radioactive decay** is not a quantum accident. It is a system *Timeout* by the Garbage Collector, which forcefully kills the hung process to save the entire system from a Geometry Overflow.
+        #### 4. Radioactivity as a 3D-Time Synchronization Error (Kernel Panic)
+Stable nuclei are those whose geometry perfectly resonates with the discrete steps of the FCC lattice. Because their nodes align exactly with the "integer floors" of the grid, their internal 3D-time vectors ($t_x, t_y, t_z$) update in absolute synchrony. The Matrix recalculates them flawlessly, without lag or Topological Debt ($\Delta K \approx 0$). They exist in a stable, infinite execution loop.
+
+Unstable nuclei are geometrically deformed. Their nodes get physically shifted and "stuck" between the lattice layers (Geometric Jitter). Because the speed of information transfer in the system is finite (the speed of light), this physical spatial misalignment automatically converts into a temporal lag. The three time axes inside the nucleus begin to desynchronize.
+
+When the topological debt reaches a critical threshold (around 55 MeV), the desynchronization angle hits 180° (complete anti-phase). A fatal system error occurs: the global 1D macro-timeline cannot render a node whose internal 3D dimensions are ticking in opposite directions. 
+
+**Radioactive decay is not a quantum accident.** It is a deterministic Garbage Collector Timeout, forcefully terminating and recompiling the desynchronized process to save the Universe's operating system from Geometry Overflow.
 
         ### ⚙️ How Does This Script Work?
         This engine completely avoids the probabilistic crutches of the Standard Model. It takes the geometric assembly error ($\Delta K$), translates it into a 3D-time desynchronization angle, and computes the exact Garbage Collector timeout. It then compares this theoretical timeout against real collider measurements (NUBASE database). The accuracy you see in the Live Benchmark proves that **the Universe is strictly algorithmic**.

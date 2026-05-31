@@ -79,7 +79,6 @@ else:
         st.markdown("""
         Modern physics has hit a dead end trying to describe the world with a set of probabilities and infinite fields. 
         **Grid Physics** offers a radical ontological shift: The Universe is a discrete computational substrate (Face-Centered Cubic lattice) governed by a single hardware law — **the drive towards minimal computational complexity ($\Sigma K \\to \min$)**.
-
         ### 1. The Dual Nature of Time: 3D Micro-Time vs. 1D Macro-Time
         Forget about protons and neutrons as independent, solid spheres. At the fundamental hardware level, reality is constructed entirely from **three-dimensional numbers** (Trinaries). Because the Matrix's processor (the Trisistor) updates these data structures across all three spatial axes (X, Y, Z) simultaneously, **time inside a particle is strictly three-dimensional** — an update vector $(t_x, t_y, t_z)$. 
         

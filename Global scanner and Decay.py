@@ -74,11 +74,11 @@ else:
         "🗄️ System Log (Theory vs Reality)"
     ])
 
-   with tab1:
+    with tab1:
         st.header("Simureality: How the Universe Actually Works")
-        st.markdown("""
+        st.markdown(r"""
         Modern physics has hit a dead end trying to describe the world with a set of probabilities and infinite fields. 
-        **Grid Physics** offers a radical ontological shift: The Universe is a discrete computational substrate (Face-Centered Cubic lattice) governed by a single hardware law — **the drive towards minimal computational complexity ($\Sigma K \\to \min$)**.
+        **Grid Physics** offers a radical ontological shift: The Universe is a discrete computational substrate (Face-Centered Cubic lattice) governed by a single hardware law — **the drive towards minimal computational complexity ($\Sigma K \to \min$)**.
 
         ### 1. The Dual Nature of Time: 3D Micro-Time vs. 1D Macro-Time
         Forget about protons and neutrons as independent, solid spheres. At the fundamental hardware level, reality is constructed entirely from **three-dimensional numbers** (Trinaries). Because the Matrix's processor (the Trisistor) updates these data structures across all three spatial axes (X, Y, Z) simultaneously, **time inside a particle is strictly three-dimensional** — an update vector ($t_x, t_y, t_z$). 
@@ -97,7 +97,7 @@ else:
         > **Gravity** is the operating system's attempt to move heavy, "lagging" processes closer together (defragmentation) to optimize the cache. This is exactly why time flows slower near massive objects.
 
         ### 4. Radioactivity as a 3D-Time Synchronization Error (Kernel Panic)
-        Stable nuclei are those whose geometry perfectly resonates with the discrete steps of the FCC lattice. Because their nodes align exactly with the "integer floors" of the grid, their internal 3D-time vectors ($t_x, t_y, t_z$) update in absolute synchrony. The Matrix recalculates them flawlessly, without lag or Topological Debt ($\Delta K \\approx 0$). They exist in a stable, infinite execution loop.
+        Stable nuclei are those whose geometry perfectly resonates with the discrete steps of the FCC lattice. Because their nodes align exactly with the "integer floors" of the grid, their internal 3D-time vectors ($t_x, t_y, t_z$) update in absolute synchrony. The Matrix recalculates them flawlessly, without lag or Topological Debt ($\Delta K \approx 0$). They exist in a stable, infinite execution loop.
 
         Unstable nuclei are geometrically deformed. Their nodes get physically shifted and "stuck" between the lattice layers (Geometric Jitter). Because the speed of information transfer in the system is finite (the speed of light), this physical spatial misalignment automatically converts into a temporal lag. The three time axes inside the nucleus begin to desynchronize.
 

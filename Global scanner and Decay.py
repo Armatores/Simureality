@@ -13,7 +13,7 @@ st.set_page_config(page_title="Chronos V9.2: 3D-Time Engine", layout="wide", pag
 
 @st.cache_data
 def load_chronos_data():
-    files_to_try = ["Chronos_v10_benchmark.csv","2026-05-30T23-26_export.csv"]
+    files_to_try = ["2026-05-30T23-26_export.csv", "simureality_chronos_v8_benchmark.csv"]
     for file_name in files_to_try:
         if os.path.exists(file_name):
             df = pd.read_csv(file_name)

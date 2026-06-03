@@ -3,10 +3,10 @@ import pandas as pd
 import numpy as np
 
 # ==============================================================================
-# SIMUREALITY: GRID PHYSICS V14 (SHELL vs SATELLITE ARCHITECTURE)
+# SIMUREALITY: GRID PHYSICS V15 (ISOSPIN SHELL & STERIC FACTOR)
 # ==============================================================================
 
-st.set_page_config(page_title="Grid Physics V14: Core Shells", layout="wide", page_icon="🌌")
+st.set_page_config(page_title="Grid Physics V15", layout="wide", page_icon="📐")
 
 # --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (PURE AB-INITIO) ---
 MASS_P = 938.272
@@ -76,7 +76,7 @@ class LiquidDropCore:
         else: pair = 0
         return (Z * MASS_P) + (N * MASS_N) - (vol - surf - coul - asym + pair)
 
-class GridPhysicsV14Core:
+class GridPhysicsV15Core:
     def __init__(self):
         self._crystal_cache = {
             0: (0, 0), 1: (0, 12), 2: (1, 22), 3: (3, 30), 4: (6, 36)
@@ -142,7 +142,7 @@ class GridPhysicsV14Core:
             macro_links, core_surface_ports = self.compile_3d_crystal(n_alphas)
         binding_macro = macro_links * E_MACRO_LINK
 
-        # 2. Валентные нуклоны (Гало / Пленка)
+        # 2. Валентные нуклоны (Нарост или Пленка)
         rem_Z = Z - (n_alphas * 2)
         rem_N = N - (n_alphas * 2)
         orphans_total = rem_Z + rem_N
@@ -155,51 +155,52 @@ class GridPhysicsV14Core:
             pairs = min(rem_Z, rem_N)
             binding_skin += pairs * (E_LINK + E_PAIR)  # Внутреннее спаривание гало
             
-            # --- V14: МОДЕЛЬ "НАРОСТ" vs "ПЛЕНКА" ---
+            # --- V15: ISOSPIN SURFACE PROBABILITY ---
             if orphans_total <= 3:
-                # МОДЕЛЬ "НАРОСТ" (Satellite) - Ядро вытягивается
+                # МОДЕЛЬ "НАРОСТ" (Satellite)
                 simplex_links = 1 if orphans_total == 2 else 3
                 if orphans_total == 1: simplex_links = 0
                 
-                # Внутренние связи нароста (если нет пар, они слабые)
+                # Слабые внутренние связи нароста (если это чистые нейтроны)
                 if pairs == 0:
                     binding_skin += simplex_links * (E_LINK / 3.0)
                 else:
                     binding_skin += max(0, simplex_links - pairs) * (E_LINK / 3.0)
                 
-                # Стыковка с ядром одной гранью (слабые линки)
+                # Стыковка с ядром (0.5 p-вероятность для одиночного порта)
                 if core_surface_ports > 0:
                     docked_nodes = min(orphans_total, core_surface_ports)
-                    binding_skin += docked_nodes * (E_LINK / 2.0)
+                    binding_skin += docked_nodes * (E_LINK * 0.5)
                     ports_used = docked_nodes
             else:
-                # МОДЕЛЬ "ПЛЕНКА" (Magic Shell) - Нейтроны облепляют ядро
-                # Оценка доступной топологии лунок на поверхности ГЦК макро-кристалла
-                dimples_3 = int(n_alphas * 1.2)
-                edges_2 = int(n_alphas * 2.0)
+                # МОДЕЛЬ "ПЛЕНКА" (Magic Shell)
+                # Стерический фактор: лунки перекрывают друг друга, нельзя занять их все
+                cap_dimples = int(n_alphas * 1.0)
+                cap_edges = int(n_alphas * 1.5)
                 
-                docked_links = 0
+                docked_energy = 0
                 for _ in range(orphans_total):
-                    if dimples_3 > 0 and (core_surface_ports - ports_used) >= 3:
-                        docked_links += 3
+                    if cap_dimples > 0 and (core_surface_ports - ports_used) >= 3:
+                        # Лунка (3 контакта). Вероятность 50% p -> 1.5 эффективных сильных связи
+                        docked_energy += 1.5 * E_LINK
                         ports_used += 3
-                        dimples_3 -= 1
-                    elif edges_2 > 0 and (core_surface_ports - ports_used) >= 2:
-                        docked_links += 2
+                        cap_dimples -= 1
+                    elif cap_edges > 0 and (core_surface_ports - ports_used) >= 2:
+                        # Ребро (2 контакта). Вероятность 50% p -> 1.0 эффективная связь
+                        docked_energy += 1.0 * E_LINK
                         ports_used += 2
-                        edges_2 -= 1
+                        cap_edges -= 1
                     elif (core_surface_ports - ports_used) >= 1:
-                        docked_links += 1
+                        # Вершина (1 контакт). Вероятность 50% p -> 0.5 эффективной связи
+                        docked_energy += 0.5 * E_LINK
                         ports_used += 1
                         
-                # Нейтроны пленки в глубоких лунках образуют сильные связи с протонами ядра
-                binding_skin += docked_links * E_LINK
+                binding_skin += docked_energy
             
             # --- АППАРАТНЫЙ ШУМ (ISOSPIN JITTER) ---
             open_ports = (orphans_total * 12) - ports_used
             asym = abs(rem_Z - rem_N)
-            
-            # Перекос изоспина дает геометрическое напряжение в вакууме
+            # Штраф за свободные порты и изоспиновую асимметрию
             jitter += (open_ports * JITTER_COST) + (asym * JITTER_COST * 2.5)
 
         total_be = binding_alphas + binding_macro + binding_skin - jitter
@@ -228,20 +229,19 @@ def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- UI RENDERING ---
-st.title("Grid Physics V14: Shell vs Satellite Architecture")
+st.title("Grid Physics V15: Isospin Probabilities")
 st.markdown("""
-**Обновление V14.0:**
-Внедрена гибридная алгоритмика укладки валентных нуклонов. 
-Матрица автоматически переключается между формированием **Нароста** (асимметричная деформация для малого числа нуклонов) и **Пленки** (тонкая нейтронная оболочка, рассаженная по глубоким лункам ядра для тяжелой экзотики). 
+**Обновление V15.0:**
+Внедрен **Закон Изоспиновой Поверхности** и **Стерический Фактор**. Скрипт корректно обсчитывает стыковку нейтронной шубы с Альфа-остовом, учитывая, что поверхность ядра состоит из протонов лишь на 50%. Это устраняет перенасыщение связи в тяжелых экзотических ядрах.
 """)
 
 df_masses = load_ame_masses("mass.txt")
-grid_engine = GridPhysicsV14Core()
+grid_engine = GridPhysicsV15Core()
 liquid_engine = LiquidDropCore()
 
 st.sidebar.header("Конфигурация ядра")
-target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=17, step=1)
-target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=28, step=1)
+target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=82, step=1)
+target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=126, step=1)
 
 symbol = ELEMENTS.get(target_Z, "Unknown")
 st.sidebar.markdown(f"### Выбранный узел: **{symbol}-{target_Z+target_N}**")
@@ -263,7 +263,7 @@ if not df_masses.empty and (target_Z, target_N) in df_masses.index:
     
     grid_mass = grid_engine.compile_mass(target_Z, target_N)
     grid_err = grid_mass - exp_mass
-    col2.metric(label=f"Grid Physics V14 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
+    col2.metric(label=f"Grid Physics V15 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
     
     liquid_mass = liquid_engine.compile_mass(target_Z, target_N)
     liquid_err = liquid_mass - exp_mass
@@ -274,7 +274,7 @@ else:
 st.markdown("---")
 st.write("### Глобальная сравнительная матрица (Авто-расчет)")
 if not df_masses.empty:
-    with st.spinner('Маршрутизация 3500+ графов (Оценка Пленки и Наростов)...'):
+    with st.spinner('Сборка 3500+ ядер с учетом Изоспина и Стерики...'):
         comp_df = generate_comparison_matrix(grid_engine, liquid_engine, df_masses)
         
         comp_df['Grid Abs Error'] = comp_df['Grid Debt/Error (MeV)'].abs()
@@ -291,6 +291,6 @@ if not df_masses.empty:
         sc2.metric(label="Liquid Drop Efficiency (5 fits)", value=f"{liquid_efficiency:.4f} %", delta=f"Mean Error: {liquid_mean:.3f} MeV", delta_color="off")
         
         csv = comp_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Скачать Матрицу (V14)", data=csv, file_name='GridPhysics_V14_Log.csv', mime='text/csv')
+        st.download_button(label="📥 Скачать Матрицу (V15)", data=csv, file_name='GridPhysics_V15_Log.csv', mime='text/csv')
         
         st.dataframe(comp_df.drop(columns=['Grid Abs Error', 'Liquid Abs Error']), use_container_width=True, height=400)

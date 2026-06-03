@@ -2,293 +2,96 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import os
 
 # ==============================================================================
-# SIMUREALITY: THE UNIFIED ENGINE (CHRONOS V11)
-# 3D-Time Phase Desynchronization + Ab-Initio FCC Mass Compiler
+# SIMUREALITY: THE UNIFIED ENGINE (V11 MASSES + CHRONOS GC)
 # ==============================================================================
 
-st.set_page_config(page_title="Chronos V11: 3D-Time Engine", layout="wide", page_icon="⏱️")
+st.set_page_config(page_title="Simureality Unified Engine", layout="wide", page_icon="🌌")
 
-# --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (V11) ---
-MASS_P = 938.272
-MASS_N = 939.565
-E_ALPHA = 28.32       
-E_MACRO_LINK = 2.425   
-E_LINK = 2.36          
-E_PAIR = 1.18          
-JITTER_COST = 0.01311
+st.title("🌌 Unified Grid Engine: Ab-Initio + Chronos")
+st.markdown("Этот скрипт сшивает вашу новую идеальную геометрию (V11) с реальными данными периодов полураспада (NUBASE).")
 
-class GridPhysicsV11Core:
-    def __init__(self):
-        self._crystal_cache = {
-            0: (0, 0),
-            1: (0, 12),
-            2: (1, 22),
-            3: (3, 30),
-            4: (6, 36)
-        }
+# --- ИНТЕРФЕЙС ЗАГРУЗКИ (НИКАКИХ ОШИБОК ПУТЕЙ) ---
+st.info("Пожалуйста, загрузите два файла из вашей локальной папки.")
+colA, colB = st.columns(2)
 
-    def get_fcc_neighbors(self, node):
-        x, y, z = node
-        deltas = [(1,1,0), (1,-1,0), (-1,1,0), (-1,-1,0),
-                  (1,0,1), (1,0,-1), (-1,0,1), (-1,0,-1),
-                  (0,1,1), (0,1,-1), (0,-1,1), (0,-1,-1)]
-        return [(x+dx, y+dy, z+dz) for dx, dy, dz in deltas]
+with colA:
+    masses_file = st.file_uploader("1. Загрузи новый дамп масс (Masses_5_export.csv)", type=["csv"])
+with colB:
+    chronos_file = st.file_uploader("2. Загрузи старый лог Хроноса (ради колонки Log10(T_1/2))", type=["csv"])
 
-    def compile_3d_crystal(self, n_clusters):
-        if n_clusters in self._crystal_cache: 
-            return self._crystal_cache[n_clusters]
-            
-        occupied = set([(0, 0, 0)])
-        for _ in range(1, n_clusters):
-            candidates = set()
-            for node in occupied:
-                for neighbor in self.get_fcc_neighbors(node):
-                    if neighbor not in occupied: candidates.add(neighbor)
-            
-            cm_x = sum(n[0] for n in occupied) / len(occupied)
-            cm_y = sum(n[1] for n in occupied) / len(occupied)
-            cm_z = sum(n[2] for n in occupied) / len(occupied)
-
-            best_pos, max_bonds, min_dist = None, -1, float('inf')
-            is_spherical = (n_clusters <= 14)
-            
-            for cand in candidates: 
-                bonds = sum(1 for n in self.get_fcc_neighbors(cand) if n in occupied)
-                dx = cand[0] - cm_x
-                dy = cand[1] - cm_y
-                dz = cand[2] - cm_z
+if masses_file is not None and chronos_file is not None:
+    with st.spinner("Сшиваем метрики и компилируем Матрицу..."):
+        # 1. Читаем файлы
+        df_masses = pd.read_csv(masses_file)
+        df_chronos = pd.read_csv(chronos_file)
+        
+        # 2. Ищем колонку нового долга (страховка от разных названий в дампе)
+        debt_col = None
+        for c in ['Grid Debt/Error (MeV)', 'Grid Debt', 'Error (MeV)']:
+            if c in df_masses.columns:
+                debt_col = c
+                break
                 
-                if is_spherical:
-                    dist_sq = dx**2 + dy**2 + dz**2 
-                else:
-                    dist_sq = 1.5 * dx**2 + 1.5 * dy**2 + 1.0 * dz**2 
-                
-                if bonds > max_bonds or (bonds == max_bonds and dist_sq < min_dist):
-                    max_bonds, min_dist, best_pos = bonds, dist_sq, cand
-                        
-            occupied.add(best_pos)
-
-        total_macro_links = sum(sum(1 for n in self.get_fcc_neighbors(node) if n in occupied) for node in occupied) // 2
-        surface_ports = (n_clusters * 12) - (2 * total_macro_links)
-        
-        self._crystal_cache[n_clusters] = (total_macro_links, surface_ports)
-        return total_macro_links, surface_ports
-
-    def compile_mass(self, Z, N):
-        if Z < 0 or N < 0: return float('inf')
-        if Z == 0 and N == 1: return MASS_N
-        if Z == 1 and N == 0: return MASS_P
-        
-        n_alphas = min(Z // 2, N // 2)
-        binding_alphas = n_alphas * E_ALPHA
-        macro_links, surface_ports = self.compile_3d_crystal(n_alphas)
-        binding_macro = macro_links * E_MACRO_LINK
-
-        rem_Z = Z - (n_alphas * 2)
-        rem_N = N - (n_alphas * 2)
-        orphans_total = rem_Z + rem_N
-        
-        binding_halo, jitter = 0, 0
-
-        if orphans_total > 0:
-            pairs = min(rem_Z, rem_N)
-            binding_halo += pairs * (E_LINK + E_PAIR)
-            
-            leftover = orphans_total - (pairs * 2)
-            if leftover > 0:
-                if surface_ports > 0:
-                    L2_docked = min(leftover, surface_ports)
-                    binding_halo += L2_docked * (E_LINK / 2.0)
-                    leftover -= L2_docked
-                
-                if leftover > 0:
-                    binding_halo += leftover * (E_LINK / 3.0)
-
-            open_ports = orphans_total * 12 if (n_alphas == 0 and pairs == 0) else orphans_total * 11
-            jitter += open_ports * JITTER_COST
-
-        total_be = binding_alphas + binding_macro + binding_halo - jitter
-        return (Z * MASS_P) + (N * MASS_N) - total_be
-
-
-@st.cache_data
-def compile_universe_matrix(filename):
-    if not os.path.exists(filename):
-        return None
-    
-    df = pd.read_csv(filename)
-    required = {'Z', 'A', 'Mass_MeV', 'Log10(T_1/2)', 'Status'}
-    if not required.issubset(df.columns):
-        st.error(f"В файле {filename} нет нужных колонок! Нужно: {required}")
-        return None
-
-    # Инициализация Движка Масс
-    engine = GridPhysicsV11Core()
-    df['N'] = df['A'] - df['Z']
-    
-    # 1. Расчет Абсолютных масс из первых принципов
-    df['Grid_Mass_MeV'] = df.apply(lambda row: engine.compile_mass(int(row['Z']), int(row['N'])), axis=1)
-    
-    # 2. Определение Топологического Долга (Разница между Природой и Идеальной Решеткой)
-    df['ΔK Debt (MeV)'] = abs(df['Grid_Mass_MeV'] - df['Mass_MeV'])
-    
-    # Оставляем только те строки, где есть данные о распаде
-    df = df.dropna(subset=['Log10(T_1/2)'])
-    
-    # 3. Движок распада Chronos
-    df['3D_Jitter'] = (df['ΔK Debt (MeV)'] / 110.0).clip(0, 0.4999)
-    df['Desync_Angle_Deg'] = df['3D_Jitter'] * 360.0
-    
-    df['Unpaired'] = ((df['Z'] % 2 != 0) | ((df['A'] - df['Z']) % 2 != 0)).astype(int)
-    
-    T_base, Z_imp, E_pow, P_lock = 2.76, 0.04, -0.87, -0.13
-    df['Predicted_LogT'] = T_base + (Z_imp * df['Z']) + (E_pow * np.sqrt(df['ΔK Debt (MeV)'])) + (P_lock * df['Unpaired'])
-    
-    df['Error_Delta'] = abs(df['Predicted_LogT'] - df['Log10(T_1/2)'])
-    
-    return df.sort_values('Desync_Angle_Deg')
-
-
-# --- USER INTERFACE ---
-st.title("⏱️ Chronos V11: 3D-Time Mechanics & Deterministic Decay")
-st.markdown("**Grid Physics Framework:** Unified Pipeline (Ab-Initio Masses $\\rightarrow$ Topological Debt $\\rightarrow$ Decay Timeout).")
-
-# ЗДЕСЬ УКАЖИ СВОЙ ИСХОДНЫЙ ФАЙЛ (базу данных с колонками Z, A, Mass_MeV, Log10(T_1/2))
-# Например, файл из которого ты раньше брал данные
-SOURCE_FILE = "nubase_source.csv" # <--- ПОМЕНЯЙ ЭТО ИМЯ НА ТВОЙ ФАЙЛ
-
-df = compile_universe_matrix(SOURCE_FILE)
-
-if df is None:
-    st.warning(f"Ожидаю файл `{SOURCE_FILE}` в папке со скриптом для запуска компиляции.")
-    uploaded = st.file_uploader("Или загрузи исходную базу вручную:", type=['csv'])
-    if uploaded:
-        # Сохраняем загруженный файл, чтобы закешировать парсинг
-        with open(SOURCE_FILE, "wb") as f:
-            f.write(uploaded.getbuffer())
-        st.rerun()
-else:
-    df_unstable = df[(df['Status'] == 'Unstable') & (df['Log10(T_1/2)'].notna())].copy()
-
-    # --- LIVE BENCHMARK PANEL ---
-    mae_global = df_unstable['Error_Delta'].mean()
-    accuracy_percent = max(0, 100 - (mae_global / 50.0 * 100))
-    
-    st.markdown("### 🎯 Live Benchmark: Hardware-Level Theory Accuracy")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Processed Isotopes", f"{len(df_unstable)}")
-    col2.metric("Mean Absolute Error (MAE)", f"{mae_global:.2f} orders", help="Average deviation of prediction from CERN/NUBASE empirical data")
-    col3.metric("Computational Accuracy", f"{accuracy_percent:.1f}%", delta="Grid Physics Core", delta_color="normal")
-    col4.metric("Time Singularity", "180°", help="Absolute desync limit before Kernel Panic")
-    
-    st.divider()
-
-    # --- TABS ---
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "📖 Matrix Ontology (Manifesto)",
-        "🔬 Isotope Chains (Death Vector)", 
-        "🌌 Global Desync Graph", 
-        "🗄️ System Log (Theory vs Reality)"
-    ])
-
-    with tab1:
-        st.header("Simureality: How the Universe Actually Works")
-        st.markdown(r"""
-        Modern physics has hit a dead end trying to describe the world with a set of probabilities and infinite fields. 
-        **Grid Physics** offers a radical ontological shift: The Universe is a discrete computational substrate (Face-Centered Cubic lattice) governed by a single hardware law — **the drive towards minimal computational complexity ($\Sigma K \to \min$)**.
-
-        ### 1. The Dual Nature of Time: 3D Micro-Time vs. 1D Macro-Time
-        Forget about protons and neutrons as independent, solid spheres. At the fundamental hardware level, reality is constructed entirely from **three-dimensional numbers** (Trinaries). Because the Matrix's processor (the Trisistor) updates these data structures across all three spatial axes (X, Y, Z) simultaneously, **time inside a particle is strictly three-dimensional** — an update vector ($t_x, t_y, t_z$). 
-        
-        What we perceive as standard, linear one-dimensional "time" is merely the macroscopic rendering track — the straight coordinate axis along which the global system moves as a whole, frame by frame. 
-        
-        Therefore, an atomic nucleus is a dynamic 3D-graph compilation process. **Mass** is not an innate property of matter; it is **Topological Debt ($\Delta K$)** — the amount of processor resources the Matrix must spend to successfully route these 3D-time vectors through a distorted lattice node to keep it synchronized with the 1D macro-timeline.
-
-        ### 2. Data Deduplication (Mass Defect)
-        Why does a nucleus weigh less than the sum of its parts? In IT, this is called **Data Deduplication**. When nodes merge, they collapse shared I/O ports. The Matrix no longer needs to compute their internal boundaries. Computational complexity drops, and the freed resources are released into the physical world as "Binding Energy".
-
-        ### 3. 3D-Time and Gravity (Compensated Lag)
-        In a perfect lattice ($\Delta K = 0$), system clocks tick absolutely synchronously in all directions. 
-        But if a node is deformed, the Matrix requires more clock cycles to compute its topology. A **routing lag** emerges. 
-        To compensate for this local lag, the System Dispatcher *slows down the clock rate* in that region. 
-        > **Gravity** is the operating system's attempt to move heavy, "lagging" processes closer together (defragmentation) to optimize the cache. This is exactly why time flows slower near massive objects.
-
-        ### 4. Radioactivity as a 3D-Time Synchronization Error (Kernel Panic)
-        Stable nuclei are those whose geometry perfectly resonates with the discrete steps of the FCC lattice. Because their nodes align exactly with the "integer floors" of the grid, their internal 3D-time vectors ($t_x, t_y, t_z$) update in absolute synchrony. The Matrix recalculates them flawlessly, without lag or Topological Debt ($\Delta K \approx 0$). They exist in a stable, infinite execution loop.
-
-        Unstable nuclei are geometrically deformed. Their nodes get physically shifted and "stuck" between the lattice layers (Geometric Jitter). Because the speed of information transfer in the system is finite (the speed of light), this physical spatial misalignment automatically converts into a temporal lag. The three time axes inside the nucleus begin to desynchronize.
-
-        When the topological debt reaches a critical threshold (around 55 MeV), the desynchronization angle hits 180° (complete anti-phase). A fatal system error occurs: the global 1D macro-timeline cannot render a node whose internal 3D dimensions are ticking in opposite directions. 
-
-        **Radioactive decay is not a quantum accident.** It is a deterministic Garbage Collector Timeout, forcefully terminating and recompiling the desynchronized process to save the Universe's operating system from Geometry Overflow.
-
-        ### ⚙️ How Does This Script Work?
-        This unified engine compiles the geometric mass error ($\Delta K$) strictly from Ab-Initio principles, translates it into a 3D-time desynchronization angle, and computes the exact Garbage Collector timeout.
-        """)
-
-    with tab2:
-        st.subheader("Phase Decay of an Element (Micro-analysis)")
-        elements = sorted(df_unstable['Z'].unique())
-        selected_Z = st.selectbox("Select Nuclear Charge (Z):", elements, index=elements.index(6) if 6 in elements else 0)
-        chain = df_unstable[df_unstable['Z'] == selected_Z]
-        
-        if len(chain) > 2:
-            fig1 = px.scatter(
-                chain, x="Desync_Angle_Deg", y="Log10(T_1/2)", 
-                hover_name="Isotope", text="Isotope",
-                title=f"Kernel Panic Trajectory for Z={selected_Z}",
-                labels={"Desync_Angle_Deg": "3D-Time Desync Angle (°)", "Log10(T_1/2)": "Real Time Log10(T)"},
-                trendline="ols", trendline_color_override="#FF1744", template="plotly_dark"
-            )
-            fig1.update_traces(textposition='top right', marker=dict(size=14, color='#00E676', line=dict(width=2, color='white')))
-            fig1.add_vline(x=180, line_dash="dash", line_color="red", annotation_text="Kernel Panic (180°)")
-            
-            stable_chain = df[(df['Z'] == selected_Z) & (df['Status'] == 'Stable')]
-            if not stable_chain.empty:
-                fig1.add_trace(px.scatter(stable_chain, x="Desync_Angle_Deg", y=[30]*len(stable_chain), text="Isotope").data[0])
-                fig1.data[-1].marker.color = 'yellow'
-                fig1.data[-1].marker.symbol = 'star'
-                fig1.data[-1].name = 'Stable (∞)'
-
-            st.plotly_chart(fig1, use_container_width=True)
+        if debt_col is None:
+            st.error(f"❌ В файле масс не найдена колонка долга! Колонки: {list(df_masses.columns)}")
         else:
-            st.warning("Not enough data to plot the chain trend.")
-
-    with tab3:
-        st.subheader("Global Phase Shift (All Elements)")
-        fig2 = px.scatter(
-            df_unstable, x="Desync_Angle_Deg", y="Log10(T_1/2)", color="Z", 
-            hover_name="Isotope", hover_data=["ΔK Debt (MeV)", "Predicted_LogT", "Error_Delta"],
-            color_continuous_scale="Turbo", template="plotly_dark",
-            title="Global 3D-Time Degradation Map",
-            labels={"Desync_Angle_Deg": "Desync Angle (°)", "Log10(T_1/2)": "Real Time Log10(T)"}
-        )
-        fig2.add_vline(x=180, line_dash="dash", line_color="red")
-        st.plotly_chart(fig2, use_container_width=True)
-
-    with tab4:
-        st.markdown("### 🗄️ Comparison: Theory vs. Reality")
-        st.markdown("The Matrix compares its mathematical prediction (`Predicted_LogT`) against real collider data (`Log10(T_1/2)`).")
-        
-        # Кнопка скачивания датасета (чтобы отдавать Питеру!)
-        csv_data = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Download V11 Master Dataset (for Visualizer)",
-            data=csv_data,
-            file_name="Chronos_V11_Master_Export.csv",
-            mime="text/csv",
-        )
-        
-        display_cols = ['Isotope', 'Z', 'Status', 'Grid_Mass_MeV', 'Mass_MeV', 'ΔK Debt (MeV)', 'Desync_Angle_Deg', 'Predicted_LogT', 'Log10(T_1/2)', 'Error_Delta']
-        format_dict = {'Grid_Mass_MeV':'{:.3f}', 'Mass_MeV':'{:.3f}', 'ΔK Debt (MeV)': '{:.3f}', 'Desync_Angle_Deg': '{:.2f}°', 'Predicted_LogT': '{:.2f}', 'Log10(T_1/2)': '{:.2f}', 'Error_Delta': '{:.3f}'}
-        
-        st.dataframe(
-            df_unstable[display_cols].sort_values('Error_Delta').style
-            .format(format_dict)
-            .background_gradient(subset=['Error_Delta'], cmap='Reds', vmin=0, vmax=5)
-            .background_gradient(subset=['Desync_Angle_Deg'], cmap='Oranges'),
-            use_container_width=True, height=600
-        )
+            # 3. ВЫТЯЖКА ДАННЫХ ИЗ СТАРОГО ФАЙЛА (Только база ЦЕРНа)
+            base_cols = ['Isotope', 'Z', 'A', 'Status', 'Log10(T_1/2)']
+            existing_base_cols = [c for c in base_cols if c in df_chronos.columns]
+            df_nubase = df_chronos[existing_base_cols].copy()
+            
+            # 4. СЛИЯНИЕ ПО Z И A
+            df_merged = pd.merge(df_nubase, df_masses[['Z', 'A', debt_col]], on=['Z', 'A'], how='inner')
+            
+            # 5. ПЕРЕСЧЕТ CHRONOS (Новая геометрия -> Новое Время)
+            df_merged['ΔK Debt (MeV)'] = df_merged[debt_col].abs()
+            
+            df_merged['3D_Jitter'] = (df_merged['ΔK Debt (MeV)'] / 110.0).clip(0, 0.4999)
+            df_merged['Desync_Angle_Deg'] = df_merged['3D_Jitter'] * 360.0
+            df_merged['Unpaired'] = ((df_merged['Z'] % 2 != 0) | ((df_merged['A'] - df_merged['Z']) % 2 != 0)).astype(int)
+            
+            T_base, Z_imp, E_pow, P_lock = 2.76, 0.04, -0.87, -0.13
+            df_merged['Predicted_LogT'] = T_base + (Z_imp * df_merged['Z']) + (E_pow * np.sqrt(df_merged['ΔK Debt (MeV)'])) + (P_lock * df_merged['Unpaired'])
+            
+            df_merged['Error_Delta'] = abs(df_merged['Predicted_LogT'] - df_merged['Log10(T_1/2)'])
+            df_merged = df_merged.sort_values('Desync_Angle_Deg')
+            
+            # --- ВЫВОД РЕЗУЛЬТАТОВ БЕНЧМАРКА ---
+            df_unstable = df_merged[(df_merged['Status'] == 'Unstable') & (df_merged['Log10(T_1/2)'].notna())]
+            mae_global = df_unstable['Error_Delta'].mean()
+            accuracy_percent = max(0, 100 - (mae_global / 50.0 * 100))
+            
+            st.success("✅ Слияние успешно завершено!")
+            
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Сшито ядер (Nodes Compiled)", f"{len(df_merged)}")
+            c2.metric("Новая средняя ошибка (MAE)", f"{mae_global:.3f} порядков")
+            c3.metric("Точность Сборщика Мусора", f"{accuracy_percent:.2f}%")
+            
+            # --- ГРАФИК ---
+            st.subheader("Global Phase Shift")
+            fig = px.scatter(
+                df_unstable, x="Desync_Angle_Deg", y="Log10(T_1/2)", color="Z", 
+                hover_name="Isotope", hover_data=["ΔK Debt (MeV)", "Error_Delta"],
+                color_continuous_scale="Turbo", template="plotly_dark",
+                title="Global 3D-Time Degradation Map"
+            )
+            fig.add_vline(x=180, line_dash="dash", line_color="red")
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # --- СКАЧИВАНИЕ ---
+            st.divider()
+            st.markdown("### 💾 Экспорт Мастер-Файла")
+            cols_to_export = ['Isotope', 'Z', 'A', 'Status', 'Log10(T_1/2)', 'ΔK Debt (MeV)', 'Desync_Angle_Deg', 'Unpaired', 'Predicted_LogT', 'Error_Delta']
+            csv_data = df_merged[cols_to_export].to_csv(index=False).encode('utf-8')
+            
+            st.download_button(
+                label="📥 Скачать готовый Chronos_V11_benchmark.csv",
+                data=csv_data,
+                file_name="Chronos_V11_benchmark.csv",
+                mime="text/csv"
+            )
+            
+            st.dataframe(df_merged[cols_to_export].head(15), use_container_width=True)

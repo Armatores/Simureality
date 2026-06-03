@@ -3,10 +3,10 @@ import pandas as pd
 import numpy as np
 
 # ==============================================================================
-# SIMUREALITY: GRID PHYSICS V13 (DYNAMIC NEUTRON SKIN)
+# SIMUREALITY: GRID PHYSICS V14 (SHELL vs SATELLITE ARCHITECTURE)
 # ==============================================================================
 
-st.set_page_config(page_title="Grid Physics V13: Neutron Skin", layout="wide", page_icon="🧬")
+st.set_page_config(page_title="Grid Physics V14: Core Shells", layout="wide", page_icon="🌌")
 
 # --- СТРОГИЕ АППАРАТНЫЕ КОНСТАНТЫ SIMUREALITY (PURE AB-INITIO) ---
 MASS_P = 938.272
@@ -76,15 +76,10 @@ class LiquidDropCore:
         else: pair = 0
         return (Z * MASS_P) + (N * MASS_N) - (vol - surf - coul - asym + pair)
 
-class GridPhysicsV13Core:
+class GridPhysicsV14Core:
     def __init__(self):
-        # Кэш макро-кластеров
         self._crystal_cache = {
             0: (0, 0), 1: (0, 12), 2: (1, 22), 3: (3, 30), 4: (6, 36)
-        }
-        # Кэш микро-оболочки (Шубы)
-        self._skin_cache = {
-            1: (0, 12), 2: (1, 22), 3: (3, 30), 4: (6, 36)
         }
 
     def get_fcc_neighbors(self, node):
@@ -95,7 +90,6 @@ class GridPhysicsV13Core:
         return [(x+dx, y+dy, z+dz) for dx, dy, dz in deltas]
 
     def compile_3d_crystal(self, n_clusters):
-        """Сборщик основного Альфа-ядра (Макро-узлы)"""
         if n_clusters in self._crystal_cache: 
             return self._crystal_cache[n_clusters]
             
@@ -129,42 +123,13 @@ class GridPhysicsV13Core:
         self._crystal_cache[n_clusters] = (total_macro_links, surface_ports)
         return total_macro_links, surface_ports
 
-    def compile_micro_crystal(self, n_nodes):
-        """Сборщик вторичной решетки (Нейтронная шуба)"""
-        if n_nodes <= 0: return 0, 0
-        if n_nodes in self._skin_cache: return self._skin_cache[n_nodes]
-        
-        occupied = set([(0, 0, 0)])
-        for _ in range(1, n_nodes):
-            candidates = set()
-            for node in occupied:
-                for neighbor in self.get_fcc_neighbors(node):
-                    if neighbor not in occupied: candidates.add(neighbor)
-            
-            cm_x = sum(n[0] for n in occupied) / len(occupied)
-            cm_y = sum(n[1] for n in occupied) / len(occupied)
-            cm_z = sum(n[2] for n in occupied) / len(occupied)
-            
-            best_pos, max_bonds, min_dist = None, -1, float('inf')
-            for cand in candidates:
-                bonds = sum(1 for n in self.get_fcc_neighbors(cand) if n in occupied)
-                dist_sq = (cand[0]-cm_x)**2 + (cand[1]-cm_y)**2 + (cand[2]-cm_z)**2
-                if bonds > max_bonds or (bonds == max_bonds and dist_sq < min_dist):
-                    max_bonds, min_dist, best_pos = bonds, dist_sq, cand
-            occupied.add(best_pos)
-            
-        total_links = sum(sum(1 for n in self.get_fcc_neighbors(node) if n in occupied) for node in occupied) // 2
-        surface_ports = (n_nodes * 12) - (2 * total_links)
-        self._skin_cache[n_nodes] = (total_links, surface_ports)
-        return total_links, surface_ports
-
     def compile_mass(self, Z, N):
         if Z < 0 or N < 0: return float('inf')
         if Z == 0 and N == 1: return MASS_N
         if Z == 1 and N == 0: return MASS_P
         A = Z + N
         
-        # --- ФУНДАМЕНТАЛЬНЫЕ 2D/3D СИМПЛЕКСЫ ---
+        # --- БАЗОВЫЕ ИДЕАЛЬНЫЕ СИМПЛЕКСЫ (2D/3D) ---
         if A == 2: return (Z * MASS_P) + (N * MASS_N) - (E_LINK + E_PAIR - (22 * JITTER_COST))
         if A == 3: return (Z * MASS_P) + (N * MASS_N) - ((3 * E_LINK) + E_PAIR - (30 * JITTER_COST))
         
@@ -177,39 +142,65 @@ class GridPhysicsV13Core:
             macro_links, core_surface_ports = self.compile_3d_crystal(n_alphas)
         binding_macro = macro_links * E_MACRO_LINK
 
-        # 2. Нейтронная/Протонная Шуба (Остатки)
+        # 2. Валентные нуклоны (Гало / Пленка)
         rem_Z = Z - (n_alphas * 2)
         rem_N = N - (n_alphas * 2)
         orphans_total = rem_Z + rem_N
         
         binding_skin = 0
         jitter = 0
+        ports_used = 0
 
         if orphans_total > 0:
             pairs = min(rem_Z, rem_N)
-            binding_skin += pairs * E_PAIR  
+            binding_skin += pairs * (E_LINK + E_PAIR)  # Внутреннее спаривание гало
             
-            # --- V13: АРХИТЕКТУРА ДИНАМИЧЕСКОЙ ШУБЫ ---
-            # Матрица строит отдельный микро-кристалл из всех остатков
-            skin_internal_links, skin_surface_ports = self.compile_micro_crystal(orphans_total)
-            
-            # Физика: Нейтроны плохо связываются с нейтронами. Сильный линк только у смешанных пар.
-            if pairs > 0:
-                binding_skin += skin_internal_links * E_LINK
-            else:
-                binding_skin += skin_internal_links * (E_LINK / 3.0)
+            # --- V14: МОДЕЛЬ "НАРОСТ" vs "ПЛЕНКА" ---
+            if orphans_total <= 3:
+                # МОДЕЛЬ "НАРОСТ" (Satellite) - Ядро вытягивается
+                simplex_links = 1 if orphans_total == 2 else 3
+                if orphans_total == 1: simplex_links = 0
                 
-            # --- СТЫКОВКА (MERGE) ---
-            # Считаем, сколько узлов шубы касаются ядра
-            if n_alphas > 0:
-                docked_nodes = min(orphans_total, core_surface_ports)
-                binding_skin += docked_nodes * (E_LINK / 2.0)
-
+                # Внутренние связи нароста (если нет пар, они слабые)
+                if pairs == 0:
+                    binding_skin += simplex_links * (E_LINK / 3.0)
+                else:
+                    binding_skin += max(0, simplex_links - pairs) * (E_LINK / 3.0)
+                
+                # Стыковка с ядром одной гранью (слабые линки)
+                if core_surface_ports > 0:
+                    docked_nodes = min(orphans_total, core_surface_ports)
+                    binding_skin += docked_nodes * (E_LINK / 2.0)
+                    ports_used = docked_nodes
+            else:
+                # МОДЕЛЬ "ПЛЕНКА" (Magic Shell) - Нейтроны облепляют ядро
+                # Оценка доступной топологии лунок на поверхности ГЦК макро-кристалла
+                dimples_3 = int(n_alphas * 1.2)
+                edges_2 = int(n_alphas * 2.0)
+                
+                docked_links = 0
+                for _ in range(orphans_total):
+                    if dimples_3 > 0 and (core_surface_ports - ports_used) >= 3:
+                        docked_links += 3
+                        ports_used += 3
+                        dimples_3 -= 1
+                    elif edges_2 > 0 and (core_surface_ports - ports_used) >= 2:
+                        docked_links += 2
+                        ports_used += 2
+                        edges_2 -= 1
+                    elif (core_surface_ports - ports_used) >= 1:
+                        docked_links += 1
+                        ports_used += 1
+                        
+                # Нейтроны пленки в глубоких лунках образуют сильные связи с протонами ядра
+                binding_skin += docked_links * E_LINK
+            
             # --- АППАРАТНЫЙ ШУМ (ISOSPIN JITTER) ---
-            open_ports = skin_surface_ports
-            # Штраф за деформацию: чем больше асимметрия N и Z, тем сильнее шуба отрывается от ядра
+            open_ports = (orphans_total * 12) - ports_used
             asym = abs(rem_Z - rem_N)
-            jitter += (open_ports * JITTER_COST) + (asym * JITTER_COST * 2.0)
+            
+            # Перекос изоспина дает геометрическое напряжение в вакууме
+            jitter += (open_ports * JITTER_COST) + (asym * JITTER_COST * 2.5)
 
         total_be = binding_alphas + binding_macro + binding_skin - jitter
         return (Z * MASS_P) + (N * MASS_N) - total_be
@@ -237,19 +228,20 @@ def generate_comparison_matrix(_grid_engine, _liquid_engine, df_ame):
     return pd.DataFrame(results).sort_values(by=["Z", "N"])
 
 # --- UI RENDERING ---
-st.title("Grid Physics V13: Neutron Skin Architecture")
+st.title("Grid Physics V14: Shell vs Satellite Architecture")
 st.markdown("""
-**Обновление V13.0:**
-Внедрена архитектура **Динамической Нейтронной Шубы**. Экстремально нейтронно-избыточные изотопы на дрип-линиях больше не "размазываются" в виде сирот. Матрица компилирует для них вторичный ГЦК-кристалл (Шубу), учитывая штрафы за изоспиновую асимметрию.
+**Обновление V14.0:**
+Внедрена гибридная алгоритмика укладки валентных нуклонов. 
+Матрица автоматически переключается между формированием **Нароста** (асимметричная деформация для малого числа нуклонов) и **Пленки** (тонкая нейтронная оболочка, рассаженная по глубоким лункам ядра для тяжелой экзотики). 
 """)
 
 df_masses = load_ame_masses("mass.txt")
-grid_engine = GridPhysicsV13Core()
+grid_engine = GridPhysicsV14Core()
 liquid_engine = LiquidDropCore()
 
 st.sidebar.header("Конфигурация ядра")
-target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=1, step=1)
-target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=2, step=1)
+target_Z = st.sidebar.number_input("Протоны (Z)", min_value=1, max_value=118, value=17, step=1)
+target_N = st.sidebar.number_input("Нейтроны (N)", min_value=0, max_value=184, value=28, step=1)
 
 symbol = ELEMENTS.get(target_Z, "Unknown")
 st.sidebar.markdown(f"### Выбранный узел: **{symbol}-{target_Z+target_N}**")
@@ -264,11 +256,14 @@ if not df_masses.empty and (target_Z, target_N) in df_masses.index:
     n_alph = min(target_Z//2, target_N//2)
     shape_str = "Сфера" if n_alph <= 14 else "Эллипсоид"
     if n_alph == 0: shape_str = "Базовый Симплекс"
-    if (target_Z - n_alph*2) + (target_N - n_alph*2) > 4: shape_str += " + Шуба"
+    else:
+        orphans = (target_Z - n_alph*2) + (target_N - n_alph*2)
+        if orphans > 0 and orphans <= 3: shape_str += " + Нарост"
+        elif orphans > 3: shape_str += " + Пленка"
     
     grid_mass = grid_engine.compile_mass(target_Z, target_N)
     grid_err = grid_mass - exp_mass
-    col2.metric(label=f"Grid Physics V13 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
+    col2.metric(label=f"Grid Physics V14 ({shape_str})", value=f"{grid_mass:.3f} MeV", delta=f"{grid_err:.3f} MeV", delta_color="inverse")
     
     liquid_mass = liquid_engine.compile_mass(target_Z, target_N)
     liquid_err = liquid_mass - exp_mass
@@ -279,7 +274,7 @@ else:
 st.markdown("---")
 st.write("### Глобальная сравнительная матрица (Авто-расчет)")
 if not df_masses.empty:
-    with st.spinner('Развертывание 3500+ графов (Ядро + Шуба)...'):
+    with st.spinner('Маршрутизация 3500+ графов (Оценка Пленки и Наростов)...'):
         comp_df = generate_comparison_matrix(grid_engine, liquid_engine, df_masses)
         
         comp_df['Grid Abs Error'] = comp_df['Grid Debt/Error (MeV)'].abs()
@@ -296,6 +291,6 @@ if not df_masses.empty:
         sc2.metric(label="Liquid Drop Efficiency (5 fits)", value=f"{liquid_efficiency:.4f} %", delta=f"Mean Error: {liquid_mean:.3f} MeV", delta_color="off")
         
         csv = comp_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Скачать Матрицу (V13)", data=csv, file_name='GridPhysics_V13_Log.csv', mime='text/csv')
+        st.download_button(label="📥 Скачать Матрицу (V14)", data=csv, file_name='GridPhysics_V14_Log.csv', mime='text/csv')
         
         st.dataframe(comp_df.drop(columns=['Grid Abs Error', 'Liquid Abs Error']), use_container_width=True, height=400)

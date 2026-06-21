@@ -122,3 +122,32 @@ else:
     st.markdown("### 📊 Анализ точности")
     mean_delta = df_exotic["Delta (MeV)"].mean()
     st.metric(label="Средняя абсолютная погрешность (Delta)", value=f"{mean_delta:.2f} MeV")
+# --- ДОБАВЬ ЭТО В КОНЕЦ ФАЙЛА APP.PY ---
+st.markdown("---")
+st.markdown("### 🕵️‍♂️ Поиск точных имен в файле PDG")
+st.write("Скрипт ищет, как именно ЦЕРН записал нужные нам массы...")
+
+search_targets = ["3872", "3900", "3875", "4312", "4440", "4430", "6900"]
+found_names = []
+
+try:
+    with open("mass_width_2026.txt", 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        for line in lines:
+            if line.startswith('*') or len(line.strip()) == 0:
+                continue
+            if len(line) > 107:
+                raw_name = line[107:128].strip().split(' ')[0]
+                # Проверяем, есть ли искомые цифры в имени частицы
+                if any(target in raw_name for target in search_targets):
+                    # Вытаскиваем и саму массу, чтобы убедиться, что это то, что нужно
+                    mass = float(line[33:51].strip()) * 1000
+                    found_names.append(f"Имя в файле: `{raw_name}` (Масса: {mass:.1f} MeV)")
+                    
+    if found_names:
+        for name in set(found_names): # Убираем дубликаты
+            st.code(name, language="text")
+    else:
+        st.write("Частицы с такими массами/номерами не найдены в файле.")
+except Exception as e:
+    st.error(f"Ошибка поиска: {e}")

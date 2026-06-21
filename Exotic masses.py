@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import os
 
+# Настройка широкой страницы для удобного просмотра таблиц
+st.set_page_config(page_title="Grid Physics: PDG Validator", layout="wide")
+
 # ---------------------------------------------------------
 # Grid Physics Constants
 # ---------------------------------------------------------
@@ -18,6 +21,7 @@ PAYLOADS = {
 
 # ---------------------------------------------------------
 # PDG Mapping Dictionary (Translating CERN names to Grid Rules)
+# ВАЖНО: Ключи должны точно совпадать с текстом из файла!
 # ---------------------------------------------------------
 EXOTIC_MAP = {
     "D(s0)*(2317)": ("D_s0*(2317)", ['c', 's'], "1V"),           
@@ -39,7 +43,7 @@ def fetch_and_parse_pdg_data(filename="mass_width_2026.txt"):
 
     # Проверяем, существует ли файл локально
     if not os.path.exists(filename):
-        st.error(f"Файл {filename} не найден в корневой директории!")
+        st.error(f"❌ Системная ошибка: Файл '{filename}' не найден в корневой директории!")
         return pd.DataFrame()
 
     try:
@@ -89,11 +93,32 @@ def fetch_and_parse_pdg_data(filename="mass_width_2026.txt"):
                 continue
 
     except Exception as e:
-        st.error(f"Ошибка при чтении файла: {e}")
+        st.error(f"❌ Ошибка при чтении файла: {e}")
         return pd.DataFrame()
 
     return pd.DataFrame(parsed_data)
 
-# --- Пример вызова ---
-# df_exotic = fetch_and_parse_pdg_data()
-# st.dataframe(df_exotic)
+# =========================================================
+# ИНТЕРФЕЙС STREAMLIT (UI)
+# =========================================================
+
+st.title("🌌 Grid Physics: Exotic Hadron Validator")
+st.markdown("""
+Этот модуль анализирует **сырые данные Particle Data Group (PDG)** и доказывает, 
+что массы экзотических частиц (тетракварков и пентакварков) детерминированно вычисляются 
+через топологические правила ГЦК-решетки без использования эмпирических подгонок КХД.
+""")
+
+st.write("⏳ Чтение и парсинг локальной базы PDG...")
+df_exotic = fetch_and_parse_pdg_data()
+
+# Проверка: если датафрейм пустой, значит ключи в словаре не совпали с файлом
+if df_exotic.empty:
+    st.warning("⚠️ База данных прочитана, но экзотические частицы не найдены. Проверьте точное написание ключей в словаре `EXOTIC_MAP`!")
+else:
+    st.success("✅ Данные успешно синхронизированы с PDG!")
+    st.dataframe(df_exotic, use_container_width=True)
+    
+    st.markdown("### 📊 Анализ точности")
+    mean_delta = df_exotic["Delta (MeV)"].mean()
+    st.metric(label="Средняя абсолютная погрешность (Delta)", value=f"{mean_delta:.2f} MeV")

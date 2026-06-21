@@ -3,8 +3,8 @@ import pandas as pd
 import sqlite3
 import os
 
-st.set_page_config(page_title="PDG Particles Explorer", layout="wide")
-st.title("🗄️ Охота на Экзотику (Таблица Particles)")
+st.set_page_config(page_title="PDG Database Explorer", layout="wide")
+st.title("🗄️ Исследователь Базы PDG (SQLite)")
 
 DB_FILE = "pdg-2026.db"
 
@@ -13,39 +13,54 @@ if not os.path.exists(DB_FILE):
 else:
     conn = sqlite3.connect(DB_FILE)
     
-    # Жестко выбираем нужную нам таблицу!
-    target_table = "particles"
+    # 1. Получаем список всех таблиц
+    tables_query = "SELECT name FROM sqlite_master WHERE type='table';"
+    tables_df = pd.read_sql_query(tables_query, conn)
     
-    st.markdown(f"### 🔍 Прямой SQL-запрос к таблице `{target_table}`")
-    
-    try:
-        # Ищем наши частицы напрямую по колонке 'name' (в SQLite она обычно так и называется)
-        search_query = f"""
-        SELECT * FROM {target_table} 
-        WHERE name LIKE '%3872%' 
-           OR name LIKE '%3900%'
-           OR name LIKE '%4430%'
-           OR name LIKE '%4312%'
-           OR name LIKE '%4440%'
-           OR name LIKE '%6900%'
-           OR name LIKE '%2317%'
-        """
-        df_exotic = pd.read_sql_query(search_query, conn)
+    if not tables_df.empty:
+        table_names = tables_df['name'].tolist()
         
-        if not df_exotic.empty:
-            st.success("🎯 БИНГО! Вот наши экзотические частицы прямо из ЦЕРНа:")
-            st.dataframe(df_exotic, use_container_width=True)
+        # 2. Делаем выпадающий список, чтобы ты мог сам выбрать таблицу!
+        selected_table = st.selectbox("📂 Выберите таблицу для просмотра:", table_names)
+        
+        st.markdown(f"### Структура и данные таблицы: `{selected_table}`")
+        
+        try:
+            # Читаем первые 1000 строк из выбранной таблицы
+            df = pd.read_sql_query(f"SELECT * FROM {selected_table} LIMIT 1000;", conn)
             
-            # Предлагаем код для словаря EXOTIC_MAP на основе того, что нашли
-            st.markdown("### 🛠 Что делать дальше?")
-            st.write("Скопируй точные имена из колонки **name** (или **description**) в наш словарь `EXOTIC_MAP` для финального калькулятора.")
-        else:
-            st.warning("В колонке 'name' таких цифр нет. Возможно, колонка называется иначе. Вывожу 500 частиц, чтобы посмотреть структуру базы глазами:")
-            fallback_query = f"SELECT * FROM {target_table} LIMIT 500;"
-            df_fallback = pd.read_sql_query(fallback_query, conn)
-            st.dataframe(df_fallback, use_container_width=True)
+            # Показываем список колонок (чтобы мы знали, где искать массу и имя)
+            st.write("**Колонки в этой таблице:**", df.columns.tolist())
             
-    except Exception as e:
-        st.error(f"Ошибка БД: {e}")
+            # Показываем сами данные
+            st.dataframe(df, use_container_width=True)
+            
+            # 3. Умный поиск по всей таблице
+            st.markdown("---")
+            st.markdown("### 🔍 Поиск по таблице")
+            search_term = st.text_input("Введите значение для поиска (например, 3872 или X):")
+            
+            if search_term:
+                # Ищем во всех текстовых колонках
+                text_cols = df.select_dtypes(include=['object']).columns
+                if not text_cols.empty:
+                    # Строим запрос для поиска по всем текстовым колонкам
+                    conditions = " OR ".join([f"{col} LIKE '%{search_term}%'" for col in text_cols])
+                    search_query = f"SELECT * FROM {selected_table} WHERE {conditions}"
+                    
+                    search_results = pd.read_sql_query(search_query, conn)
+                    if not search_results.empty:
+                        st.success(f"Найдено {len(search_results)} совпадений!")
+                        st.dataframe(search_results, use_container_width=True)
+                    else:
+                        st.warning("Ничего не найдено.")
+                else:
+                    st.info("В этой таблице нет текстовых колонок для поиска.")
+                    
+        except Exception as e:
+            st.error(f"Ошибка при чтении таблицы {selected_table}: {e}")
+            
+    else:
+        st.warning("База данных пуста (нет таблиц).")
         
     conn.close()

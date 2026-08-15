@@ -1,19 +1,16 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import itertools
-from collections import defaultdict
+# ==============================================================================
+# SIMUREALITY OS: HEAVY API EXTRACTOR (ГЛОБАЛЬНЫЙ ПАРСЕР С ТЯЖЕЛЫМИ БЛОКАМИ)
+# Автоматически извлекает цены интерфейсов вплоть до Свинца-208
+# ==============================================================================
 
-# --- CONFIG & UI SETUP ---
-st.set_page_config(page_title="Simureality Auto-API Extractor", layout="wide")
-st.title("⚙️ Grid Physics: Automated Matrix API Extractor")
-st.markdown("Автоматический парсер всей базы AME2020 (`mass.txt`) для извлечения аппаратного прайс-листа интерфейсов Матрицы.")
+import itertools
+import numpy as np
+import pandas as pd
+from collections import defaultdict
 
 MASS_P = 938.272
 MASS_N = 939.565
 
-# --- 1. ROBUST AME2020 PARSER ---
-@st.cache_data
 def load_ame_masses(filename="mass.txt"):
     data = []
     try:
@@ -35,48 +32,42 @@ def load_ame_masses(filename="mass.txt"):
             df = df[~df.index.duplicated(keep='first')]
         return df
     except Exception as e:
-        return pd.DataFrame(), str(e)
+        print(f"❌ Ошибка чтения файла {filename}: {e}")
+        return pd.DataFrame()
 
-df_masses = load_ame_masses("mass.txt")
-
-if isinstance(df_masses, tuple) or df_masses.empty:
-    st.error("❌ Ошибка: файл `mass.txt` не найден в корневой директории! Положи его рядом с `app.py`.")
-    st.stop()
-
-st.success(f"✅ База AME2020 успешно загружена. Всего изотопов в памяти: **{len(df_masses)}**")
-
-# --- 2. HARDWARE CACHE PREFABS ---
+# РАСШИРЕННАЯ БАЗА КЭШЕЙ (Добавлены Никель, Олово и Свинец)
 CORE_BLOCKS = [
     (1, 1, 'H-2'), (2, 2, 'He-4'), (3, 4, 'Li-7'), 
     (6, 6, 'C-12'), (8, 8, 'O-16'), (10, 10, 'Ne-20'), 
-    (12, 12, 'Mg-24'), (14, 14, 'Si-28'), (16, 16, 'S-32'), (20, 20, 'Ca-40')
+    (12, 12, 'Mg-24'), (14, 14, 'Si-28'), (16, 16, 'S-32'), (20, 20, 'Ca-40'),
+    (28, 28, 'Ni-56'), (50, 82, 'Sn-132'), (82, 126, 'Pb-208')
 ]
 
-block_masses = {}
-for z, n, name in CORE_BLOCKS:
-    if (z, n) in df_masses.index:
-        block_masses[name] = df_masses.loc[(z, n), 'Mass_MeV']
+def run_auto_extraction():
+    print("================================================================================")
+    print("      SIMUREALITY OS: СБОРЩИК КОНСТАНТ HEAVY API (AME2020)")
+    print("================================================================================\n")
+    
+    df_masses = load_ame_masses("mass.txt")
+    if df_masses.empty:
+        print("❌ Файл 'mass.txt' не найден! Положи его рядом со скриптом.")
+        return
 
-st.markdown("---")
-st.subheader("🚀 Запуск автоматического сканирования интерфейсов")
-st.markdown("Нажми кнопку ниже, чтобы компьютер на автопилоте сопоставил все 3000+ ядер и вытащил чистые константы слияния.")
+    block_masses = {}
+    for z, n, name in CORE_BLOCKS:
+        if (z, n) in df_masses.index:
+            block_masses[name] = df_masses.loc[(z, n), 'Mass_MeV']
 
-if st.button("Запустить авто-экстрактор констант", type="primary"):
     interface_database = defaultdict(list)
-    available_blocks = [(bx, by, bname) for bx, by, bname in CORE_BLOCKS if bname in block_masses]
+
+    print(f"[*] Сканирование базы изотопов ({len(df_masses)} строк). Ищем макро-стыковки...")
     
-    items = list(df_masses.iterrows())
-    total_items = len(items)
-    
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    scanned_links = 0
-    
-    # Run loop with progress bar so UI never freezes
-    for idx, ((z, n), row) in enumerate(items):
-        if z < 2 or n < 2: continue
+    scanned = 0
+    for (z, n), row in df_masses.iterrows():
+        if z < 2 or n < 2: continue 
         target_mass = row['Mass_MeV']
+        
+        available_blocks = [(bx, by, bname) for bx, by, bname in CORE_BLOCKS if bname in block_masses]
         
         for b1, b2 in itertools.combinations_with_replacement(available_blocks, 2):
             if b1[0] + b2[0] == z and b1[1] + b2[1] == n:
@@ -86,41 +77,34 @@ if st.button("Запустить авто-экстрактор констант"
                 
                 pair_key = tuple(sorted([b1[2], b2[2]]))
                 interface_database[pair_key].append(fusion_energy)
-                scanned_links += 1
-                
-        if idx % 100 == 0:
-            progress_bar.progress(min(idx / total_items, 1.0))
-            status_text.text(f"Обработано строк: {idx} / {total_items} | Найдено связей: {scanned_links}")
+                scanned += 1
 
-    progress_bar.progress(1.0)
-    status_text.text(f"✅ Сканирование завершено! Всего проанализировано связей: {scanned_links}")
+    print(f"[*] Готово! Просканировано связей: {scanned}\n")
+    print("================================================================================")
+    print("      ИТОГОВЫЙ АВТОМАТИЧЕСКИЙ СЛОВАРЬ API МАТРИЦЫ (ВКЛЮЧАЯ ТЯЖЕЛЫЕ)")
+    print("================================================================================")
     
-    # Process results into a clean dataframe
-    results_list = []
-    final_api_dict = {}
-    
+    final_api_dictionary = {}
     for pair, energies in interface_database.items():
         if len(energies) > 0:
-            avg_energy = float(np.median(energies))
-            spread = float(np.max(energies) - np.min(energies))
-            pair_str = f"('{pair[0]}', '{pair[1]}')"
-            results_list.append({
-                "Interface Pair": pair_str,
-                "Median Price (MeV)": round(avg_energy, 3),
-                "Spread (MeV)": round(spread, 3),
-                "Occurrences": len(energies)
-            })
-            final_api_dict[pair] = round(avg_energy, 3)
+            avg_energy = np.median(energies)
+            final_api_dictionary[pair] = round(float(avg_energy), 3)
             
-    df_results = pd.DataFrame(results_list).sort_values(by="Occurrences", ascending=False)
+    # Сортируем вывод: сначала самые выгодные интерфейсы, потом штрафные (отрицательные)
+    sorted_api = sorted(final_api_dictionary.items(), key=lambda x: x[1], reverse=True)
     
-    st.markdown("### 📊 Итоговый Словарь API Матрицы (Интерфейсные Константы)")
-    st.dataframe(df_results, use_container_width=True)
-    
-    st.markdown("### 📋 Готовый код словаря для вашего Ab Initio Компилятора:")
-    code_snippet = "API_FUSION = {\n"
-    for k, v in final_api_dict.items():
-        code_snippet += f"    ('{k[0]}', '{k[1]}'): {v},\n"
-    code_snippet += "}"
-    
-    st.code(code_snippet, language="python")
+    for pair, energy in sorted_api:
+        pair_str = f"('{pair[0]}', '{pair[1]}')"
+        if energy < 0:
+            print(f"{pair_str:<22} | {energy:>14.3f} МэВ  [🚨 GEOMETRY OVERFLOW]")
+        else:
+            print(f"{pair_str:<22} | {energy:>14.3f} МэВ")
+
+    print("\n[+] Готовый программный словарь для вставки в Ab Initio Компилятор:")
+    print("API_FUSION = {")
+    for k, v in final_api_dictionary.items():
+        print(f"    ('{k[0]}', '{k[1]}'): {v},")
+    print("}")
+
+if __name__ == "__main__":
+    run_auto_extraction()

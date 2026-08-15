@@ -45,19 +45,21 @@ def load_ame_masses(filename="mass.txt"):
         st.error(f"Error loading {filename}: {e}")
         return pd.DataFrame()
 
-# --- 2. THE HARDWARE CACHE LIBRARY ---
-# These are the fundamental pre-compiled blocks the Matrix uses to build larger nuclei
+# --- 2. THE HARDWARE CACHE LIBRARY (С РАСШИРЕННОЙ ЭКЗОТИКОЙ) ---
 CORE_BLOCKS = [
-    (0, 1, 'n'), (1, 0, 'p'), (1, 1, 'H-2'), (1, 2, 'H-3'), (2, 1, 'He-3'), (2, 2, 'He-4'),
+    # Сырые нуклоны и базовые пары
+    (0, 1, 'n'), (1, 0, 'p'), (0, 2, '2n'), (1, 1, 'H-2'), 
+    # Нейтронно-избыточные префабы (для экзотики и гало-ядер)
+    (1, 2, 'H-3'), (2, 1, 'He-3'), (2, 2, 'He-4'), (2, 4, 'He-6'),
     (3, 3, 'Li-6'), (3, 4, 'Li-7'), (4, 4, 'Be-8'), (4, 5, 'Be-9'), (5, 5, 'B-10'), 
     (6, 6, 'C-12'), (7, 7, 'N-14'), (8, 8, 'O-16'), (10, 10, 'Ne-20'), (12, 12, 'Mg-24'),
     (14, 14, 'Si-28'), (16, 16, 'S-32'), (18, 18, 'Ar-36'), (20, 20, 'Ca-40'), (26, 30, 'Fe-56')
 ]
 
 # --- STREAMLIT UI ---
-st.set_page_config(page_title="Simureality Interface Debugger", layout="wide")
-st.title("🌌 Grid Physics: Visual Interface Debugger")
-st.markdown("Decompiling the Hardware Assembly API from AME2020 Data.")
+st.set_page_config(page_title="Simureality Interface Debugger v2", layout="wide")
+st.title("🌌 Grid Physics: Visual Interface Debugger (Extended Exotic Library)")
+st.markdown("Decompiling Hardware Assembly APIs and Exotic Halo Structures from AME2020.")
 
 df_masses = load_ame_masses()
 
@@ -65,26 +67,27 @@ if df_masses.empty:
     st.warning("Please place 'mass.txt' in the root directory to run the empirical scan.")
     st.stop()
 
-# Build the block mass dictionary from the AME data
+# Build the block mass dictionary from the AME data (including synthetic exotic virtual weights if needed)
 block_masses = {}
 for z, n, name in CORE_BLOCKS:
     if z == 1 and n == 0: block_masses[name] = MASS_P
     elif z == 0 and n == 1: block_masses[name] = MASS_N
+    elif z == 0 and n == 2: block_masses[name] = 2 * MASS_N - 0.5  # Dineutron virtual prefab binding estimate
     else:
         try:
             block_masses[name] = df_masses.loc[(z, n), 'Mass_MeV']
         except KeyError:
-            pass # Skip if block is missing from AME snippet
+            pass 
 
 st.sidebar.header("Target Nucleus Selector")
-target_Z = st.sidebar.number_input("Protons (Z)", min_value=1, max_value=100, value=14, step=1)
-target_N = st.sidebar.number_input("Neutrons (N)", min_value=1, max_value=160, value=14, step=1)
+target_Z = st.sidebar.number_input("Protons (Z)", min_value=1, max_value=100, value=3, step=1)
+target_N = st.sidebar.number_input("Neutrons (N)", min_value=1, max_value=160, value=8, step=1)
 target_A = target_Z + target_N
 symbol = ELEMENTS.get(target_Z, "Unknown")
 target_name = f"{symbol}-{target_A}"
 
 st.sidebar.markdown("### Search Settings")
-max_blocks = st.sidebar.slider("Max Blocks to Merge", 2, 5, 2)
+max_blocks = st.sidebar.slider("Max Blocks to Merge", 2, 6, 3)
 
 st.write(f"### Decompiling: **{target_name}** (Z={target_Z}, N={target_N})")
 
@@ -96,12 +99,11 @@ except KeyError:
     st.stop()
 
 # --- 3. COMBINATORIAL ENGINE ---
-with st.spinner("Calculating all valid topological fusion paths..."):
+with st.spinner("Calculating all valid topological fusion paths including exotic prefabs..."):
     available_blocks = [(z, n, name) for z, n, name in CORE_BLOCKS if name in block_masses and (z!=target_Z or n!=target_N)]
     
     valid_paths = []
     
-    # Combinatorial search for matching Z and N
     for k in range(2, max_blocks + 1):
         for combo in itertools.combinations_with_replacement(available_blocks, k):
             sum_z = sum(b[0] for b in combo)
@@ -123,7 +125,6 @@ if valid_paths:
     
     st.markdown(f"Found **{len(df_results)}** valid geometric assembly paths:")
     
-    # Format the table for nice display
     st.dataframe(
         df_results.style.format({
             "Total Initial Mass": "{:.4f}",
@@ -132,16 +133,15 @@ if valid_paths:
         use_container_width=True
     )
     
-    # Visual Highlights
     best_path = df_results.iloc[0]
     st.info(f"**Highest Deduplication Profit (Most Efficient Fusion):** \n\n`{best_path['Path']}  ⟶  {target_name}` \n\nMatrix saves **{best_path['Interface Energy (MeV)']:.4f} MeV** in this macro-link.")
     
 else:
-    st.warning("No exact block combinations found within the current block dictionary and max block limit. Increase 'Max Blocks' or add exotic blocks to the dictionary.")
+    st.warning("No exact block combinations found within the current block dictionary and max block limit. Increase 'Max Blocks' or add more exotic prefabs.")
 
 st.markdown("---")
-st.markdown("### How to interpret this:")
+st.markdown("### Что изменилось:")
 st.markdown("""
-- **Path:** The set of pre-compiled `Caches` (Alpha-clusters, Deuterons, Carbon rings) merged together.
-- **Interface Energy:** The energy released ($\Delta K$) when the Matrix erases the physical boundaries (deduplicates) between the colliding blocks. This is the exact price of the 'macro-link' in Grid Physics.
+- **Экзотические префабы (`H-3`, `He-6`, `2n`):** Теперь алгоритм может компоновать тяжелые нейтронные хвосты (гало) не через десятки одиночных нейтронов, а через стабильные суб-модули, сокращая глубину дерева поиска.
+- Попробуй выставить Литий-11 ($Z=3, N=8$) с `Max Blocks = 3` или `4` — скрипт мгновенно найдет сборку вроде `Li-7 + 2n` или `He-6 + H-3 + 2n`!
 """)

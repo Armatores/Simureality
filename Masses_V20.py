@@ -174,12 +174,16 @@ with tab1:
     gm = grid.compile_mass(target_Z, target_N)
     if (target_Z,target_N) in df.index:
         exp = df.loc[(target_Z,target_N),'Mass_MeV']
+        lm = drop.compile_mass(target_Z, target_N)
+        winner = "🏆 V20" if abs(gm-exp) <= abs(lm-exp) else "🏆 Вейцзеккер"
         c1.metric("AME2020 (лог железа)", f"{exp:.3f} MeV")
         c2.metric("Grid Physics V20", f"{gm:.3f} MeV",
-                  delta=f"{gm-exp:+.3f} MeV", delta_color="inverse")
-        lm = drop.compile_mass(target_Z, target_N)
+                  delta=f"{gm-exp:+.3f} MeV | точность {100-abs(gm-exp)/exp*100:.4f}%",
+                  delta_color="inverse")
         c3.metric("Вейцзеккер (5 фитов)", f"{lm:.3f} MeV",
-                  delta=f"{lm-exp:+.3f} MeV", delta_color="inverse")
+                  delta=f"{lm-exp:+.3f} MeV | точность {100-abs(lm-exp)/exp*100:.4f}%",
+                  delta_color="inverse")
+        st.markdown(f"## {winner} на этом узле")
     else:
         c1.metric("AME2020", "узел не измерен")
         c2.metric("Grid Physics V20 (ПРОГНОЗ)", f"{gm:.3f} MeV")
@@ -209,21 +213,34 @@ with tab1:
                 rows.append({"Узел": f"{ELEMENTS.get(Z,'?')}-{A}", "Z":Z, "N":N, "A":A,
                              "AME2020": round(exp,3), "V20": round(g,3),
                              "Δ V20 (MeV)": round(g-exp,3),
-                             "Вейцзеккер": round(l,3), "Δ LDM (MeV)": round(l-exp,3)})
+                             "Точность V20 %": round(100-abs(g-exp)/exp*100,4),
+                             "Вейцзеккер": round(l,3), "Δ LDM (MeV)": round(l-exp,3),
+                             "Точность LDM %": round(100-abs(l-exp)/exp*100,4),
+                             "Корона": "V20" if abs(g-exp)<=abs(l-exp) else "LDM"})
             res = pd.DataFrame(rows)
             ga = res["Δ V20 (MeV)"].abs(); la = res["Δ LDM (MeV)"].abs()
             rms = float(np.sqrt((res["Δ V20 (MeV)"]**2).mean()))
-            s1,s2,s3 = st.columns(3)
-            s1.metric("V20: средняя |ошибка|", f"{ga.mean():.2f} MeV", delta=f"RMS {rms:.2f}", delta_color="off")
-            s2.metric("Вейцзеккер: средняя |ошибка|", f"{la.mean():.2f} MeV", delta_color="off")
-            s3.metric("Макс. долг V20", f"{ga.max():.2f} MeV", delta_color="off")
-            st.write("**По регионам (V20, mean |Δ|, MeV):**")
+            eff_g = 100 - (ga/res["AME2020"]).mean()*100
+            eff_l = 100 - (la/res["AME2020"]).mean()*100
+            wins = (res["Корона"]=="V20").sum()
+            s1,s2,s3,s4 = st.columns(4)
+            s1.metric("V20: средняя |ошибка|", f"{ga.mean():.2f} MeV",
+                      delta=f"точность {eff_g:.4f}%", delta_color="off")
+            s2.metric("Вейцзеккер: средняя |ошибка|", f"{la.mean():.2f} MeV",
+                      delta=f"точность {eff_l:.4f}%", delta_color="off")
+            s3.metric("Короны V20", f"{wins} / {len(res)}",
+                      delta=f"{wins/len(res)*100:.1f}% узлов", delta_color="off")
+            s4.metric("Макс. долг V20", f"{ga.max():.2f} MeV", delta_color="off")
+            st.write("**По регионам:**")
             reg = []
             for lo,hi,nm in [(4,20,"A<20"),(20,60,"20–60"),(60,120,"60–120"),(120,400,"A≥120")]:
                 sel = res[(res["A"]>=lo)&(res["A"]<hi)]
                 reg.append({"Регион":nm, "n":len(sel),
-                            "V20 mean|Δ|": round(sel["Δ V20 (MeV)"].abs().mean(),2),
-                            "LDM mean|Δ|": round(sel["Δ LDM (MeV)"].abs().mean(),2)})
+                            "V20 mean|Δ| MeV": round(sel["Δ V20 (MeV)"].abs().mean(),2),
+                            "LDM mean|Δ| MeV": round(sel["Δ LDM (MeV)"].abs().mean(),2),
+                            "Точность V20 %": round(sel["Точность V20 %"].mean(),4),
+                            "Точность LDM %": round(sel["Точность LDM %"].mean(),4),
+                            "Корон V20": int((sel["Корона"]=="V20").sum())})
             st.dataframe(pd.DataFrame(reg), use_container_width=True)
             st.dataframe(res, use_container_width=True, height=380)
             st.download_button("📥 Скачать матрицу (CSV)",

@@ -177,7 +177,7 @@ grid = GridPhysicsV20(E_B)
 drop = LiquidDrop()
 
 if df.empty:
-    st.error("mass.txt (AME2020) не найден рядом со скриптом")
+    st.error("mass.txt (AME2020) not found next to the script")
     st.stop()
 st.sidebar.success(f"✅ AME2020-strict: {len(df)} verified nodes")
 
@@ -236,7 +236,7 @@ with tab1:
         c3.metric("Weizsäcker (5 fits)", f"{lm:.3f} MeV",
                   delta=f"{lm-exp:+.3f} MeV | accuracy {100-abs(lm-exp)/exp*100:.4f}%",
                   delta_color="inverse")
-        st.markdown(f"## {winner} на этом узле")
+        st.markdown(f"## {winner} on this node")
     else:
         c1.metric("AME2020", "node not measured")
         c2.metric("Grid Physics V21 (PREDICTION)", f"{gm:.3f} MeV")
@@ -294,7 +294,7 @@ with tab1:
                             "V21 mean|Δ| MeV": round(sel["Δ V21 (MeV)"].abs().mean(),2),
                             "LDM mean|Δ| MeV": round(sel["Δ LDM (MeV)"].abs().mean(),2),
                             "Accuracy V21 %": round(sel["Accuracy V21 %"].mean(),4),
-                            "Точность LDM %": round(sel["Точность LDM %"].mean(),4),
+                            "Accuracy LDM %": round(sel["Accuracy LDM %"].mean(),4),
                             "V21 crowns": int((sel["Crown"]=="V21").sum())})
             st.dataframe(pd.DataFrame(reg), use_container_width=True)
             st.dataframe(res, use_container_width=True, height=380)
